@@ -9,12 +9,32 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch } from 'react-redux';
 import { useTheme } from '../../hooks/useTheme';
+import { loginFailure, loginStart, loginSuccess } from '../../store/slices/authSlice';
+import { addUser } from '../../utils/demoUsers';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import Card from '../../components/common/Card';
+
+const availableRoles = [
+  {
+    id: 'buyer',
+    title: 'Buyer',
+    icon: '🛒',
+    description: 'Browse and purchase products.',
+  },
+  {
+    id: 'seller',
+    title: 'Seller',
+    icon: '🏪',
+    description: 'List and manage your products.',
+  },
+];
 
 const RegisterScreen = ({ navigation }) => {
   const { theme } = useTheme();
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -22,9 +42,11 @@ const RegisterScreen = ({ navigation }) => {
     password: '',
     confirmPassword: '',
   });
+  const [selectedRole, setSelectedRole] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
 
   const updateField = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -41,6 +63,7 @@ const RegisterScreen = ({ navigation }) => {
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
+    if (!selectedRole) newErrors.role = 'Select buyer or seller';
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -48,10 +71,32 @@ const RegisterScreen = ({ navigation }) => {
     }
 
     setLoading(true);
-    // TODO: Implement actual registration logic
+    setFormError('');
+    dispatch(loginStart());
+
     setTimeout(() => {
+      try {
+        const newUser = addUser({
+          role: selectedRole,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+        });
+
+        dispatch(
+          loginSuccess({
+            user: newUser,
+            token: `demo_token_${newUser.role}`,
+          })
+        );
+      } catch (error) {
+        const message = error?.message || 'Unable to sign up';
+        setFormError(message);
+        dispatch(loginFailure(message));
+      }
+
       setLoading(false);
-      navigation.navigate('RoleSelect');
     }, 1500);
   };
 
@@ -73,6 +118,53 @@ const RegisterScreen = ({ navigation }) => {
             </Text>
             <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
               Join FreshRoute today
+            </Text>
+          </View>
+
+          {/* Role Selection */}
+          <View style={styles.rolesContainer}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
+              Choose your role
+            </Text>
+            {availableRoles.map((role) => (
+              <TouchableOpacity key={role.id} onPress={() => setSelectedRole(role.id)}>
+                <Card
+                  style={[
+                    styles.roleCard,
+                    selectedRole === role.id && {
+                      borderWidth: 2,
+                      borderColor: theme.colors.primary.main,
+                    },
+                  ]}
+                >
+                  <View style={styles.roleContent}>
+                    <View style={[styles.iconContainer, { backgroundColor: theme.colors.primary.light }]}>
+                      <Text style={styles.roleIcon}>{role.icon}</Text>
+                    </View>
+                    <View style={styles.roleInfo}>
+                      <Text style={[styles.roleTitle, { color: theme.colors.text.primary }]}>
+                        {role.title}
+                      </Text>
+                      <Text style={[styles.roleDescription, { color: theme.colors.text.secondary }]}>
+                        {role.description}
+                      </Text>
+                    </View>
+                    {selectedRole === role.id && (
+                      <View style={[styles.checkmark, { backgroundColor: theme.colors.primary.main }]}>
+                        <Text style={styles.checkmarkText}>✓</Text>
+                      </View>
+                    )}
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            ))}
+            {errors.role && (
+              <Text style={[styles.errorText, { color: theme.colors.error?.main || '#d32f2f' }]}>
+                {errors.role}
+              </Text>
+            )}
+            <Text style={[styles.helperText, { color: theme.colors.text.secondary }]}>
+              Drivers and field admins are added by administrators only.
             </Text>
           </View>
 
@@ -135,6 +227,12 @@ const RegisterScreen = ({ navigation }) => {
               loading={loading}
               style={styles.registerButton}
             />
+
+            {!!formError && (
+              <Text style={[styles.errorText, { color: theme.colors.error?.main || '#d32f2f' }]}>
+                {formError}
+              </Text>
+            )}
           </View>
 
           {/* Footer */}
@@ -179,6 +277,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+  rolesContainer: {
+    marginBottom: 16,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  roleCard: {
+    marginBottom: 12,
+  },
+  roleContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  roleIcon: {
+    fontSize: 26,
+  },
+  roleInfo: {
+    flex: 1,
+  },
+  roleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  roleDescription: {
+    fontSize: 13,
+  },
+  checkmark: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkmarkText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  helperText: {
+    fontSize: 12,
+    marginTop: 4,
+  },
   form: {
     marginBottom: 24,
   },
@@ -197,6 +348,12 @@ const styles = StyleSheet.create({
   loginText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

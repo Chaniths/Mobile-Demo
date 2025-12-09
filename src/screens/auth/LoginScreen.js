@@ -9,17 +9,22 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch } from 'react-redux';
 import { useTheme } from '../../hooks/useTheme';
+import { loginFailure, loginStart, loginSuccess } from '../../store/slices/authSlice';
+import { findUserByCredentials } from '../../utils/demoUsers';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 
 const LoginScreen = ({ navigation }) => {
   const { theme } = useTheme();
+  const dispatch = useDispatch();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [authError, setAuthError] = useState('');
 
   const handleLogin = async () => {
     // Validation
@@ -33,11 +38,26 @@ const LoginScreen = ({ navigation }) => {
     }
 
     setLoading(true);
-    // TODO: Implement actual login logic
-    // For demo purposes, just navigate to role selection
+    setAuthError('');
+    dispatch(loginStart());
+
     setTimeout(() => {
+      const user = findUserByCredentials(email, password);
+
+      if (user) {
+        dispatch(
+          loginSuccess({
+            user,
+            token: `demo_token_${user.role}`,
+          })
+        );
+      } else {
+        const message = 'Invalid email or password';
+        setAuthError(message);
+        dispatch(loginFailure(message));
+      }
+
       setLoading(false);
-      navigation.navigate('RoleSelect');
     }, 1500);
   };
 
@@ -112,6 +132,12 @@ const LoginScreen = ({ navigation }) => {
               loading={loading}
               style={styles.loginButton}
             />
+
+            {!!authError && (
+              <Text style={[styles.errorText, { color: theme.colors.error?.main || '#d32f2f' }]}>
+                {authError}
+              </Text>
+            )}
           </View>
 
           {/* Footer */}
@@ -192,6 +218,12 @@ const styles = StyleSheet.create({
   signupText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 
