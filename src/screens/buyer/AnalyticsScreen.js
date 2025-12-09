@@ -66,7 +66,7 @@ const AnalyticsScreen = () => {
           <Card style={[styles.metricCard, styles.tintTeal, { flex: 1 }]}>
             <Text style={[styles.metricLabel, { color: theme.colors.text.secondary }]}>Open Orders</Text>
             <Text style={[styles.metricValue, { color: theme.colors.text.highlight }]}>{spendSummary.openOrders}</Text>
-            <Text style={[styles.metricSub, { color:theme.colors.text.secondary }]}>Awaiting rider</Text>
+            <Text style={[styles.metricSub, { color: theme.colors.text.secondary }]}>Awaiting rider</Text>
           </Card>
         </View>
 
@@ -74,7 +74,7 @@ const AnalyticsScreen = () => {
           <Card style={[styles.metricCard, styles.tintAmber, { flex: 1 }]}>
             <Text style={[styles.metricLabel, { color: theme.colors.text.secondary }]}>Completed (7D)</Text>
             <Text style={[styles.metricValue, { color: theme.colors.text.highlight }]}>{spendSummary.completed7d}</Text>
-            <Text style={[styles.metricSub, { color:theme.colors.text.secondary }]}>+3 vs last week</Text>
+            <Text style={[styles.metricSub, { color: theme.colors.text.secondary }]}>+3 vs last week</Text>
           </Card>
           <Card style={[styles.metricCard, styles.tintIndigo, { flex: 1 }]}>
             <Text style={[styles.metricLabel, { color: theme.colors.text.secondary }]}>Favorite Vendors</Text>

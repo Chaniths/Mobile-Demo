@@ -13,6 +13,7 @@ import OrdersScreen from '../screens/buyer/OrdersScreen';
 import ProfileScreen from '../screens/buyer/ProfileScreen';
 import AnalyticsScreen from '../screens/buyer/AnalyticsScreen';
 import TrackOrderScreen from '../screens/buyer/TrackOrderScreen';
+import CheckoutScreen from '../screens/buyer/CheckoutScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -21,9 +22,23 @@ const HomeStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Home" component={HomeScreen} />
     <Stack.Screen name="ProductBrowse" component={ProductBrowseScreen} />
-    <Stack.Screen name="ProductDetail" component={HomeScreen} />
+    <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
     <Stack.Screen name="Analytics" component={AnalyticsScreen} />
     <Stack.Screen name="TrackOrder" component={TrackOrderScreen} />
+  </Stack.Navigator>
+);
+
+const BrowseStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="ProductBrowse" component={ProductBrowseScreen} />
+    <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+  </Stack.Navigator>
+);
+
+const CartStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Cart" component={CartScreen} />
+    <Stack.Screen name="Checkout" component={CheckoutScreen} />
   </Stack.Navigator>
 );
 
