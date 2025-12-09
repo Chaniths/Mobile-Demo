@@ -19,6 +19,11 @@ const mockProducts = [
   { id: '4', name: 'Carrots', price: '$2.49', image: '🥕', rating: 4.5, category: 'vegetables' },
   { id: '5', name: 'Raw Honey', price: '$8.99', image: '🍯', rating: 4.9, category: 'dairy' },
   { id: '6', name: 'Tomatoes', price: '$3.99', image: '🍅', rating: 4.8, category: 'vegetables' },
+  { id: '7', name: 'Organic Milk', price: '$5.99', image: '🥛', rating: 4.8, category: 'dairy' },
+  { id: '8', name: 'Organic Eggs', price: '$1.99', image: '🥚', rating: 4.6, category: 'dairy' },
+  { id: '9', name: 'Organic Wheat', price: '$4.99', image: '🌾', rating: 4.9, category: 'grains' },
+  { id: '10', name: 'Organic Rice', price: '$3.99', image: '🍚', rating: 4.7, category: 'grains' },
+  { id: '11', name: 'Organic Sugar', price: '$2.99', image: '🍬', rating: 4.5, category: 'sugar' },
 ];
 
 const ProductBrowseScreen = ({ navigation, route }) => {

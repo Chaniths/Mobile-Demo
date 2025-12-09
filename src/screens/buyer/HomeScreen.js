@@ -16,12 +16,24 @@ const categories = [
   { id: '2', name: 'Vegetables', icon: '🥬' },
   { id: '3', name: 'Dairy', icon: '🥛' },
   { id: '4', name: 'Grains', icon: '🌾' },
+  { id: '5', name: 'Herbs', icon: '🌿' },
+  { id: '6', name: 'Spices', icon: '🌶️' },
+  { id: '7', name: 'Nuts', icon: '🌰' },
+  { id: '8', name: 'Seeds', icon: '🌱' },
+  { id: '9', name: 'Flowers', icon: '🌺' },
 ];
 
 const featuredProducts = [
   { id: '1', name: 'Organic Apples', price: '$4.99', image: '🍎', rating: 4.8 },
   { id: '2', name: 'Fresh Spinach', price: '$2.99', image: '🥬', rating: 4.6 },
   { id: '3', name: 'Raw Honey', price: '$8.99', image: '🍯', rating: 4.9 },
+  { id: '4', name: 'Organic Bananas', price: '$3.99', image: '🍌', rating: 4.7 },
+  { id: '5', name: 'Fresh Carrots', price: '$2.99', image: '🥕', rating: 4.5 },
+  { id: '6', name: 'Organic Milk', price: '$5.99', image: '🥛', rating: 4.8 },
+  { id: '7', name: 'Organic Eggs', price: '$1.99', image: '🥚', rating: 4.6 },
+  { id: '8', name: 'Organic Wheat', price: '$4.99', image: '🌾', rating: 4.9 },
+  { id: '9', name: 'Organic Rice', price: '$3.99', image: '🍚', rating: 4.7 },
+  { id: '10', name: 'Organic Sugar', price: '$2.99', image: '🍬', rating: 4.5 },
 ];
 
 const HomeScreen = ({ navigation }) => {
@@ -238,6 +250,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     paddingHorizontal: 20,
     paddingVertical: 16,
+    marginBottom: 16,
   },
   categoryIcon: {
     fontSize: 32,
@@ -253,6 +266,7 @@ const styles = StyleSheet.create({
   productCard: {
     width: 140,
     marginHorizontal: 4,
+    marginBottom: 16,
   },
   productImage: {
     height: 120,
