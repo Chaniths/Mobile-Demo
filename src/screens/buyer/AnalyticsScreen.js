@@ -59,27 +59,27 @@ const AnalyticsScreen = () => {
         {/* Spend & KPIs */}
         <View style={styles.row}>
           <Card style={[styles.metricCard, styles.tintGreen, { flex: 1 }]}>
-            <Text style={[styles.metricLabel, { color: '#cbd5e1' }]}>Spend (30D)</Text>
-            <Text style={[styles.metricValue, { color: '#f8fafc' }]}>{spendSummary.monthTotal}</Text>
-            <Text style={[styles.metricSub, { color: '#e2e8f0' }]}>Avg: {spendSummary.avgOrder}</Text>
+            <Text style={[styles.metricLabel, { color: theme.colors.text.secondary }]}>Spend (30D)</Text>
+            <Text style={[styles.metricValue, { color: theme.colors.text.highlight }]}>{spendSummary.monthTotal}</Text>
+            <Text style={[styles.metricSub, { color: theme.colors.text.secondary }]}>Avg: {spendSummary.avgOrder}</Text>
           </Card>
           <Card style={[styles.metricCard, styles.tintTeal, { flex: 1 }]}>
-            <Text style={[styles.metricLabel, { color: '#cbd5e1' }]}>Open Orders</Text>
-            <Text style={[styles.metricValue, { color: '#f8fafc' }]}>{spendSummary.openOrders}</Text>
-            <Text style={[styles.metricSub, { color: '#e2e8f0' }]}>Awaiting rider</Text>
+            <Text style={[styles.metricLabel, { color: theme.colors.text.secondary }]}>Open Orders</Text>
+            <Text style={[styles.metricValue, { color: theme.colors.text.highlight }]}>{spendSummary.openOrders}</Text>
+            <Text style={[styles.metricSub, { color:theme.colors.text.secondary }]}>Awaiting rider</Text>
           </Card>
         </View>
 
         <View style={styles.row}>
           <Card style={[styles.metricCard, styles.tintAmber, { flex: 1 }]}>
-            <Text style={[styles.metricLabel, { color: '#0f172a' }]}>Completed (7D)</Text>
-            <Text style={[styles.metricValue, { color: '#0f172a' }]}>{spendSummary.completed7d}</Text>
-            <Text style={[styles.metricSub, { color: '#1f2937' }]}>+3 vs last week</Text>
+            <Text style={[styles.metricLabel, { color: theme.colors.text.secondary }]}>Completed (7D)</Text>
+            <Text style={[styles.metricValue, { color: theme.colors.text.highlight }]}>{spendSummary.completed7d}</Text>
+            <Text style={[styles.metricSub, { color:theme.colors.text.secondary }]}>+3 vs last week</Text>
           </Card>
           <Card style={[styles.metricCard, styles.tintIndigo, { flex: 1 }]}>
-            <Text style={[styles.metricLabel, { color: '#e0e7ff' }]}>Favorite Vendors</Text>
-            <Text style={[styles.metricValue, { color: '#eef2ff' }]}>{spendSummary.favVendors}</Text>
-            <Text style={[styles.metricSub, { color: '#c7d2fe' }]}>Pinned vendors</Text>
+            <Text style={[styles.metricLabel, { color: theme.colors.text.secondary }]}>Favorite Vendors</Text>
+            <Text style={[styles.metricValue, { color: theme.colors.text.highlight }]}>{spendSummary.favVendors}</Text>
+            <Text style={[styles.metricSub, { color: theme.colors.text.secondary }]}>Pinned vendors</Text>
           </Card>
         </View>
 
@@ -228,10 +228,10 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 999,
   },
-  tintGreen: { backgroundColor: 'rgba(34,197,94,0.12)' },
-  tintTeal: { backgroundColor: 'rgba(45,212,191,0.12)' },
-  tintAmber: { backgroundColor: 'rgba(251,191,36,0.70)' },
-  tintIndigo: { backgroundColor: 'rgba(99,102,241,0.22)' },
+  tintGreen: { backgroundColor: 'rgba(34,197,94,0.60)' },
+  tintTeal: { backgroundColor: 'rgba(45,212,191,0.60)' },
+  tintAmber: { backgroundColor: 'rgba(251,191,36,0.50)' },
+  tintIndigo: { backgroundColor: 'rgba(99,102,241,0.50)' },
 });
 
 export default AnalyticsScreen;

@@ -61,6 +61,7 @@ export const useTheme = () => {
         primary: isDarkMode ? colors.text.primary : colors.textLight.primary,
         secondary: isDarkMode ? colors.text.secondary : colors.textLight.secondary,
         tertiary: isDarkMode ? colors.text.tertiary : colors.textLight.tertiary,
+        highlight: isDarkMode ? colors.text.highlight : colors.textLight.highlight,
         disabled: isDarkMode ? colors.text.disabled : colors.textLight.disabled,
       },
 

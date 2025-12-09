@@ -47,6 +47,7 @@ export const colors = {
     primary: '#f8fafc',    // slate-50 (for dark theme)
     secondary: '#cbd5e1',  // slate-300
     tertiary: '#94a3b8',   // slate-400
+    highlight: '#e2e8f0',  // off-white for emphasis
     disabled: '#64748b',   // slate-500
   },
 
@@ -55,6 +56,7 @@ export const colors = {
     primary: '#0f172a',    // slate-900
     secondary: '#475569',  // slate-600
     tertiary: '#64748b',   // slate-500
+    highlight: '#ffffff',  // pure white for emphasis
     disabled: '#94a3b8',   // slate-400
   },
 

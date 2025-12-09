@@ -8,6 +8,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 
 const statusColor = {
   'On the way': '#22c55e',
@@ -57,19 +58,19 @@ const TrackOrderScreen = () => {
         {/* KPI Row */}
         <View style={styles.kpiRow}>
           <Card style={[styles.kpiCard, styles.tintGreen]}>
-            <Text style={[styles.kpiLabel, { color: '#cbd5e1' }]}>Live Deliveries</Text>
-            <Text style={[styles.kpiValue, { color: '#f8fafc' }]}>2</Text>
-            <Text style={[styles.kpiHint, { color: '#cbd5e1' }]}>Tracking now</Text>
+            <Text style={[styles.kpiLabel, { color: theme.colors.text.secondary }]}>Live Deliveries</Text>
+            <Text style={[styles.kpiValue, { color: theme.colors.text.highlight }]}>2</Text>
+            <Text style={[styles.kpiHint, { color: theme.colors.text.secondary }]}>Tracking now</Text>
           </Card>
           <Card style={[styles.kpiCard, styles.tintTeal]}>
-            <Text style={[styles.kpiLabel, { color: '#cbd5e1' }]}>Delivered (7D)</Text>
-            <Text style={[styles.kpiValue, { color: '#f8fafc' }]}>14</Text>
-            <Text style={[styles.kpiHint, { color: '#cbd5e1' }]}>+4 vs previous</Text>
+            <Text style={[styles.kpiLabel, { color: theme.colors.text.secondary }]}>Delivered (7D)</Text>
+            <Text style={[styles.kpiValue, { color: theme.colors.text.highlight }]}>14</Text>
+            <Text style={[styles.kpiHint, { color: theme.colors.text.secondary }]}>+4 vs previous</Text>
           </Card>
           <Card style={[styles.kpiCard, styles.tintAmber]}>
-            <Text style={[styles.kpiLabel, { color: '#0f172a' }]}>Average ETA</Text>
-            <Text style={[styles.kpiValue, { color: '#0f172a' }]}>21 min</Text>
-            <Text style={[styles.kpiHint, { color: '#1e293b' }]}>Across Colombo routes</Text>
+            <Text style={[styles.kpiLabel, { color: theme.colors.text.secondary }]}>Average ETA</Text>
+            <Text style={[styles.kpiValue, { color: theme.colors.text.highlight }]}>21 min</Text>
+            <Text style={[styles.kpiHint, { color: theme.colors.text.secondary }]}>Across Colombo routes</Text>
           </Card>
         </View>
 
@@ -155,13 +156,53 @@ const TrackOrderScreen = () => {
         {/* Live Map Preview */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Live map preview</Text>
         <Card style={styles.mapCard}>
-          <View style={styles.mapPlaceholder}>
-            <Text style={[styles.mapPlaceholderText, { color: theme.colors.text.tertiary }]}>
-              Live map will appear here
-            </Text>
+          <View style={styles.mapContainer}>
+            <MapView
+              style={StyleSheet.absoluteFill}
+              initialRegion={{
+                latitude: 6.9271,
+                longitude: 79.8612,
+                latitudeDelta: 0.08,
+                longitudeDelta: 0.08,
+              }}
+              showsUserLocation={false}
+              showsCompass={false}
+              scrollEnabled={false}
+              pitchEnabled={false}
+              rotateEnabled={false}
+              zoomEnabled={false}
+            >
+              <Polyline
+                coordinates={[
+                  { latitude: 6.9155, longitude: 79.8570 }, // Hub
+                  { latitude: 6.9252, longitude: 79.8725 }, // Mid waypoint
+                  { latitude: 6.9380, longitude: 79.8805 }, // Destination
+                ]}
+                strokeColor="#16a34a"
+                strokeWidth={5}
+              />
+              <Marker
+                coordinate={{ latitude: 6.9155, longitude: 79.8570 }}
+                title="Hub"
+                description="FreshRoute hub"
+                pinColor="#16a34a"
+              />
+              <Marker
+                coordinate={{ latitude: 6.9252, longitude: 79.8725 }}
+                title="Rider"
+                description="Current rider position"
+                pinColor="#3b82f6"
+              />
+              <Marker
+                coordinate={{ latitude: 6.9380, longitude: 79.8805 }}
+                title="Customer"
+                description="Delivery location"
+                pinColor="#f97316"
+              />
+            </MapView>
           </View>
           <Text style={[styles.mapHint, { color: theme.colors.text.secondary }]}>
-            When live data is available, we’ll show active rider locations, routes, and ETAs.
+            Map preview with rider, hub, and delivery location. Hook to live coordinates when available.
           </Text>
         </Card>
       </ScrollView>
@@ -216,24 +257,20 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   mapCard: { padding: 12, marginTop: 10, marginBottom: 12 },
-  mapPlaceholder: {
-    height: 240,
+  mapContainer: {
+    height: 260,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mapPlaceholderText: {
-    fontSize: 14,
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
   mapHint: {
     fontSize: 12,
     marginTop: 10,
   },
-  tintGreen: { backgroundColor: 'rgba(34,197,94,0.12)' },
-  tintTeal: { backgroundColor: 'rgba(52,211,153,0.12)' },
+  tintGreen: { backgroundColor: 'rgba(34,197,94,0.62)' },
+  tintTeal: { backgroundColor: 'rgba(52,211,153,0.62)' },
   tintAmber: { backgroundColor: 'rgba(251,191,36,0.70)' },
 });
 
