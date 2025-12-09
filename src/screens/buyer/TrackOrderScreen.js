@@ -1,0 +1,241 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../hooks/useTheme';
+import Card from '../../components/common/Card';
+
+const statusColor = {
+  'On the way': '#22c55e',
+  Packing: '#f59e0b',
+  Pending: '#94a3b8',
+};
+
+const liveOrders = [
+  {
+    id: 'fr-1042',
+    title: '#FR-1042 Green Market',
+    status: 'On the way',
+    eta: '12 min',
+    items: ['Heirloom tomatoes: 2kg', 'Organic spinach: 3 bunches', 'Thambili: 4 pcs'],
+    timeline: ['Order placed', 'Packed', 'Picked up', 'On the way', 'Delivered'],
+    currentIndex: 3,
+    rider: { name: 'Tharindu', vehicle: 'Scooter · WP BHI-2045', phone: '+94 77 123 4567' },
+  },
+  {
+    id: 'fr-1038',
+    title: '#FR-1038 Colombo Greens',
+    status: 'Packing',
+    eta: '28 min',
+    items: ['Baby carrots: 2kg', 'Purple cabbage: 2 pcs'],
+    timeline: ['Order placed', 'Packed', 'Picked up', 'On the way', 'Delivered'],
+    currentIndex: 1,
+    rider: { name: 'Pending', vehicle: 'Assignment pending', phone: '' },
+  },
+];
+
+const TrackOrderScreen = () => {
+  const { theme } = useTheme();
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <Text style={[styles.title, { color: theme.colors.text.primary }]}>
+          Tracking & History
+        </Text>
+        <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
+          Stay on top of every delivery with live telemetry, product details, and rider contact info.
+        </Text>
+
+        {/* KPI Row */}
+        <View style={styles.kpiRow}>
+          <Card style={[styles.kpiCard, styles.tintGreen]}>
+            <Text style={[styles.kpiLabel, { color: '#cbd5e1' }]}>Live Deliveries</Text>
+            <Text style={[styles.kpiValue, { color: '#f8fafc' }]}>2</Text>
+            <Text style={[styles.kpiHint, { color: '#cbd5e1' }]}>Tracking now</Text>
+          </Card>
+          <Card style={[styles.kpiCard, styles.tintTeal]}>
+            <Text style={[styles.kpiLabel, { color: '#cbd5e1' }]}>Delivered (7D)</Text>
+            <Text style={[styles.kpiValue, { color: '#f8fafc' }]}>14</Text>
+            <Text style={[styles.kpiHint, { color: '#cbd5e1' }]}>+4 vs previous</Text>
+          </Card>
+          <Card style={[styles.kpiCard, styles.tintAmber]}>
+            <Text style={[styles.kpiLabel, { color: '#0f172a' }]}>Average ETA</Text>
+            <Text style={[styles.kpiValue, { color: '#0f172a' }]}>21 min</Text>
+            <Text style={[styles.kpiHint, { color: '#1e293b' }]}>Across Colombo routes</Text>
+          </Card>
+        </View>
+
+        {/* Live Orders */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Live order tracking</Text>
+        {liveOrders.map((order) => (
+          <Card key={order.id} style={styles.orderCard}>
+            <View style={styles.orderHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.orderTitle, { color: theme.colors.text.primary }]}>
+                  {order.title}
+                </Text>
+                <Text style={[styles.items, { color: theme.colors.text.secondary }]}>
+                  {order.items.join(' · ')}
+                </Text>
+              </View>
+              <View style={styles.orderBadge}>
+                <Text
+                  style={[
+                    styles.statusPill,
+                    {
+                      backgroundColor: `${statusColor[order.status] || theme.colors.primary.main}33`,
+                      color: statusColor[order.status] || theme.colors.primary.main,
+                    },
+                  ]}
+                >
+                  {order.status}
+                </Text>
+                <Text style={[styles.badgeEta, { color: theme.colors.text.tertiary }]}>ETA {order.eta}</Text>
+              </View>
+            </View>
+
+            {/* Timeline */}
+            <View style={styles.timelineBar}>
+              <View
+                style={[
+                  styles.timelineBarFill,
+                  {
+                    width: `${((order.currentIndex + 1) / order.timeline.length) * 100}%`,
+                    backgroundColor: theme.colors.primary.main,
+                  },
+                ]}
+              />
+            </View>
+            <View style={styles.timeline}>
+              {order.timeline.map((step, idx) => {
+                const active = idx <= order.currentIndex;
+                return (
+                  <View key={`${order.id}-tl-${idx}`} style={styles.timelineStep}>
+                    <View
+                      style={[
+                        styles.timelineDot,
+                        { backgroundColor: active ? theme.colors.primary.main : theme.colors.text.tertiary },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.timelineLabel,
+                        { color: active ? theme.colors.text.primary : theme.colors.text.tertiary },
+                      ]}
+                    >
+                      {step}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Rider */}
+            <Card style={styles.riderCard} elevation="lg">
+              <Text style={[styles.riderTitle, { color: theme.colors.text.primary }]}>Rider contact</Text>
+              <Text style={[styles.riderName, { color: theme.colors.text.secondary }]}>{order.rider.name}</Text>
+              <Text style={[styles.riderMeta, { color: theme.colors.text.tertiary }]}>{order.rider.vehicle}</Text>
+              {order.rider.phone ? (
+                <Text style={[styles.riderPhone, { color: theme.colors.text.primary }]}>{order.rider.phone}</Text>
+              ) : (
+                <Text style={[styles.riderPhone, { color: theme.colors.text.tertiary }]}>Pending assignment</Text>
+              )}
+            </Card>
+          </Card>
+        ))}
+
+        {/* Live Map Preview */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Live map preview</Text>
+        <Card style={styles.mapCard}>
+          <View style={styles.mapPlaceholder}>
+            <Text style={[styles.mapPlaceholderText, { color: theme.colors.text.tertiary }]}>
+              Live map will appear here
+            </Text>
+          </View>
+          <Text style={[styles.mapHint, { color: theme.colors.text.secondary }]}>
+            When live data is available, we’ll show active rider locations, routes, and ETAs.
+          </Text>
+        </Card>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 120 },
+  title: { fontSize: 24, fontWeight: '800', marginTop: 8 },
+  subtitle: { fontSize: 14, marginTop: 6, marginBottom: 16 },
+  kpiRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  kpiCard: { flex: 1, padding: 14 },
+  kpiLabel: { fontSize: 12 },
+  kpiValue: { fontSize: 20, fontWeight: '700', marginTop: 4 },
+  kpiHint: { fontSize: 12, marginTop: 2 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', marginTop: 18, marginBottom: 10 },
+  orderCard: { marginBottom: 12, padding: 14 },
+  orderHeader: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  orderTitle: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
+  items: { fontSize: 13 },
+  orderBadge: { alignItems: 'flex-end' },
+  badgeText: { fontSize: 13, fontWeight: '700' },
+  badgeEta: { fontSize: 12, marginTop: 2 },
+  timeline: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  timelineStep: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 2, paddingHorizontal: 6 },
+  timelineDot: { width: 10, height: 10, borderRadius: 5 },
+  timelineLabel: { fontSize: 12, fontWeight: '600' },
+  riderCard: { marginTop: 12, padding: 12 },
+  riderTitle: { fontSize: 13, fontWeight: '700', marginBottom: 4 },
+  riderName: { fontSize: 13, fontWeight: '600' },
+  riderMeta: { fontSize: 12, marginTop: 2 },
+  riderPhone: { fontSize: 12, marginTop: 4 },
+  statusPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  timelineBar: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    marginTop: 12,
+    overflow: 'hidden',
+  },
+  timelineBarFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  mapCard: { padding: 12, marginTop: 10, marginBottom: 12 },
+  mapPlaceholder: {
+    height: 240,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapPlaceholderText: {
+    fontSize: 14,
+  },
+  mapHint: {
+    fontSize: 12,
+    marginTop: 10,
+  },
+  tintGreen: { backgroundColor: 'rgba(34,197,94,0.12)' },
+  tintTeal: { backgroundColor: 'rgba(52,211,153,0.12)' },
+  tintAmber: { backgroundColor: 'rgba(251,191,36,0.70)' },
+});
+
+export default TrackOrderScreen;
+

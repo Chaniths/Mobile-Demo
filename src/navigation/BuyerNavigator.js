@@ -10,6 +10,8 @@ import ProductBrowseScreen from '../screens/buyer/ProductBrowseScreen';
 import CartScreen from '../screens/buyer/CartScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen';
 import ProfileScreen from '../screens/buyer/ProfileScreen';
+import AnalyticsScreen from '../screens/buyer/AnalyticsScreen';
+import TrackOrderScreen from '../screens/buyer/TrackOrderScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -19,6 +21,8 @@ const HomeStack = () => (
     <Stack.Screen name="Home" component={HomeScreen} />
     <Stack.Screen name="ProductBrowse" component={ProductBrowseScreen} />
     <Stack.Screen name="ProductDetail" component={HomeScreen} />
+    <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+    <Stack.Screen name="TrackOrder" component={TrackOrderScreen} />
   </Stack.Navigator>
 );
 

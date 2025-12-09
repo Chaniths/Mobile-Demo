@@ -151,10 +151,10 @@ const HomeScreen = ({ navigation }) => {
                 Cart
               </Text>
             </Card>
-            <Card style={styles.actionCard} onPress={() => navigation.navigate('Wishlist')}>
-              <Text style={styles.actionIcon}>❤️</Text>
+            <Card style={styles.actionCard} onPress={() => navigation.navigate('Analytics')}>
+              <Text style={styles.actionIcon}>📊</Text>
               <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
-                Wishlist
+                Analytics
               </Text>
             </Card>
             <Card style={styles.actionCard} onPress={() => navigation.navigate('TrackOrder')}>
