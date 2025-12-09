@@ -12,15 +12,10 @@ import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
 
 const categories = [
-  { id: '1', name: 'Fruits', icon: '🍎' },
-  { id: '2', name: 'Vegetables', icon: '🥬' },
-  { id: '3', name: 'Dairy', icon: '🥛' },
-  { id: '4', name: 'Grains', icon: '🌾' },
-  { id: '5', name: 'Herbs', icon: '🌿' },
-  { id: '6', name: 'Spices', icon: '🌶️' },
-  { id: '7', name: 'Nuts', icon: '🌰' },
-  { id: '8', name: 'Seeds', icon: '🌱' },
-  { id: '9', name: 'Flowers', icon: '🌺' },
+  { id: 'fruits', name: 'Fruits', icon: '🍎' },
+  { id: 'vegetables', name: 'Vegetables', icon: '🥬' },
+  { id: 'dairy', name: 'Dairy', icon: '🥛' },
+  { id: 'grains', name: 'Grains', icon: '🌾' },
 ];
 
 const featuredProducts = [
@@ -42,13 +37,14 @@ const HomeScreen = ({ navigation }) => {
   const renderCategory = ({ item }) => (
     <TouchableOpacity
       onPress={() => navigation.navigate('ProductBrowse', { category: item.id })}
+      style={styles.categoryPillWrapper}
     >
-      <Card style={styles.categoryCard}>
+      <View style={[styles.categoryPill, { backgroundColor: theme.colors.card }]}>
         <Text style={styles.categoryIcon}>{item.icon}</Text>
         <Text style={[styles.categoryName, { color: theme.colors.text.primary }]}>
           {item.name}
         </Text>
-      </Card>
+      </View>
     </TouchableOpacity>
   );
 
@@ -151,13 +147,13 @@ const HomeScreen = ({ navigation }) => {
             Quick Actions
           </Text>
           <View style={styles.actionsGrid}>
-            <Card style={styles.actionCard} onPress={() => navigation.navigate('Orders')}>
+            <Card style={styles.actionCard} onPress={() => navigation.navigate('OrdersTab')}>
               <Text style={styles.actionIcon}>📦</Text>
               <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
                 My Orders
               </Text>
             </Card>
-            <Card style={styles.actionCard} onPress={() => navigation.navigate('Cart')}>
+            <Card style={styles.actionCard} onPress={() => navigation.navigate('CartTab')}>
               <Text style={styles.actionIcon}>🛒</Text>
               <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
                 Cart
@@ -169,7 +165,10 @@ const HomeScreen = ({ navigation }) => {
                 Analytics
               </Text>
             </Card>
-            <Card style={styles.actionCard} onPress={() => navigation.navigate('TrackOrder')}>
+            <Card
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('TrackOrder')}
+            >
               <Text style={styles.actionIcon}>📍</Text>
               <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
                 Track Order
@@ -245,20 +244,23 @@ const styles = StyleSheet.create({
   categoriesList: {
     paddingHorizontal: 16,
   },
-  categoryCard: {
-    alignItems: 'center',
-    marginHorizontal: 4,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    marginBottom: 16,
-  },
   categoryIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+    fontSize: 18,
+    marginRight: 8,
   },
   categoryName: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
+  },
+  categoryPillWrapper: {
+    marginRight: 8,
+  },
+  categoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
   },
   productsList: {
     paddingHorizontal: 16,

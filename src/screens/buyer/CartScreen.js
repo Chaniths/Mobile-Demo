@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,27 +11,16 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
-
-const mockCartItems = [
-  { id: '1', name: 'Organic Apples', price: 4.99, quantity: 2, image: '🍎' },
-  { id: '2', name: 'Fresh Spinach', price: 2.99, quantity: 1, image: '🥬' },
-  { id: '3', name: 'Raw Honey', price: 8.99, quantity: 1, image: '🍯' },
-];
+import { useDispatch, useSelector } from 'react-redux';
+import { changeItemQuantity } from '../../store/slices/cartSlice';
 
 const CartScreen = ({ navigation }) => {
   const { theme } = useTheme();
-  const [cartItems, setCartItems] = useState(mockCartItems);
+  const dispatch = useDispatch();
+  const cartItems = useSelector((state) => state.cart.items);
 
   const updateQuantity = (id, change) => {
-    setCartItems((items) =>
-      items.map((item) => {
-        if (item.id === id) {
-          const newQuantity = Math.max(0, item.quantity + change);
-          return { ...item, quantity: newQuantity };
-        }
-        return item;
-      }).filter((item) => item.quantity > 0)
-    );
+    dispatch(changeItemQuantity({ id, delta: change }));
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -90,7 +79,7 @@ const CartScreen = ({ navigation }) => {
           title="Your cart is empty"
           message="Add some organic products to get started"
           actionLabel="Browse Products"
-          onAction={() => navigation.navigate('ProductBrowse')}
+          onAction={() => navigation.navigate('BrowseTab')}
         />
       </SafeAreaView>
     );

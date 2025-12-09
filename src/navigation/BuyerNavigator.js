@@ -7,6 +7,7 @@ import { useTheme } from '../hooks/useTheme';
 // Buyer Screens
 import HomeScreen from '../screens/buyer/HomeScreen';
 import ProductBrowseScreen from '../screens/buyer/ProductBrowseScreen';
+import ProductDetailScreen from '../screens/buyer/ProductDetailScreen';
 import CartScreen from '../screens/buyer/CartScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen';
 import ProfileScreen from '../screens/buyer/ProfileScreen';
@@ -26,7 +27,7 @@ const HomeStack = () => (
   </Stack.Navigator>
 );
 
-const BuyerNavigator = () => {
+const BuyerTabs = () => {
   const { theme } = useTheme();
 
   return (
@@ -38,9 +39,20 @@ const BuyerNavigator = () => {
         tabBarStyle: {
           backgroundColor: theme.colors.card,
           borderTopColor: theme.colors.border,
+          borderTopWidth: 0,
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
+          position: 'absolute',
+          left: 16,
+          right: 16,
+          bottom: 16,
+          borderRadius: 24,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOpacity: 0.08,
+          shadowOffset: { width: 0, height: 4 },
+          shadowRadius: 12,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -53,31 +65,31 @@ const BuyerNavigator = () => {
         component={HomeStack}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>🏠</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🏠</Text>,
         }}
       />
       <Tab.Screen
-        name="Browse"
-        component={ProductBrowseScreen}
+        name="BrowseTab"
+        component={BrowseStack}
         options={{
           tabBarLabel: 'Browse',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>🔍</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🔍</Text>,
         }}
       />
       <Tab.Screen
-        name="Cart"
-        component={CartScreen}
+        name="CartTab"
+        component={CartStack}
         options={{
           tabBarLabel: 'Cart',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>🛒</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🛒</Text>,
         }}
       />
       <Tab.Screen
-        name="Orders"
+        name="OrdersTab"
         component={OrdersScreen}
         options={{
-          tabBarLabel: 'Orders',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📦</Text>,
+          tabBarLabel: 'My Orders',
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>,
         }}
       />
       <Tab.Screen
@@ -85,12 +97,19 @@ const BuyerNavigator = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>👤</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>,
         }}
       />
     </Tab.Navigator>
   );
 };
+
+const BuyerNavigator = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="MainTabs" component={BuyerTabs} />
+    <Stack.Screen name="TrackOrder" component={TrackOrderScreen} />
+  </Stack.Navigator>
+);
 
 export default BuyerNavigator;
 

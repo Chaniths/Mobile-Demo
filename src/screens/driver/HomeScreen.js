@@ -82,7 +82,7 @@ const HomeScreen = ({ navigation }) => {
           </Text>
           <Button
             title="View Route Map"
-            onPress={() => navigation.navigate('RouteView')}
+            onPress={() => navigation.navigate('Route')}
             style={styles.routeButton}
           />
         </Card>
@@ -155,9 +155,7 @@ const HomeScreen = ({ navigation }) => {
                 <Text style={[styles.distance, { color: theme.colors.text.tertiary }]}>
                   {delivery.distance} away
                 </Text>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('Navigation', { deliveryId: delivery.id })}
-                >
+                <TouchableOpacity onPress={() => navigation.navigate('Route')}>
                   <Text style={[styles.startButton, { color: theme.colors.primary.main }]}>
                     Start →
                   </Text>

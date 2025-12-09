@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
@@ -42,22 +43,53 @@ const AppNavigator = () => {
   const RoleNavigator = getRoleNavigator();
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          cardStyle: { backgroundColor: theme.colors.background },
-        }}
+    <View style={styles.root}>
+      <NavigationContainer>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            cardStyle: { backgroundColor: theme.colors.background },
+          }}
+        >
+          {!isAuthenticated || !RoleNavigator ? (
+            <Stack.Screen name="Auth" component={AuthNavigator} />
+          ) : (
+            <Stack.Screen name="Main" component={RoleNavigator} />
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.footer,
+          {
+            backgroundColor: 'transparent',
+          },
+        ]}
       >
-        {!isAuthenticated || !RoleNavigator ? (
-          <Stack.Screen name="Auth" component={AuthNavigator} />
-        ) : (
-          <Stack.Screen name="Main" component={RoleNavigator} />
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+        <Text style={[styles.footerText, { color: theme.colors.text.tertiary }]}>
+          © {new Date().getFullYear()} FreshRoute. All rights reserved.
+        </Text>
+      </View>
+    </View>
   );
 };
 
-export default AppNavigator;
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 17,
+    alignItems: 'center',
+    paddingBottom: 0,
+  },
+  footerText: {
+    fontSize: 10,
+  },
+});
 
+export default AppNavigator;

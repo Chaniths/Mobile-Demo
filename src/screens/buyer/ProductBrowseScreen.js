@@ -25,42 +25,51 @@ const mockProducts = [
   { id: '10', name: 'Organic Rice', price: '$3.99', image: '🍚', rating: 4.7, category: 'grains' },
   { id: '11', name: 'Organic Sugar', price: '$2.99', image: '🍬', rating: 4.5, category: 'sugar' },
 ];
+import { products } from '../../utils/catalog';
 
 const ProductBrowseScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(route?.params?.category || 'all');
+  const [selectedCategory] = useState(route?.params?.category || 'all');
 
-  const filteredProducts = mockProducts.filter((product) => {
+  const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const renderProduct = ({ item }) => (
-    <Card
-      style={styles.productCard}
-      onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
-    >
-      <View style={[styles.productImage, { backgroundColor: theme.colors.primary.light }]}>
-        <Text style={styles.productEmoji}>{item.image}</Text>
-      </View>
-      <View style={styles.productInfo}>
-        <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
-          {item.name}
-        </Text>
-        <View style={styles.productFooter}>
-          <Text style={[styles.productPrice, { color: theme.colors.primary.main }]}>
-            {item.price}
-          </Text>
-          <Text style={styles.rating}>⭐ {item.rating}</Text>
+  const renderProduct = ({ item }) => {
+    const firstSeller = item.sellers && item.sellers[0];
+    const priceLabel = firstSeller ? `$${firstSeller.price.toFixed(2)}` : 'See sellers';
+
+    return (
+      <Card
+        style={styles.productCard}
+        onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
+      >
+        <View style={[styles.productImage, { backgroundColor: theme.colors.primary.light }]}>
+          <Text style={styles.productEmoji}>{item.image}</Text>
         </View>
-      </View>
-      <TouchableOpacity style={[styles.addButton, { backgroundColor: theme.colors.primary.main }]}>
-        <Text style={styles.addButtonText}>+</Text>
-      </TouchableOpacity>
-    </Card>
-  );
+        <View style={styles.productInfo}>
+          <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
+            {item.name}
+          </Text>
+          <View style={styles.productFooter}>
+            <Text style={[styles.productPrice, { color: theme.colors.primary.main }]}>
+              {priceLabel}
+            </Text>
+            <Text style={styles.rating}>⭐ {item.rating}</Text>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: theme.colors.primary.main }]}
+          onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
+        >
+          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity>
+      </Card>
+    );
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -70,7 +79,7 @@ const ProductBrowseScreen = ({ navigation, route }) => {
           <Text style={[styles.backButton, { color: theme.colors.primary.main }]}>← Back</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>Products</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
+        <TouchableOpacity onPress={() => navigation.navigate('CartTab')}>
           <Text style={styles.cartIcon}>🛒</Text>
         </TouchableOpacity>
       </View>

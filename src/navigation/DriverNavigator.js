@@ -7,6 +7,7 @@ import { useTheme } from '../hooks/useTheme';
 import HomeScreen from '../screens/driver/HomeScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen'; // Reuse for deliveries
 import ProfileScreen from '../screens/buyer/ProfileScreen'; // Reuse
+import RouteScreen from '../screens/driver/RouteScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -22,9 +23,20 @@ const DriverNavigator = () => {
         tabBarStyle: {
           backgroundColor: theme.colors.card,
           borderTopColor: theme.colors.border,
+          borderTopWidth: 0,
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
+          position: 'absolute',
+          left: 16,
+          right: 16,
+          bottom: 16,
+          borderRadius: 24,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOpacity: 0.08,
+          shadowOffset: { width: 0, height: 4 },
+          shadowRadius: 12,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -37,7 +49,15 @@ const DriverNavigator = () => {
         component={HomeScreen}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>🏠</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🏠</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="Route"
+        component={RouteScreen}
+        options={{
+          tabBarLabel: 'Route',
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🗺️</Text>,
         }}
       />
       <Tab.Screen
@@ -45,15 +65,7 @@ const DriverNavigator = () => {
         component={OrdersScreen}
         options={{
           tabBarLabel: 'Deliveries',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📦</Text>,
-        }}
-      />
-      <Tab.Screen
-        name="Map"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: 'Map',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>🗺️</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>,
         }}
       />
       <Tab.Screen
@@ -61,7 +73,7 @@ const DriverNavigator = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>👤</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>,
         }}
       />
     </Tab.Navigator>

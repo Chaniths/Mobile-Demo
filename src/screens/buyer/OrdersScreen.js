@@ -61,10 +61,7 @@ const OrdersScreen = ({ navigation }) => {
     : mockOrders.filter((order) => order.status === activeTab);
 
   const renderOrder = ({ item }) => (
-    <Card
-      style={styles.orderCard}
-      onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}
-    >
+    <Card style={styles.orderCard}>
       <View style={styles.orderHeader}>
         <View>
           <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>
@@ -155,7 +152,7 @@ const OrdersScreen = ({ navigation }) => {
             title="No orders found"
             message="You haven't placed any orders yet"
             actionLabel="Browse Products"
-            onAction={() => navigation.navigate('ProductBrowse')}
+            onAction={() => navigation.navigate('BrowseTab')}
           />
         }
       />
