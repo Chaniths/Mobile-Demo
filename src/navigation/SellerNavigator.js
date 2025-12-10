@@ -1,18 +1,24 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
 
 // Seller Screens
 import DashboardScreen from '../screens/seller/DashboardScreen';
 import ProductsScreen from '../screens/seller/ProductsScreen';
+import AddProductScreen from '../screens/seller/AddProductScreen';
+import EditProductScreen from '../screens/seller/EditProductScreen';
+import TruckTrackingScreen from '../screens/seller/TruckTrackingScreen';
+import OrderDetailScreen from '../screens/seller/OrderDetailScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen'; // Reuse
 import ProfileScreen from '../screens/buyer/ProfileScreen'; // Reuse
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
-const SellerNavigator = () => {
+const SellerTabs = () => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -51,7 +57,7 @@ const SellerNavigator = () => {
         component={DashboardScreen}
         options={{
           tabBarLabel: 'Dashboard',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📊</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📊</Text>,
         }}
       />
       <Tab.Screen
@@ -59,7 +65,7 @@ const SellerNavigator = () => {
         component={ProductsScreen}
         options={{
           tabBarLabel: 'Products',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>🏪</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🏪</Text>,
         }}
       />
       <Tab.Screen
@@ -67,7 +73,7 @@ const SellerNavigator = () => {
         component={OrdersScreen}
         options={{
           tabBarLabel: 'Orders',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📦</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>,
         }}
       />
       <Tab.Screen
@@ -75,12 +81,22 @@ const SellerNavigator = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>👤</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>,
         }}
       />
     </Tab.Navigator>
   );
 };
+
+const SellerNavigator = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="SellerTabs" component={SellerTabs} />
+    <Stack.Screen name="AddProduct" component={AddProductScreen} />
+    <Stack.Screen name="EditProduct" component={EditProductScreen} />
+    <Stack.Screen name="TruckTracking" component={TruckTrackingScreen} />
+     <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+  </Stack.Navigator>
+);
 
 export default SellerNavigator;
 

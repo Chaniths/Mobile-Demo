@@ -27,10 +27,10 @@ const DashboardScreen = ({ navigation }) => {
   ];
 
   const quickActions = [
-    { id: '1', title: 'Add Product', icon: '➕', screen: 'AddProduct' },
-    { id: '2', title: 'Manage Inventory', icon: '📊', screen: 'Inventory' },
-    { id: '3', title: 'View Orders', icon: '📋', screen: 'Orders' },
-    { id: '4', title: 'Earnings', icon: '💵', screen: 'Earnings' },
+    { id: '1', title: 'Request Product', icon: '➕', screen: 'AddProduct' },
+    { id: '2', title: 'Manage Inventory', icon: '📊', screen: 'Products' },
+    { id: '3', title: 'Truck tracking', icon: '🚚', screen: 'TruckTracking' },
+    { id: '4', title: 'View Orders', icon: '📋', screen: 'Orders' },
   ];
 
   return (

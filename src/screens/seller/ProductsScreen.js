@@ -13,10 +13,42 @@ import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 
 const mockProducts = [
-  { id: '1', name: 'Organic Apples', price: 4.99, stock: 45, image: '🍎', status: 'active' },
-  { id: '2', name: 'Fresh Spinach', price: 2.99, stock: 12, image: '🥬', status: 'active' },
-  { id: '3', name: 'Raw Honey', price: 8.99, stock: 8, image: '🍯', status: 'low_stock' },
-  { id: '4', name: 'Tomatoes', price: 3.99, stock: 0, image: '🍅', status: 'out_of_stock' },
+  {
+    id: '1',
+    name: 'Organic Apples',
+    category: 'Fruits',
+    price: 4.99,
+    stock: 45,
+    image: '🍎',
+    status: 'active',
+  },
+  {
+    id: '2',
+    name: 'Fresh Spinach',
+    category: 'Leafy greens',
+    price: 2.99,
+    stock: 12,
+    image: '🥬',
+    status: 'active',
+  },
+  {
+    id: '3',
+    name: 'Raw Honey',
+    category: 'Pantry',
+    price: 8.99,
+    stock: 8,
+    image: '🍯',
+    status: 'low_stock',
+  },
+  {
+    id: '4',
+    name: 'Tomatoes',
+    category: 'Vegetables',
+    price: 3.99,
+    stock: 0,
+    image: '🍅',
+    status: 'out_of_stock',
+  },
 ];
 
 const ProductsScreen = ({ navigation }) => {
@@ -62,6 +94,9 @@ const ProductsScreen = ({ navigation }) => {
           <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
             {item.name}
           </Text>
+          <Text style={[styles.productCategory, { color: theme.colors.text.secondary }]}>
+            {item.category}
+          </Text>
           <Text style={[styles.productPrice, { color: theme.colors.primary.main }]}>
             ${item.price.toFixed(2)}
           </Text>
@@ -92,7 +127,9 @@ const ProductsScreen = ({ navigation }) => {
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>My Products</Text>
         <TouchableOpacity onPress={() => navigation.navigate('AddProduct')}>
-          <Text style={[styles.addButton, { color: theme.colors.primary.main }]}>+ Add</Text>
+          <Text style={[styles.addButton, { color: theme.colors.primary.main }]}>
+            + Request product
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -107,8 +144,8 @@ const ProductsScreen = ({ navigation }) => {
           <EmptyState
             icon={<Text style={styles.emptyIcon}>📦</Text>}
             title="No products yet"
-            message="Start by adding your first product"
-            actionLabel="Add Product"
+            message="Ask admin to add your first product to the catalog"
+            actionLabel="Request product"
             onAction={() => navigation.navigate('AddProduct')}
           />
         }
@@ -164,7 +201,11 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 2,
+  },
+  productCategory: {
+    fontSize: 13,
+    marginBottom: 2,
   },
   productPrice: {
     fontSize: 18,
