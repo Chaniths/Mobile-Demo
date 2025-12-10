@@ -10,6 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
+import { DRIVER_DELIVERIES } from './deliveriesData';
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -21,26 +22,7 @@ const HomeScreen = ({ navigation }) => {
     { id: '4', label: 'Earnings', value: '$240', icon: '💰', color: '#8b5cf6' },
   ];
 
-  const upcomingDeliveries = [
-    {
-      id: '1',
-      orderId: '#ORD-001',
-      customer: 'John Doe',
-      address: '123 Main St, Downtown',
-      distance: '2.5 km',
-      time: '10:30 AM',
-      priority: 'high',
-    },
-    {
-      id: '2',
-      orderId: '#ORD-002',
-      customer: 'Jane Smith',
-      address: '456 Oak Ave, Midtown',
-      distance: '4.2 km',
-      time: '11:00 AM',
-      priority: 'normal',
-    },
-  ];
+  const upcomingDeliveries = DRIVER_DELIVERIES;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
 
 // Seller Screens
@@ -13,6 +14,7 @@ const Tab = createBottomTabNavigator();
 
 const SellerNavigator = () => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -24,13 +26,13 @@ const SellerNavigator = () => {
           backgroundColor: theme.colors.card,
           borderTopColor: theme.colors.border,
           borderTopWidth: 0,
-          height: 60,
-          paddingBottom: 8,
+          height: 55 + insets.bottom,
+          paddingBottom: 0 + insets.bottom,
           paddingTop: 8,
           position: 'absolute',
           left: 16,
           right: 16,
-          bottom: 16,
+          bottom: 0,
           borderRadius: 24,
           elevation: 8,
           shadowColor: '#000',
