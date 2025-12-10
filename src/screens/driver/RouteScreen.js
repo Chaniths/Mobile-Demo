@@ -54,6 +54,12 @@ const RouteScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -86,12 +92,12 @@ const RouteScreen = () => {
         >
           <Polyline
             coordinates={polylineCoords}
-            strokeColor={theme.colors.primary.main}
+            strokeColor={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}
             strokeWidth={4}
           />
 
           <Marker coordinate={HUB_COORDS}>
-            <View style={[styles.hubMarker, { backgroundColor: theme.colors.primary.light }]}>
+            <View style={[styles.hubMarker, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
               <Text style={styles.hubEmoji}>🏬</Text>
             </View>
           </Marker>
@@ -105,9 +111,9 @@ const RouteScreen = () => {
                     styles.stopMarker,
                     {
                       backgroundColor: isActive
-                        ? theme.colors.primary.main
+                        ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main)
                         : theme.colors.card,
-                      borderColor: theme.colors.primary.main,
+                      borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                     },
                   ]}
                 >
@@ -125,16 +131,16 @@ const RouteScreen = () => {
           })}
         </MapView>
 
-        <View style={[styles.mapOverlay, { backgroundColor: theme.colors.card }]}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.mapOverlay}>
           <Text style={[styles.overlayText, { color: theme.colors.text.primary }]}>
             Next stop in {activeStop.etaMinutes} min • {activeStop.distanceKm} km
           </Text>
-        </View>
+        </Card>
       </View>
 
       {/* Bottom sheet with stops */}
       <View style={styles.bottomSheet}>
-        <Card style={styles.activeStopCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.activeStopCard}>
           <View style={styles.activeStopHeader}>
             <View>
               <Text style={[styles.activeStopLabel, { color: theme.colors.text.secondary }]}>
@@ -145,7 +151,7 @@ const RouteScreen = () => {
               </Text>
             </View>
             <View style={styles.activeStopMeta}>
-              <Text style={[styles.metaPrimary, { color: theme.colors.primary.main }]}>
+              <Text style={[styles.metaPrimary, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                 {activeStop.etaMinutes} min
               </Text>
               <Text style={[styles.metaSecondary, { color: theme.colors.text.secondary }]}>
@@ -183,11 +189,12 @@ const RouteScreen = () => {
                   onPress={() => setActiveStopId(stop.id)}
                 >
                   <Card
+                    variant={theme.isDarkMode ? "glass" : "default"}
                     style={[
                       styles.stopCard,
                       isActive && {
                         borderWidth: 1.5,
-                        borderColor: theme.colors.primary.main,
+                        borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                       },
                     ]}
                   >
@@ -197,7 +204,7 @@ const RouteScreen = () => {
                           styles.stopNumber,
                           {
                             backgroundColor: isActive
-                              ? theme.colors.primary.main
+                              ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main)
                               : theme.colors.card,
                           },
                         ]}
@@ -242,8 +249,32 @@ const RouteScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   header: {
+    zIndex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

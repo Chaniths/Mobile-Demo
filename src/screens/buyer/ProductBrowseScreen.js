@@ -44,10 +44,11 @@ const ProductBrowseScreen = ({ navigation, route }) => {
 
     return (
       <Card
+        variant={theme.isDarkMode ? "glass" : "default"}
         style={styles.productCard}
         onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
       >
-        <View style={[styles.productImage, { backgroundColor: theme.colors.primary.light }]}>
+        <View style={[styles.productImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
           <Text style={styles.productEmoji}>{item.image}</Text>
         </View>
         <View style={styles.productInfo}>
@@ -55,7 +56,7 @@ const ProductBrowseScreen = ({ navigation, route }) => {
             {item.name}
           </Text>
           <View style={styles.productFooter}>
-            <Text style={[styles.productPrice, { color: theme.colors.primary.main }]}>
+            <Text style={[styles.productPrice, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
               {priceLabel}
             </Text>
             <Text style={styles.rating}>⭐ {item.rating}</Text>
@@ -73,10 +74,16 @@ const ProductBrowseScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={[styles.backButton, { color: theme.colors.primary.main }]}>← Back</Text>
+          <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.primary.main : theme.colors.primary.main }]}>← Back</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>Products</Text>
         <TouchableOpacity onPress={() => navigation.navigate('CartTab')}>
@@ -85,16 +92,18 @@ const ProductBrowseScreen = ({ navigation, route }) => {
       </View>
 
       {/* Search Bar */}
-      <View style={[styles.searchContainer, { backgroundColor: theme.colors.card }]}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={[styles.searchInput, { color: theme.colors.text.primary }]}
-          placeholder="Search products..."
-          placeholderTextColor={theme.colors.text.tertiary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
+      <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.searchCard}>
+        <View style={styles.searchContainer}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={[styles.searchInput, { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary }]}
+            placeholder="Search products..."
+            placeholderTextColor={theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+      </Card>
 
       {/* Product List */}
       <FlatList
@@ -118,6 +127,43 @@ const ProductBrowseScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  header: {
+    zIndex: 1,
+  },
+  searchCard: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    zIndex: 1,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
   },
   header: {
     flexDirection: 'row',
@@ -135,14 +181,6 @@ const styles = StyleSheet.create({
   },
   cartIcon: {
     fontSize: 24,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: 12,
   },
   searchIcon: {
     fontSize: 20,

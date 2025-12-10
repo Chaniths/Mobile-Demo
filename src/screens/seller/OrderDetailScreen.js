@@ -66,13 +66,19 @@ const OrderDetailScreen = ({ route, navigation }) => {
 
   const order = useMemo(() => findOrderById(orderId), [orderId]);
   const status = order.status || 'pending';
-  const pillColor = statusColor[status] || theme.colors.primary.main;
+  const pillColor = statusColor[status] || (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main);
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       edges={['top']}
     >
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -98,7 +104,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
         </Text>
 
         {/* Customer & slot */}
-        <Card style={styles.sectionCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.sectionCard}>
           <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
             Customer
           </Text>
@@ -111,7 +117,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
         </Card>
 
         {/* Items */}
-        <Card style={styles.sectionCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.sectionCard}>
           <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
             Items in this order
           </Text>
@@ -125,7 +131,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
                   {item.qty}
                 </Text>
               </View>
-              <Text style={[styles.itemPrice, { color: theme.colors.primary.main }]}>
+              <Text style={[styles.itemPrice, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                 ${item.price.toFixed(2)}
               </Text>
             </View>
@@ -133,7 +139,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
         </Card>
 
         {/* Financial summary */}
-        <Card style={styles.sectionCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.sectionCard}>
           <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
             Financial summary
           </Text>
@@ -158,7 +164,7 @@ const OrderDetailScreen = ({ route, navigation }) => {
             <Text style={[styles.summaryPayoutLabel, { color: theme.colors.text.primary }]}>
               Payout to you
             </Text>
-            <Text style={[styles.summaryPayoutValue, { color: theme.colors.primary.main }]}>
+            <Text style={[styles.summaryPayoutValue, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
               ${order.payout.toFixed(2)}
             </Text>
           </View>
@@ -186,10 +192,34 @@ const OrderDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 120,
+    zIndex: 1,
   },
   headerRow: {
     flexDirection: 'row',

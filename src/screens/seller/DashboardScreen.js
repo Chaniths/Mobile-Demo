@@ -35,6 +35,12 @@ const DashboardScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -58,7 +64,7 @@ const DashboardScreen = ({ navigation }) => {
         {/* Stats */}
         <View style={styles.statsGrid}>
           {stats.map((stat) => (
-            <Card key={stat.id} style={styles.statCard}>
+            <Card variant={theme.isDarkMode ? "glass" : "default"} key={stat.id} style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
                 <Text style={styles.statIconText}>{stat.icon}</Text>
               </View>
@@ -80,6 +86,7 @@ const DashboardScreen = ({ navigation }) => {
           <View style={styles.actionsGrid}>
             {quickActions.map((action) => (
               <Card
+                variant={theme.isDarkMode ? "glass" : "default"}
                 key={action.id}
                 style={styles.actionCard}
                 onPress={() => navigation.navigate(action.screen)}
@@ -100,13 +107,14 @@ const DashboardScreen = ({ navigation }) => {
               Recent Orders
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Orders')}>
-              <Text style={[styles.seeAll, { color: theme.colors.primary.main }]}>
+              <Text style={[styles.seeAll, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                 See All
               </Text>
             </TouchableOpacity>
           </View>
           {recentOrders.map((order) => (
             <Card
+              variant={theme.isDarkMode ? "glass" : "default"}
               key={order.id}
               style={styles.orderCard}
               onPress={() => navigation.navigate('OrderDetail', { orderId: order.id })}
@@ -150,7 +158,7 @@ const DashboardScreen = ({ navigation }) => {
                 <Text style={[styles.orderItems, { color: theme.colors.text.tertiary }]}>
                   {order.items} items
                 </Text>
-                <Text style={[styles.orderTotal, { color: theme.colors.primary.main }]}>
+                <Text style={[styles.orderTotal, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                   ${order.total.toFixed(2)}
                 </Text>
               </View>
@@ -165,6 +173,7 @@ const DashboardScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
   scrollView: {
     flex: 1,
@@ -172,6 +181,29 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 60,
     paddingBottom: 100,
+    zIndex: 1,
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   header: {
     flexDirection: 'row',

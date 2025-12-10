@@ -57,6 +57,12 @@ const TruckTrackingScreen = ({ navigation }) => {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       edges={['top']}
     >
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -64,7 +70,7 @@ const TruckTrackingScreen = ({ navigation }) => {
         {/* Header */}
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={[styles.backText, { color: theme.colors.primary.main }]}>← Back</Text>
+            <Text style={[styles.backText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
           </TouchableOpacity>
           <View style={styles.headerText}>
             <Text style={[styles.title, { color: theme.colors.text.primary }]}>
@@ -77,7 +83,7 @@ const TruckTrackingScreen = ({ navigation }) => {
         </View>
 
         {/* Map */}
-        <Card style={styles.mapCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.mapCard}>
           <View style={styles.mapContainer}>
             <MapView
               style={StyleSheet.absoluteFill}
@@ -92,13 +98,13 @@ const TruckTrackingScreen = ({ navigation }) => {
             >
               <Polyline
                 coordinates={polylineCoords}
-                strokeColor={theme.colors.primary.main}
+                strokeColor={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}
                 strokeWidth={4}
               />
 
               {/* Hub */}
               <Marker coordinate={HUB_COORDS}>
-                <View style={[styles.hubMarker, { backgroundColor: theme.colors.primary.light }]}>
+                <View style={[styles.hubMarker, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
                   <Text style={styles.hubEmoji}>🏬</Text>
                 </View>
               </Marker>
@@ -112,8 +118,8 @@ const TruckTrackingScreen = ({ navigation }) => {
                       style={[
                         styles.stopMarker,
                         {
-                          backgroundColor: isYou ? theme.colors.primary.main : theme.colors.card,
-                          borderColor: theme.colors.primary.main,
+                          backgroundColor: isYou ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main) : theme.colors.card,
+                          borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                         },
                       ]}
                     >
@@ -138,7 +144,7 @@ const TruckTrackingScreen = ({ navigation }) => {
         </Card>
 
         {/* Your slot */}
-        <Card style={styles.highlightCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.highlightCard}>
           <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
             Your pickup slot
           </Text>
@@ -170,15 +176,16 @@ const TruckTrackingScreen = ({ navigation }) => {
             return (
               <TouchableOpacity key={stop.id} onPress={() => setActiveStopId(stop.id)}>
                 <Card
+                  variant={theme.isDarkMode ? "glass" : "default"}
                   style={[
                     styles.stopCard,
-                    isActive && { borderWidth: 1.5, borderColor: theme.colors.primary.main },
+                    isActive && { borderWidth: 1.5, borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main },
                   ]}
                 >
                   <Text
                     style={[
                       styles.stopName,
-                      { color: isYou ? theme.colors.primary.main : theme.colors.text.primary },
+                      { color: isYou ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main) : theme.colors.text.primary },
                     ]}
                   >
                     {isYou ? 'Your store' : stop.name}
@@ -199,10 +206,34 @@ const TruckTrackingScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 120,
+    zIndex: 1,
   },
   headerRow: {
     flexDirection: 'row',

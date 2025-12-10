@@ -45,11 +45,13 @@ const Input = ({
         style={[
           styles.inputContainer,
           {
-            backgroundColor: theme.colors.card,
+            backgroundColor: theme.isDarkMode 
+              ? theme.colors.teal.soft // Use teal with low opacity instead of dark blue
+              : theme.colors.card,
             borderColor: error
               ? theme.colors.error
               : isFocused
-              ? theme.colors.primary.main
+              ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main)
               : theme.colors.border,
           },
           disabled && styles.disabled,
@@ -60,12 +62,12 @@ const Input = ({
         <TextInput
           style={[
             styles.input,
-            { color: theme.colors.text.primary },
+            { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary },
             multiline && styles.multilineInput,
             inputStyle,
           ]}
           placeholder={placeholder}
-          placeholderTextColor={theme.colors.text.tertiary}
+          placeholderTextColor={theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary}
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry}

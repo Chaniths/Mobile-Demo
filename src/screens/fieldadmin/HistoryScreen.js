@@ -148,7 +148,7 @@ const HistoryScreen = ({ navigation }) => {
   const renderContent = () => {
     if (activeTab === 'assessments') {
       return assessments.map((assessment) => (
-        <Card key={assessment.id} style={styles.itemCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} key={assessment.id} style={styles.itemCard}>
           <View style={styles.itemHeader}>
             <View>
               <Text style={[styles.itemType, { color: theme.colors.text.secondary }]}>
@@ -179,7 +179,7 @@ const HistoryScreen = ({ navigation }) => {
       ));
     } else if (activeTab === 'trucks') {
       return trucks.map((truck) => (
-        <Card key={truck.id} style={styles.itemCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} key={truck.id} style={styles.itemCard}>
           <View style={styles.itemHeader}>
             <View>
               <Text style={[styles.itemTitle, { color: theme.colors.text.primary }]}>
@@ -207,7 +207,7 @@ const HistoryScreen = ({ navigation }) => {
       ));
     } else {
       return drivers.map((driver) => (
-        <Card key={driver.id} style={styles.itemCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} key={driver.id} style={styles.itemCard}>
           <View style={styles.itemHeader}>
             <View>
               <Text style={[styles.itemTitle, { color: theme.colors.text.primary }]}>
@@ -236,6 +236,12 @@ const HistoryScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
           History
@@ -251,7 +257,7 @@ const HistoryScreen = ({ navigation }) => {
             styles.tab,
             activeTab === 'assessments' && {
               borderBottomWidth: 2,
-              borderBottomColor: theme.colors.primary.main,
+              borderBottomColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
             },
           ]}
           onPress={() => setActiveTab('assessments')}
@@ -261,7 +267,7 @@ const HistoryScreen = ({ navigation }) => {
               styles.tabText,
               { color: theme.colors.text.primary },
               activeTab === 'assessments' && {
-                color: theme.colors.primary.main,
+                color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                 fontWeight: '700',
               },
             ]}
@@ -274,7 +280,7 @@ const HistoryScreen = ({ navigation }) => {
             styles.tab,
             activeTab === 'trucks' && {
               borderBottomWidth: 2,
-              borderBottomColor: theme.colors.primary.main,
+              borderBottomColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
             },
           ]}
           onPress={() => setActiveTab('trucks')}
@@ -284,7 +290,7 @@ const HistoryScreen = ({ navigation }) => {
               styles.tabText,
               { color: theme.colors.text.primary },
               activeTab === 'trucks' && {
-                color: theme.colors.primary.main,
+                color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                 fontWeight: '700',
               },
             ]}
@@ -297,7 +303,7 @@ const HistoryScreen = ({ navigation }) => {
             styles.tab,
             activeTab === 'drivers' && {
               borderBottomWidth: 2,
-              borderBottomColor: theme.colors.primary.main,
+              borderBottomColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
             },
           ]}
           onPress={() => setActiveTab('drivers')}
@@ -307,7 +313,7 @@ const HistoryScreen = ({ navigation }) => {
               styles.tabText,
               { color: theme.colors.text.primary },
               activeTab === 'drivers' && {
-                color: theme.colors.primary.main,
+                color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                 fontWeight: '700',
               },
             ]}
@@ -328,8 +334,34 @@ const HistoryScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { 
+    flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
   header: {
+    zIndex: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 16,
@@ -348,7 +380,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabText: { fontSize: 15, fontWeight: '500' },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 120, paddingTop: 16 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 120, paddingTop: 16, zIndex: 1 },
   itemCard: { padding: 16, marginBottom: 12 },
   itemHeader: {
     flexDirection: 'row',

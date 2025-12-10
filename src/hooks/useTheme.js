@@ -55,6 +55,8 @@ export const useTheme = () => {
       card: isDarkMode ? colors.brand.card : colors.light.card,
       cardSecondary: isDarkMode ? colors.brand.muted : colors.light.cardSecondary,
       border: isDarkMode ? colors.border.dark : colors.border.light,
+      // Primary color for dark mode (teal)
+      primaryMain: isDarkMode ? colors.teal.main : colors.primary.main,
       
       // Text colors
       text: {
@@ -73,6 +75,7 @@ export const useTheme = () => {
       warning: colors.warning,
       info: colors.info,
       status: colors.status,
+      teal: colors.teal,
     },
   }), [isDarkMode]);
 

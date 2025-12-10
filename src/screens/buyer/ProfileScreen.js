@@ -31,6 +31,12 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>
@@ -45,7 +51,7 @@ const ProfileScreen = ({ navigation }) => {
       >
 
         {/* User Info */}
-        <Card style={styles.userCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.userCard}>
           <Avatar name="John Doe" size="large" />
           <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
             John Doe
@@ -59,7 +65,7 @@ const ProfileScreen = ({ navigation }) => {
         </Card>
 
         {/* Theme Toggle */}
-        <Card style={styles.themeCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.themeCard}>
           <View style={styles.themeRow}>
             <View style={styles.themeInfo}>
               <Text style={styles.themeIcon}>{isDarkMode ? '🌙' : '☀️'}</Text>
@@ -77,7 +83,7 @@ const ProfileScreen = ({ navigation }) => {
               onValueChange={toggleTheme}
               trackColor={{
                 false: theme.colors.border,
-                true: theme.colors.primary.main,
+                true: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
               }}
               thumbColor="#ffffff"
             />
@@ -91,7 +97,7 @@ const ProfileScreen = ({ navigation }) => {
               key={item.id}
               onPress={() => navigation.navigate(item.screen)}
             >
-              <Card style={styles.menuItem}>
+              <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.menuItem}>
                 <View style={styles.menuItemContent}>
                   <Text style={styles.menuIcon}>{item.icon}</Text>
                   <Text style={[styles.menuTitle, { color: theme.colors.text.primary }]}>
@@ -145,12 +151,36 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingBottom: 120,
+    zIndex: 1,
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   header: {
     paddingHorizontal: 20,

@@ -110,6 +110,12 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -136,7 +142,7 @@ const HomeScreen = ({ navigation }) => {
           </Text>
           <View style={styles.statsGrid}>
             {todayStats.map((stat) => (
-              <Card key={stat.id} style={styles.statCard}>
+              <Card variant={theme.isDarkMode ? "glass" : "default"} key={stat.id} style={styles.statCard}>
                 <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
                   <Text style={styles.statIconText}>{stat.icon}</Text>
                 </View>
@@ -162,7 +168,7 @@ const HomeScreen = ({ navigation }) => {
                 key={action.id}
                 onPress={() => navigation.navigate(action.screen)}
               >
-                <Card style={styles.actionCard}>
+                <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard}>
                   <View style={[styles.actionIconContainer, { backgroundColor: `${action.color}20` }]}>
                     <Text style={styles.actionIcon}>{action.icon}</Text>
                   </View>
@@ -185,13 +191,13 @@ const HomeScreen = ({ navigation }) => {
               Pending Tasks
             </Text>
             <TouchableOpacity>
-              <Text style={[styles.viewAll, { color: theme.colors.primary.main }]}>
+              <Text style={[styles.viewAll, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                 View All
               </Text>
             </TouchableOpacity>
           </View>
           {pendingTasks.map((task) => (
-            <Card key={task.id} style={styles.taskCard}>
+            <Card variant={theme.isDarkMode ? "glass" : "default"} key={task.id} style={styles.taskCard}>
               <View style={styles.taskHeader}>
                 <View style={styles.taskInfo}>
                   <Text style={[styles.taskType, { color: theme.colors.text.secondary }]}>
@@ -254,10 +260,34 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 120,
+    zIndex: 1,
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   header: {
     flexDirection: 'row',

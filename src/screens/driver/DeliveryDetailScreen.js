@@ -28,6 +28,12 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       edges={['top']}
     >
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -35,7 +41,7 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
         {/* Header */}
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={[styles.backText, { color: theme.colors.primary.main }]}>← Back</Text>
+            <Text style={[styles.backText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
           </TouchableOpacity>
           <View style={styles.headerInfo}>
             <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>
@@ -48,7 +54,7 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
         </View>
 
         {/* Map */}
-        <Card style={styles.mapCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.mapCard}>
           <View style={styles.mapContainer}>
             <MapView
               style={StyleSheet.absoluteFill}
@@ -58,18 +64,18 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
             >
               <Polyline
                 coordinates={[HUB_COORDS, delivery.coords]}
-                strokeColor={theme.colors.primary.main}
+                strokeColor={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}
                 strokeWidth={4}
               />
 
               <Marker coordinate={HUB_COORDS}>
-                <View style={[styles.hubMarker, { backgroundColor: theme.colors.primary.light }]}>
+                <View style={[styles.hubMarker, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
                   <Text style={styles.hubEmoji}>🏬</Text>
                 </View>
               </Marker>
 
               <Marker coordinate={delivery.coords}>
-                <View style={[styles.stopMarker, { borderColor: theme.colors.primary.main }]}>
+                <View style={[styles.stopMarker, { borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                   <Text style={[styles.stopEmoji]}>📦</Text>
                 </View>
               </Marker>
@@ -82,7 +88,7 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
 
         {/* Meta cards */}
         <View style={styles.metaRow}>
-          <Card style={styles.metaCard}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.metaCard}>
             <Text style={[styles.metaLabel, { color: theme.colors.text.secondary }]}>
               ETA
             </Text>
@@ -90,7 +96,7 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
               {delivery.etaMinutes} min
             </Text>
           </Card>
-          <Card style={styles.metaCard}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.metaCard}>
             <Text style={[styles.metaLabel, { color: theme.colors.text.secondary }]}>
               Distance
             </Text>
@@ -98,7 +104,7 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
               {delivery.distance}
             </Text>
           </Card>
-          <Card style={styles.metaCard}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.metaCard}>
             <Text style={[styles.metaLabel, { color: theme.colors.text.secondary }]}>
               Priority
             </Text>
@@ -119,7 +125,7 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
         </View>
 
         {/* Address & contact */}
-        <Card style={styles.infoCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.infoCard}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
             Delivery details
           </Text>
@@ -165,10 +171,34 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 120,
+    zIndex: 1,
   },
   headerRow: {
     flexDirection: 'row',

@@ -61,7 +61,7 @@ const OrdersScreen = ({ navigation }) => {
     : mockOrders.filter((order) => order.status === activeTab);
 
   const renderOrder = ({ item }) => (
-    <Card style={styles.orderCard}>
+    <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.orderCard}>
       <View style={styles.orderHeader}>
         <View>
           <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>
@@ -86,7 +86,7 @@ const OrdersScreen = ({ navigation }) => {
         <Text style={[styles.orderInfo, { color: theme.colors.text.secondary }]}>
           {item.items} items
         </Text>
-        <Text style={[styles.orderTotal, { color: theme.colors.primary.main }]}>
+        <Text style={[styles.orderTotal, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
           ${item.total.toFixed(2)}
         </Text>
       </View>
@@ -94,7 +94,7 @@ const OrdersScreen = ({ navigation }) => {
         onPress={() => navigation.navigate('TrackOrder', { orderId: item.id })}
         style={styles.trackButton}
       >
-        <Text style={[styles.trackButtonText, { color: theme.colors.primary.main }]}>
+        <Text style={[styles.trackButtonText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
           Track Order →
         </Text>
       </TouchableOpacity>
@@ -103,6 +103,12 @@ const OrdersScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>My Orders</Text>
@@ -117,7 +123,7 @@ const OrdersScreen = ({ navigation }) => {
             style={[
               styles.tab,
               activeTab === tab && {
-                borderBottomColor: theme.colors.primary.main,
+                borderBottomColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                 borderBottomWidth: 2,
               },
             ]}
@@ -128,7 +134,7 @@ const OrdersScreen = ({ navigation }) => {
                 {
                   color:
                     activeTab === tab
-                      ? theme.colors.primary.main
+                      ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main)
                       : theme.colors.text.secondary,
                 },
               ]}
@@ -144,7 +150,7 @@ const OrdersScreen = ({ navigation }) => {
         data={filteredOrders}
         renderItem={renderOrder}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { zIndex: 1 }]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <EmptyState
@@ -163,8 +169,32 @@ const OrdersScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   header: {
+    zIndex: 1,
     padding: 20,
     paddingBottom: 12,
   },

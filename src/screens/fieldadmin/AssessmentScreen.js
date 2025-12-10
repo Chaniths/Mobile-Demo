@@ -62,10 +62,16 @@ const AssessmentScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
+            <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
             Assessment
@@ -106,7 +112,7 @@ const AssessmentScreen = ({ navigation, route }) => {
 
         {selectedType && (
           <>
-            <Card style={styles.subjectCard}>
+            <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.subjectCard}>
               <Text style={[styles.label, { color: theme.colors.text.secondary }]}>
                 {selectedType === 'driver' ? 'Driver' : selectedType === 'buyer' ? 'Buyer' : 'Seller'}
               </Text>
@@ -143,7 +149,7 @@ const AssessmentScreen = ({ navigation, route }) => {
             <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
               Comments
             </Text>
-            <Card style={styles.commentsCard}>
+            <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.commentsCard}>
               <TextInput
                 style={[styles.input, { color: theme.colors.text.primary }]}
                 placeholder="Enter assessment comments..."
@@ -168,8 +174,37 @@ const AssessmentScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 32 },
+  container: { 
+    flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  scrollContent: { 
+    paddingHorizontal: 20, 
+    paddingBottom: 32,
+    zIndex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -177,7 +212,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
   },
-  backButton: { fontSize: 16, color: '#16a34a', fontWeight: '600' },
+  backButton: { fontSize: 16, fontWeight: '600' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
   sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12, marginTop: 8 },
   typeContainer: { flexDirection: 'row', gap: 12, marginBottom: 24 },

@@ -14,13 +14,19 @@ const AllDeliveriesScreen = ({ navigation }) => {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       edges={['top']}
     >
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={[styles.backText, { color: theme.colors.primary.main }]}>← Back</Text>
+            <Text style={[styles.backText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
           </TouchableOpacity>
           <Text style={[styles.title, { color: theme.colors.text.primary }]}>
             Today&apos;s deliveries
@@ -29,6 +35,7 @@ const AllDeliveriesScreen = ({ navigation }) => {
 
         {DRIVER_DELIVERIES.map((delivery) => (
           <Card
+            variant={theme.isDarkMode ? "glass" : "default"}
             key={delivery.id}
             style={styles.card}
             onPress={() =>
@@ -47,7 +54,7 @@ const AllDeliveriesScreen = ({ navigation }) => {
                 </Text>
               </View>
               <View style={styles.metaRight}>
-                <Text style={[styles.time, { color: theme.colors.primary.main }]}>
+                <Text style={[styles.time, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                   {delivery.time}
                 </Text>
                 <Text style={[styles.distance, { color: theme.colors.text.tertiary }]}>
@@ -110,10 +117,34 @@ const AllDeliveriesScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 120,
+    zIndex: 1,
   },
   headerRow: {
     flexDirection: 'row',

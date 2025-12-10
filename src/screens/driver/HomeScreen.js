@@ -26,6 +26,12 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -47,7 +53,7 @@ const HomeScreen = ({ navigation }) => {
         </View>
 
         {/* Active Route Card */}
-        <Card style={styles.activeRouteCard} elevation="lg">
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.activeRouteCard} elevation="lg">
           <View style={styles.routeHeader}>
             <Text style={[styles.routeTitle, { color: theme.colors.text.primary }]}>
               Active Route
@@ -76,7 +82,7 @@ const HomeScreen = ({ navigation }) => {
           </Text>
           <View style={styles.statsGrid}>
             {todayStats.map((stat) => (
-              <Card key={stat.id} style={styles.statCard}>
+              <Card variant={theme.isDarkMode ? "glass" : "default"} key={stat.id} style={styles.statCard}>
                 <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
                   <Text style={styles.statIconText}>{stat.icon}</Text>
                 </View>
@@ -98,13 +104,14 @@ const HomeScreen = ({ navigation }) => {
               Next Deliveries
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('AllDeliveries')}>
-              <Text style={[styles.seeAll, { color: theme.colors.primary.main }]}>
+              <Text style={[styles.seeAll, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                 See All
               </Text>
             </TouchableOpacity>
           </View>
           {upcomingDeliveries.map((delivery, index) => (
             <Card
+              variant={theme.isDarkMode ? "glass" : "default"}
               key={delivery.id}
               style={styles.deliveryCard}
               onPress={() => navigation.navigate('DeliveryDetail', { deliveryId: delivery.id })}
@@ -121,7 +128,7 @@ const HomeScreen = ({ navigation }) => {
                     {delivery.customer}
                   </Text>
                 </View>
-                <Text style={[styles.deliveryTime, { color: theme.colors.primary.main }]}>
+                <Text style={[styles.deliveryTime, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                   {delivery.time}
                 </Text>
               </View>
@@ -138,7 +145,7 @@ const HomeScreen = ({ navigation }) => {
                   {delivery.distance} away
                 </Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Route')}>
-                  <Text style={[styles.startButton, { color: theme.colors.primary.main }]}>
+                  <Text style={[styles.startButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                     Start →
                   </Text>
                 </TouchableOpacity>
@@ -170,6 +177,7 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
   scrollView: {
     flex: 1,
@@ -177,6 +185,29 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 60,
     paddingBottom: 100,
+    zIndex: 1,
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   header: {
     flexDirection: 'row',

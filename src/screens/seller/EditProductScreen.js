@@ -28,6 +28,12 @@ const EditProductScreen = ({ route, navigation }) => {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       edges={['top']}
     >
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -40,7 +46,7 @@ const EditProductScreen = ({ route, navigation }) => {
           category can only be changed by admin.
         </Text>
 
-        <Card style={styles.formCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.formCard}>
           {/* Read-only catalog info */}
           <View style={styles.readonlyBlock}>
             <Text style={[styles.readonlyLabel, { color: theme.colors.text.secondary }]}>
@@ -93,9 +99,33 @@ const EditProductScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   scrollContent: {
     paddingHorizontal: 20,
+    zIndex: 1,
     paddingBottom: 120,
   },
   title: {

@@ -39,12 +39,12 @@ const HomeScreen = ({ navigation }) => {
       onPress={() => navigation.navigate('ProductBrowse', { category: item.id })}
       style={styles.categoryPillWrapper}
     >
-      <View style={[styles.categoryPill, { backgroundColor: theme.colors.card }]}>
+      <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.categoryPill}>
         <Text style={styles.categoryIcon}>{item.icon}</Text>
         <Text style={[styles.categoryName, { color: theme.colors.text.primary }]}>
           {item.name}
         </Text>
-      </View>
+      </Card>
     </TouchableOpacity>
   );
 
@@ -52,15 +52,15 @@ const HomeScreen = ({ navigation }) => {
     <TouchableOpacity
       onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
     >
-      <Card style={styles.productCard}>
-        <View style={[styles.productImage, { backgroundColor: theme.colors.primary.light }]}>
+      <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.productCard}>
+        <View style={[styles.productImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
           <Text style={styles.productEmoji}>{item.image}</Text>
         </View>
         <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
           {item.name}
         </Text>
         <View style={styles.productFooter}>
-          <Text style={[styles.productPrice, { color: theme.colors.primary.main }]}>
+          <Text style={[styles.productPrice, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
             {item.price}
           </Text>
           <View style={styles.rating}>
@@ -73,6 +73,12 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -94,15 +100,17 @@ const HomeScreen = ({ navigation }) => {
         </View>
 
         {/* Search Bar */}
-        <TouchableOpacity
-          style={[styles.searchBar, { backgroundColor: theme.colors.card }]}
-          onPress={() => navigation.navigate('ProductBrowse')}
-        >
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.searchBarCard}>
+          <TouchableOpacity
+            style={styles.searchBar}
+            onPress={() => navigation.navigate('ProductBrowse')}
+          >
           <Text style={styles.searchIcon}>🔍</Text>
-          <Text style={[styles.searchPlaceholder, { color: theme.colors.text.tertiary }]}>
-            Search for organic products...
-          </Text>
-        </TouchableOpacity>
+            <Text style={[styles.searchPlaceholder, { color: theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary }]}>
+              Search for organic products...
+            </Text>
+          </TouchableOpacity>
+        </Card>
 
         {/* Categories */}
         <View style={styles.section}>
@@ -126,7 +134,7 @@ const HomeScreen = ({ navigation }) => {
               Featured Products
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('ProductBrowse')}>
-              <Text style={[styles.seeAll, { color: theme.colors.primary.main }]}>
+              <Text style={[styles.seeAll, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                 See All
               </Text>
             </TouchableOpacity>
@@ -147,25 +155,26 @@ const HomeScreen = ({ navigation }) => {
             Quick Actions
           </Text>
           <View style={styles.actionsGrid}>
-            <Card style={styles.actionCard} onPress={() => navigation.navigate('OrdersTab')}>
+            <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard} onPress={() => navigation.navigate('OrdersTab')}>
               <Text style={styles.actionIcon}>📦</Text>
               <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
                 My Orders
               </Text>
             </Card>
-            <Card style={styles.actionCard} onPress={() => navigation.navigate('CartTab')}>
+            <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard} onPress={() => navigation.navigate('CartTab')}>
               <Text style={styles.actionIcon}>🛒</Text>
               <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
                 Cart
               </Text>
             </Card>
-            <Card style={styles.actionCard} onPress={() => navigation.navigate('Analytics')}>
+            <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard} onPress={() => navigation.navigate('Analytics')}>
               <Text style={styles.actionIcon}>📊</Text>
               <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
                 Analytics
               </Text>
             </Card>
             <Card
+              variant={theme.isDarkMode ? "glass" : "default"}
               style={styles.actionCard}
               onPress={() => navigation.navigate('TrackOrder')}
             >
@@ -184,6 +193,7 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
   scrollView: {
     flex: 1,
@@ -191,6 +201,27 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 60,
     paddingBottom: 100,
+    zIndex: 1,
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
   },
   header: {
     flexDirection: 'row',
@@ -206,13 +237,15 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
   },
+  searchBarCard: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    borderRadius: 12,
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 20,
-    marginBottom: 24,
     padding: 16,
-    borderRadius: 12,
   },
   searchIcon: {
     fontSize: 20,
@@ -252,15 +285,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  categoryPillWrapper: {
-    marginRight: 8,
-  },
   categoryPill: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 999,
+    marginRight: 8,
   },
   productsList: {
     paddingHorizontal: 16,

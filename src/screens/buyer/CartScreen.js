@@ -28,15 +28,15 @@ const CartScreen = ({ navigation }) => {
   const total = subtotal + deliveryFee;
 
   const renderCartItem = ({ item }) => (
-    <Card style={styles.cartItem}>
-      <View style={[styles.itemImage, { backgroundColor: theme.colors.primary.light }]}>
+    <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.cartItem}>
+      <View style={[styles.itemImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
         <Text style={styles.itemEmoji}>{item.image}</Text>
       </View>
       <View style={styles.itemInfo}>
         <Text style={[styles.itemName, { color: theme.colors.text.primary }]}>
           {item.name}
         </Text>
-        <Text style={[styles.itemPrice, { color: theme.colors.primary.main }]}>
+        <Text style={[styles.itemPrice, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
           ${item.price.toFixed(2)}
         </Text>
       </View>
@@ -54,7 +54,7 @@ const CartScreen = ({ navigation }) => {
         </Text>
         <TouchableOpacity
           onPress={() => updateQuantity(item.id, 1)}
-          style={[styles.quantityButton, { backgroundColor: theme.colors.primary.main }]}
+          style={[styles.quantityButton, { backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}
         >
           <Text style={styles.quantityButtonText}>+</Text>
         </TouchableOpacity>
@@ -67,7 +67,7 @@ const CartScreen = ({ navigation }) => {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={[styles.backButton, { color: theme.colors.primary.main }]}>
+            <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
               ← Back
             </Text>
           </TouchableOpacity>
@@ -87,6 +87,12 @@ const CartScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -103,12 +109,12 @@ const CartScreen = ({ navigation }) => {
         data={cartItems}
         renderItem={renderCartItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { zIndex: 1 }]}
         showsVerticalScrollIndicator={false}
       />
 
       {/* Summary */}
-      <Card style={styles.summary} elevation="lg">
+      <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.summary} elevation="lg">
         <View style={styles.summaryRow}>
           <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>
             Subtotal
@@ -130,7 +136,7 @@ const CartScreen = ({ navigation }) => {
           <Text style={[styles.totalLabel, { color: theme.colors.text.primary }]}>
             Total
           </Text>
-          <Text style={[styles.totalValue, { color: theme.colors.primary.main }]}>
+          <Text style={[styles.totalValue, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
             ${total.toFixed(2)}
           </Text>
         </View>
@@ -147,8 +153,32 @@ const CartScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   header: {
+    zIndex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

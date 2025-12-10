@@ -45,6 +45,12 @@ const AnalyticsScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -58,12 +64,12 @@ const AnalyticsScreen = () => {
 
         {/* Spend & KPIs */}
         <View style={styles.row}>
-          <Card style={[styles.metricCard, styles.tintGreen, { flex: 1 }]}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={[styles.metricCard, styles.tintGreen, { flex: 1 }]}>
             <Text style={[styles.metricLabel, { color: theme.colors.text.secondary }]}>Spend (30D)</Text>
             <Text style={[styles.metricValue, { color: theme.colors.text.highlight }]}>{spendSummary.monthTotal}</Text>
             <Text style={[styles.metricSub, { color: theme.colors.text.secondary }]}>Avg: {spendSummary.avgOrder}</Text>
           </Card>
-          <Card style={[styles.metricCard, styles.tintTeal, { flex: 1 }]}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={[styles.metricCard, styles.tintTeal, { flex: 1 }]}>
             <Text style={[styles.metricLabel, { color: theme.colors.text.secondary }]}>Open Orders</Text>
             <Text style={[styles.metricValue, { color: theme.colors.text.highlight }]}>{spendSummary.openOrders}</Text>
             <Text style={[styles.metricSub, { color: theme.colors.text.secondary }]}>Awaiting rider</Text>
@@ -71,12 +77,12 @@ const AnalyticsScreen = () => {
         </View>
 
         <View style={styles.row}>
-          <Card style={[styles.metricCard, styles.tintAmber, { flex: 1 }]}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={[styles.metricCard, styles.tintAmber, { flex: 1 }]}>
             <Text style={[styles.metricLabel, { color: theme.colors.text.secondary }]}>Completed (7D)</Text>
             <Text style={[styles.metricValue, { color: theme.colors.text.highlight }]}>{spendSummary.completed7d}</Text>
             <Text style={[styles.metricSub, { color: theme.colors.text.secondary }]}>+3 vs last week</Text>
           </Card>
-          <Card style={[styles.metricCard, styles.tintIndigo, { flex: 1 }]}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={[styles.metricCard, styles.tintIndigo, { flex: 1 }]}>
             <Text style={[styles.metricLabel, { color: theme.colors.text.secondary }]}>Favorite Vendors</Text>
             <Text style={[styles.metricValue, { color: theme.colors.text.highlight }]}>{spendSummary.favVendors}</Text>
             <Text style={[styles.metricSub, { color: theme.colors.text.secondary }]}>Pinned vendors</Text>
@@ -86,7 +92,7 @@ const AnalyticsScreen = () => {
         {/* Live Delivery Planner */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Delivery Planner</Text>
         {deliveryPlanner.map((item) => (
-          <Card key={item.id} style={styles.listCard}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} key={item.id} style={styles.listCard}>
             <Text style={[styles.listTitle, { color: theme.colors.text.primary }]}>{item.window}</Text>
             <Text style={[styles.listDesc, { color: theme.colors.text.secondary }]}>{item.desc}</Text>
             <Text
@@ -106,7 +112,7 @@ const AnalyticsScreen = () => {
         {/* Recent Products */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Recent Products</Text>
         {recentPurchases.map((item) => (
-          <Card key={item.id} style={styles.listCard}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} key={item.id} style={styles.listCard}>
             <Text style={[styles.listTitle, { color: theme.colors.text.primary }]}>{item.name}</Text>
             <Text style={[styles.listDesc, { color: theme.colors.text.secondary }]}>{item.qty} · {item.price}</Text>
             <Text style={[styles.listMeta, { color: theme.colors.text.tertiary }]}>{item.date}</Text>
@@ -116,7 +122,7 @@ const AnalyticsScreen = () => {
         {/* Trending Products with mini chart bars */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Trending Products</Text>
         {trendingProducts.map((item) => (
-          <Card key={item.id} style={styles.listCard}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} key={item.id} style={styles.listCard}>
             <View style={styles.trendRow}>
               <Text style={[styles.listTitle, { color: theme.colors.text.primary }]}>{item.name}</Text>
               <Text style={[styles.trendBadge, { backgroundColor: `${item.color}33`, color: item.color }]}>
@@ -135,10 +141,36 @@ const AnalyticsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { 
+    flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 120,
+    zIndex: 1,
   },
   title: {
     fontSize: 26,

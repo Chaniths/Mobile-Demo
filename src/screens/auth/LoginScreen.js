@@ -15,6 +15,7 @@ import { loginFailure, loginStart, loginSuccess } from '../../store/slices/authS
 import { findUserByCredentials } from '../../utils/demoUsers';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import Card from '../../components/common/Card';
 
 const LoginScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -61,8 +62,23 @@ const LoginScreen = ({ navigation }) => {
     }, 1500);
   };
 
+  // Background gradient overlay for dark mode
+  const backgroundStyle = theme.isDarkMode
+    ? {
+        backgroundColor: theme.colors.background,
+      }
+    : {
+        backgroundColor: theme.colors.background,
+      };
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={[styles.container, backgroundStyle]}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
@@ -73,7 +89,7 @@ const LoginScreen = ({ navigation }) => {
         >
           {/* Logo/Header */}
           <View style={styles.header}>
-            <View style={[styles.logo, { backgroundColor: theme.colors.primary.main }]}>
+            <View style={[styles.logo, { backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
               <Text style={styles.logoText}>🌱</Text>
             </View>
             <Text style={[styles.title, { color: theme.colors.text.primary }]}>
@@ -84,8 +100,9 @@ const LoginScreen = ({ navigation }) => {
             </Text>
           </View>
 
-          {/* Form */}
-          <View style={styles.form}>
+          {/* Form Card with Glassmorphism */}
+          <Card variant="glass" style={styles.formCard}>
+            <View style={styles.form}>
             <Input
               label="Email"
               placeholder="Enter your email"
@@ -110,35 +127,36 @@ const LoginScreen = ({ navigation }) => {
               secureTextEntry={!showPassword}
               error={errors.password}
               rightIcon={
-                <Text style={{ color: theme.colors.primary.main }}>
+                <Text style={{ color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }}>
                   {showPassword ? '👁️' : '👁️‍🗨️'}
                 </Text>
               }
               onRightIconPress={() => setShowPassword(!showPassword)}
             />
 
-            <TouchableOpacity
-              onPress={() => navigation.navigate('ForgotPassword')}
-              style={styles.forgotPassword}
-            >
-              <Text style={[styles.forgotText, { color: theme.colors.primary.main }]}>
-                Forgot Password?
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ForgotPassword')}
+                style={styles.forgotPassword}
+              >
+                <Text style={[styles.forgotText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                  Forgot Password?
+                </Text>
+              </TouchableOpacity>
 
-            <Button
-              title="Sign In"
-              onPress={handleLogin}
-              loading={loading}
-              style={styles.loginButton}
-            />
+              <Button
+                title="Sign In"
+                onPress={handleLogin}
+                loading={loading}
+                style={[styles.loginButton, theme.isDarkMode && { backgroundColor: theme.colors.primary.main }]}
+              />
 
-            {!!authError && (
-              <Text style={[styles.errorText, { color: theme.colors.error?.main || '#d32f2f' }]}>
-                {authError}
-              </Text>
-            )}
-          </View>
+              {!!authError && (
+                <Text style={[styles.errorText, { color: theme.colors.error || '#d32f2f' }]}>
+                  {authError}
+                </Text>
+              )}
+            </View>
+          </Card>
 
           {/* Footer */}
           <View style={styles.footer}>
@@ -146,7 +164,7 @@ const LoginScreen = ({ navigation }) => {
               Don't have an account?{' '}
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={[styles.signupText, { color: theme.colors.primary.main }]}>
+              <Text style={[styles.signupText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                 Sign Up
               </Text>
             </TouchableOpacity>
@@ -160,14 +178,41 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
   flex: {
     flex: 1,
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
   },
   scrollContent: {
     flexGrow: 1,
     padding: 24,
     justifyContent: 'center',
+    zIndex: 1,
+  },
+  formCard: {
+    borderRadius: 24,
+    padding: 24,
+    marginVertical: 16,
   },
   header: {
     alignItems: 'center',

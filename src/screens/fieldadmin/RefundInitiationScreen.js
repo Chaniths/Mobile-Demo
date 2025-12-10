@@ -51,10 +51,16 @@ const RefundInitiationScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
+            <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
             Initiate Refund
@@ -62,7 +68,7 @@ const RefundInitiationScreen = ({ navigation, route }) => {
           <View style={{ width: 60 }} />
         </View>
 
-        <Card style={styles.orderCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.orderCard}>
           <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Order ID</Text>
           <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>{order.orderId}</Text>
           <View style={styles.divider} />
@@ -79,11 +85,11 @@ const RefundInitiationScreen = ({ navigation, route }) => {
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Refund Reason
         </Text>
-        <Card style={styles.reasonCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.reasonCard}>
           <TextInput
-            style={[styles.input, { color: theme.colors.text.primary }]}
+            style={[styles.input, { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary }]}
             placeholder="Enter refund reason..."
-            placeholderTextColor={theme.colors.text.tertiary}
+            placeholderTextColor={theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary}
             multiline
             numberOfLines={4}
             value={reason}
@@ -94,13 +100,13 @@ const RefundInitiationScreen = ({ navigation, route }) => {
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Refund Amount
         </Text>
-        <Card style={styles.amountCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.amountCard}>
           <View style={styles.amountRow}>
             <Text style={[styles.currency, { color: theme.colors.text.secondary }]}>Rs.</Text>
             <TextInput
-              style={[styles.amountInput, { color: theme.colors.text.primary }]}
+              style={[styles.amountInput, { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary }]}
               placeholder="0.00"
-              placeholderTextColor={theme.colors.text.tertiary}
+              placeholderTextColor={theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary}
               keyboardType="numeric"
               value={amount}
               onChangeText={setAmount}
@@ -122,8 +128,37 @@ const RefundInitiationScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 32 },
+  container: { 
+    flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  scrollContent: { 
+    paddingHorizontal: 20, 
+    paddingBottom: 32,
+    zIndex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -131,7 +166,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
   },
-  backButton: { fontSize: 16, color: '#16a34a', fontWeight: '600' },
+  backButton: { fontSize: 16, fontWeight: '600' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
   orderCard: { padding: 16, marginBottom: 24 },
   label: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },

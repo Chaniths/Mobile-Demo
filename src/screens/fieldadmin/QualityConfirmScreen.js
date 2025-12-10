@@ -155,11 +155,17 @@ const QualityConfirmScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
+            <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
             Confirm Quality
@@ -168,7 +174,7 @@ const QualityConfirmScreen = ({ navigation, route }) => {
         </View>
 
         {/* Order Info */}
-        <Card style={styles.orderCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.orderCard}>
           <Text style={[styles.orderLabel, { color: theme.colors.text.secondary }]}>
             Order ID
           </Text>
@@ -202,7 +208,7 @@ const QualityConfirmScreen = ({ navigation, route }) => {
           const statusText = getApprovalStatus(item, qualityData);
 
           return (
-            <Card key={item.id} style={styles.productCard}>
+            <Card variant={theme.isDarkMode ? "glass" : "default"} key={item.id} style={styles.productCard}>
               <View style={styles.productHeader}>
                 <View style={styles.productInfo}>
                   <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
@@ -353,7 +359,7 @@ const QualityConfirmScreen = ({ navigation, route }) => {
                   style={styles.partialToggle}
                   onPress={() => handleQualityCheck(item.id, 'partial', item)}
                 >
-                  <Text style={[styles.partialToggleText, { color: theme.colors.info || theme.colors.primary.main }]}>
+                  <Text style={[styles.partialToggleText, { color: theme.isDarkMode ? theme.colors.teal.main : (theme.colors.info || theme.colors.primary.main) }]}>
                     ⚡ Approve Partial Quantity
                   </Text>
                 </TouchableOpacity>
@@ -366,11 +372,11 @@ const QualityConfirmScreen = ({ navigation, route }) => {
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Additional Notes
         </Text>
-        <Card style={styles.notesCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.notesCard}>
           <TextInput
-            style={[styles.notesInput, { color: theme.colors.text.primary }]}
+            style={[styles.notesInput, { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary }]}
             placeholder="Add notes about quality check..."
-            placeholderTextColor={theme.colors.text.tertiary}
+            placeholderTextColor={theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary}
             multiline
             numberOfLines={4}
             value={notes}
@@ -393,10 +399,34 @@ const QualityConfirmScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 32,
+    zIndex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -407,7 +437,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     fontSize: 16,
-    color: '#16a34a',
     fontWeight: '600',
   },
   headerTitle: {

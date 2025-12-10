@@ -23,6 +23,12 @@ const CheckoutScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>Checkout</Text>
@@ -37,7 +43,7 @@ const CheckoutScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Order summary */}
-        <Card style={styles.card}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.card}>
           <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
             Order summary
           </Text>
@@ -64,7 +70,7 @@ const CheckoutScreen = ({ navigation }) => {
         </Card>
 
         {/* Delivery details (static placeholder) */}
-        <Card style={styles.card}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.card}>
           <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
             Delivery details
           </Text>
@@ -77,7 +83,7 @@ const CheckoutScreen = ({ navigation }) => {
         </Card>
 
         {/* Payment summary */}
-        <Card style={styles.card}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.card}>
           <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
             Payment
           </Text>
@@ -102,7 +108,7 @@ const CheckoutScreen = ({ navigation }) => {
             <Text style={[styles.totalLabel, { color: theme.colors.text.primary }]}>
               Total to pay
             </Text>
-            <Text style={[styles.totalValue, { color: theme.colors.primary.main }]}>
+            <Text style={[styles.totalValue, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
               ${total.toFixed(2)}
             </Text>
           </View>
@@ -123,8 +129,32 @@ const CheckoutScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   header: {
+    zIndex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 12,
@@ -143,6 +173,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 120,
+    zIndex: 1,
   },
   card: {
     marginBottom: 12,

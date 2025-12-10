@@ -82,12 +82,12 @@ const ProductsScreen = ({ navigation }) => {
   };
 
   const renderProduct = ({ item }) => (
-    <Card style={styles.productCard}>
+    <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.productCard}>
       <TouchableOpacity
         onPress={() => navigation.navigate('EditProduct', { productId: item.id })}
         style={styles.productContent}
       >
-        <View style={[styles.productImage, { backgroundColor: theme.colors.primary.light }]}>
+        <View style={[styles.productImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
           <Text style={styles.productEmoji}>{item.image}</Text>
         </View>
         <View style={styles.productInfo}>
@@ -97,7 +97,7 @@ const ProductsScreen = ({ navigation }) => {
           <Text style={[styles.productCategory, { color: theme.colors.text.secondary }]}>
             {item.category}
           </Text>
-          <Text style={[styles.productPrice, { color: theme.colors.primary.main }]}>
+          <Text style={[styles.productPrice, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
             ${item.price.toFixed(2)}
           </Text>
           <View style={styles.productMeta}>
@@ -123,11 +123,17 @@ const ProductsScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>My Products</Text>
         <TouchableOpacity onPress={() => navigation.navigate('AddProduct')}>
-          <Text style={[styles.addButton, { color: theme.colors.primary.main }]}>
+          <Text style={[styles.addButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
             + Request product
           </Text>
         </TouchableOpacity>
@@ -157,8 +163,32 @@ const ProductsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   header: {
+    zIndex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -174,6 +204,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 20,
+    zIndex: 1,
   },
   productCard: {
     marginBottom: 12,

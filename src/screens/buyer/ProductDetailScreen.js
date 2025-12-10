@@ -68,6 +68,12 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -87,11 +93,11 @@ const ProductDetailScreen = ({ route, navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Product hero */}
-        <Card style={styles.heroCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.heroCard}>
           <View
             style={[
               styles.heroImage,
-              { backgroundColor: theme.colors.primary.light },
+              { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light },
             ]}
           >
             <Text style={styles.heroEmoji}>{product.image}</Text>
@@ -117,11 +123,12 @@ const ProductDetailScreen = ({ route, navigation }) => {
                 onPress={() => setSelectedSellerId(seller.id)}
               >
                 <Card
+                  variant={theme.isDarkMode ? "glass" : "default"}
                   style={[
                     styles.sellerCard,
                     isSelected && {
                       borderWidth: 1.5,
-                      borderColor: theme.colors.primary.main,
+                      borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                     },
                   ]}
                 >
@@ -148,7 +155,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
                       <Text
                         style={[
                           styles.price,
-                          { color: theme.colors.primary.main },
+                          { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main },
                         ]}
                       >
                         ${seller.price.toFixed(2)}
@@ -176,7 +183,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
                       <View
                         style={[
                           styles.badge,
-                          { backgroundColor: theme.colors.primary.light },
+                          { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light },
                         ]}
                       >
                         <Text style={styles.badgeText}>{seller.badge}</Text>
@@ -221,7 +228,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <Text style={[styles.totalLabel, { color: theme.colors.text.secondary }]}>
             Estimated total
           </Text>
-          <Text style={[styles.totalValue, { color: theme.colors.primary.main }]}>
+          <Text style={[styles.totalValue, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
             ${selectedSeller ? (selectedSeller.price * quantity).toFixed(2) : '0.00'}
           </Text>
         </View>
@@ -239,8 +246,32 @@ const ProductDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+    zIndex: 0,
   },
   header: {
+    zIndex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -265,6 +296,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 140,
+    zIndex: 1,
   },
   heroCard: {
     alignItems: 'center',
