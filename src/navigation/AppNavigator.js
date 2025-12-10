@@ -10,6 +10,7 @@ import AuthNavigator from './AuthNavigator';
 import BuyerNavigator from './BuyerNavigator';
 import SellerNavigator from './SellerNavigator';
 import DriverNavigator from './DriverNavigator';
+import FieldAdminNavigator from './FieldAdminNavigator';
 
 const Stack = createStackNavigator();
 
@@ -34,7 +35,7 @@ const AppNavigator = () => {
       case 'driver':
         return DriverNavigator;
       case 'fieldadmin':
-        return BuyerNavigator; // TODO: Create FieldAdminNavigator
+        return FieldAdminNavigator;
       default:
         return BuyerNavigator;
     }

@@ -1,0 +1,224 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../hooks/useTheme';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+
+const TruckCapacityScreen = ({ navigation, route }) => {
+  const { theme } = useTheme();
+  const [truck, setTruck] = useState(route?.params?.truck || {
+    id: 'truck-001',
+    licensePlate: 'WP ABC-1234',
+    driver: 'Mike Johnson',
+    currentCapacity: '75',
+    maxCapacity: '100',
+    unit: 'kg',
+  });
+
+  const [capacity, setCapacity] = useState(truck.currentCapacity);
+  const [notes, setNotes] = useState('');
+
+  const trucks = [
+    { id: 'truck-001', licensePlate: 'WP ABC-1234', driver: 'Mike Johnson', capacity: '75/100 kg' },
+    { id: 'truck-002', licensePlate: 'WP XYZ-5678', driver: 'Sarah Williams', capacity: '45/100 kg' },
+    { id: 'truck-003', licensePlate: 'WP DEF-9012', driver: 'Tom Brown', capacity: '90/100 kg' },
+  ];
+
+  const handleUpdateCapacity = () => {
+    if (!capacity.trim() || isNaN(capacity) || parseFloat(capacity) < 0 || parseFloat(capacity) > 100) {
+      alert('Please enter a valid capacity (0-100)');
+      return;
+    }
+    // In real app, this would make an API call
+    console.log('Capacity updated:', {
+      truckId: truck.id,
+      capacity: parseFloat(capacity),
+      notes,
+    });
+    navigation.goBack();
+  };
+
+  const capacityPercent = (parseFloat(truck.currentCapacity) / parseFloat(truck.maxCapacity)) * 100;
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backButton}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
+            Truck Capacity
+          </Text>
+          <View style={{ width: 60 }} />
+        </View>
+
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+          Select Truck
+        </Text>
+        {trucks.map((t) => (
+          <TouchableOpacity key={t.id} onPress={() => setTruck(t)}>
+            <Card
+              style={[
+                styles.truckCard,
+                truck.id === t.id && {
+                  borderWidth: 2,
+                  borderColor: theme.colors.primary.main,
+                },
+              ]}
+            >
+              <Text style={[styles.truckPlate, { color: theme.colors.text.primary }]}>
+                {t.licensePlate}
+              </Text>
+              <Text style={[styles.truckDriver, { color: theme.colors.text.secondary }]}>
+                Driver: {t.driver}
+              </Text>
+              <Text style={[styles.truckCapacity, { color: theme.colors.text.secondary }]}>
+                Capacity: {t.capacity}
+              </Text>
+            </Card>
+          </TouchableOpacity>
+        ))}
+
+        <Card style={styles.capacityCard}>
+          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Truck Details</Text>
+          <Text style={[styles.detail, { color: theme.colors.text.primary }]}>
+            License: {truck.licensePlate}
+          </Text>
+          <Text style={[styles.detail, { color: theme.colors.text.primary }]}>
+            Driver: {truck.driver}
+          </Text>
+          <View style={styles.divider} />
+          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>
+            Current Capacity
+          </Text>
+          <View style={styles.capacityBarContainer}>
+            <View style={styles.capacityBar}>
+              <View
+                style={[
+                  styles.capacityBarFill,
+                  {
+                    width: `${capacityPercent}%`,
+                    backgroundColor:
+                      capacityPercent > 80
+                        ? theme.colors.error
+                        : capacityPercent > 60
+                        ? theme.colors.warning
+                        : theme.colors.success,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={[styles.capacityText, { color: theme.colors.text.primary }]}>
+              {truck.currentCapacity} / {truck.maxCapacity} {truck.unit} ({Math.round(capacityPercent)}%)
+            </Text>
+          </View>
+        </Card>
+
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+          Update Capacity
+        </Text>
+        <Card style={styles.updateCard}>
+          <View style={styles.capacityInputRow}>
+            <TextInput
+              style={[styles.capacityInput, { color: theme.colors.text.primary }]}
+              placeholder="Enter new capacity"
+              placeholderTextColor={theme.colors.text.tertiary}
+              keyboardType="numeric"
+              value={capacity}
+              onChangeText={setCapacity}
+            />
+            <Text style={[styles.unitText, { color: theme.colors.text.secondary }]}>kg</Text>
+          </View>
+          <Text style={[styles.hint, { color: theme.colors.text.tertiary }]}>
+            Max capacity: {truck.maxCapacity} kg
+          </Text>
+        </Card>
+
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+          Notes
+        </Text>
+        <Card style={styles.notesCard}>
+          <TextInput
+            style={[styles.input, { color: theme.colors.text.primary }]}
+            placeholder="Add notes about capacity update..."
+            placeholderTextColor={theme.colors.text.tertiary}
+            multiline
+            numberOfLines={4}
+            value={notes}
+            onChangeText={setNotes}
+          />
+        </Card>
+
+        <Button
+          title="Update Capacity"
+          onPress={handleUpdateCapacity}
+          style={styles.submitButton}
+        />
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 32 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    paddingBottom: 16,
+  },
+  backButton: { fontSize: 16, color: '#16a34a', fontWeight: '600' },
+  headerTitle: { fontSize: 20, fontWeight: '700' },
+  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12, marginTop: 8 },
+  truckCard: { padding: 16, marginBottom: 12 },
+  truckPlate: { fontSize: 18, fontWeight: '700', marginBottom: 4 },
+  truckDriver: { fontSize: 14, marginBottom: 4 },
+  truckCapacity: { fontSize: 14 },
+  capacityCard: { padding: 16, marginBottom: 24 },
+  label: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  detail: { fontSize: 14, marginBottom: 8 },
+  divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 12 },
+  capacityBarContainer: { marginTop: 8 },
+  capacityBar: {
+    height: 24,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  capacityBarFill: {
+    height: '100%',
+    borderRadius: 12,
+  },
+  capacityText: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  updateCard: { padding: 16, marginBottom: 24 },
+  capacityInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  capacityInput: { flex: 1, fontSize: 18, fontWeight: '600', paddingVertical: 12 },
+  unitText: { fontSize: 16, fontWeight: '600', marginLeft: 8 },
+  hint: { fontSize: 12 },
+  notesCard: { padding: 16, marginBottom: 24 },
+  input: { fontSize: 14, minHeight: 100, textAlignVertical: 'top' },
+  submitButton: { marginTop: 8 },
+});
+
+export default TruckCapacityScreen;
+
