@@ -131,8 +131,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   lightModeCircle1: {
-    backgroundColor: 'rgba(22, 163, 74, 0.15)',
-    opacity: 0.5,
+    backgroundColor: 'rgba(22, 163, 74, 0.35)',
+    opacity: 0.7,
   },
   lightModeCircle2: {
     backgroundColor: 'rgba(74, 222, 128, 0.2)',

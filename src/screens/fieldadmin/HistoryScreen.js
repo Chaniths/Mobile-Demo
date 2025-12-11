@@ -236,13 +236,21 @@ const HistoryScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-      {theme.isDarkMode && (
+      {theme.isDarkMode ? (
         <>
           {/* Arch-like strips in teal colors */}
           <View style={styles.archStrip1} />
           <View style={styles.archStrip2} />
           <View style={styles.archStrip3} />
           <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
         </>
       )}
       <View style={styles.header}>
@@ -431,6 +439,23 @@ const styles = StyleSheet.create({
   comments: { fontSize: 13, fontStyle: 'italic', marginTop: 8 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 12, fontWeight: '600' },
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
+  },
 });
 
 export default HistoryScreen;

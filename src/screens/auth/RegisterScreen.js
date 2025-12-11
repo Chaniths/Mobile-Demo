@@ -102,10 +102,15 @@ const RegisterScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-      {theme.isDarkMode && (
+      {theme.isDarkMode ? (
         <>
           <View style={styles.gradientCircle1} />
           <View style={styles.gradientCircle2} />
+        </>
+      ) : (
+        <>
+          <View style={[styles.gradientCircle1, styles.lightModeCircle1]} />
+          <View style={[styles.gradientCircle2, styles.lightModeCircle2]} />
         </>
       )}
       <KeyboardAvoidingView
@@ -392,6 +397,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  lightModeCircle1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.35)',
+    opacity: 0.7,
+  },
+  lightModeCircle2: {
+    backgroundColor: 'rgba(74, 222, 128, 0.2)',
+    opacity: 0.5,
   },
 });
 

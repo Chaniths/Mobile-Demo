@@ -37,6 +37,17 @@ const ForgotPasswordScreen = ({ navigation }) => {
   if (success) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        {theme.isDarkMode ? (
+          <>
+            <View style={styles.gradientCircle1} />
+            <View style={styles.gradientCircle2} />
+          </>
+        ) : (
+          <>
+            <View style={[styles.gradientCircle1, styles.lightModeCircle1]} />
+            <View style={[styles.gradientCircle2, styles.lightModeCircle2]} />
+          </>
+        )}
         <View style={styles.successContainer}>
           <View style={[styles.successIcon, { backgroundColor: theme.colors.success }]}>
             <Text style={styles.successIconText}>✓</Text>
@@ -60,10 +71,15 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {theme.isDarkMode && (
+      {theme.isDarkMode ? (
         <>
           <View style={styles.gradientCircle1} />
           <View style={styles.gradientCircle2} />
+        </>
+      ) : (
+        <>
+          <View style={[styles.gradientCircle1, styles.lightModeCircle1]} />
+          <View style={[styles.gradientCircle2, styles.lightModeCircle2]} />
         </>
       )}
       <View style={styles.content}>
@@ -198,6 +214,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 20,
+  },
+  lightModeCircle1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.35)',
+    opacity: 0.7,
+  },
+  lightModeCircle2: {
+    backgroundColor: 'rgba(74, 222, 128, 0.2)',
+    opacity: 0.5,
   },
 });
 
