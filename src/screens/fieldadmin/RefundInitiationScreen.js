@@ -53,8 +53,11 @@ const RefundInitiationScreen = ({ navigation, route }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
       {theme.isDarkMode && (
         <>
-          <View style={styles.gradientCircle1} />
-          <View style={styles.gradientCircle2} />
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
         </>
       )}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -132,27 +135,58 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
   },
-  gradientCircle1: {
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
     position: 'absolute',
-    top: -160,
-    left: -160,
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: 'rgba(56, 189, 248, 0.45)',
-    opacity: 0.6,
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
     zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
   },
-  gradientCircle2: {
+  archStrip2: {
     position: 'absolute',
-    bottom: -192,
-    right: -192,
-    width: 384,
-    height: 384,
-    borderRadius: 192,
-    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
     opacity: 0.6,
     zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
   },
   scrollContent: { 
     paddingHorizontal: 20, 
