@@ -16,6 +16,7 @@ import DamageReportScreen from '../screens/fieldadmin/DamageReportScreen';
 import TruckCapacityScreen from '../screens/fieldadmin/TruckCapacityScreen';
 import RouteOrdersScreen from '../screens/fieldadmin/RouteOrdersScreen';
 import RouteMapScreen from '../screens/fieldadmin/RouteMapScreen';
+import OrdersScreen from '../screens/fieldadmin/OrdersScreen';
 import HistoryScreen from '../screens/fieldadmin/HistoryScreen';
 import ProfileScreen from '../screens/buyer/ProfileScreen'; // Reuse profile
 
@@ -37,8 +38,31 @@ const FieldAdminStack = () => {
       <Stack.Screen name="TruckCapacity" component={TruckCapacityScreen} />
       <Stack.Screen name="RouteOrders" component={RouteOrdersScreen} />
       <Stack.Screen name="RouteMap" component={RouteMapScreen} />
+      <Stack.Screen name="Orders" component={OrdersScreen} />
       <Stack.Screen name="History" component={HistoryScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+    </Stack.Navigator>
+  );
+};
+
+// Routes Stack - starts at RouteOrders
+const RoutesStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="RouteOrders">
+      <Stack.Screen name="RouteOrders" component={RouteOrdersScreen} />
+      <Stack.Screen name="RouteMap" component={RouteMapScreen} />
+      <Stack.Screen name="DeliveryPickup" component={DeliveryPickupScreen} />
+    </Stack.Navigator>
+  );
+};
+
+// Orders Stack - starts at Orders
+const OrdersStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Orders">
+      <Stack.Screen name="Orders" component={OrdersScreen} />
+      <Stack.Screen name="DeliveryPickup" component={DeliveryPickupScreen} />
+      <Stack.Screen name="RouteMap" component={RouteMapScreen} />
     </Stack.Navigator>
   );
 };
@@ -77,7 +101,7 @@ const FieldAdminNavigator = () => {
       }}
     >
       <Tab.Screen
-        name="Main"
+        name="HomeTab"
         component={FieldAdminStack}
         options={{
           tabBarLabel: 'Home',
@@ -85,24 +109,19 @@ const FieldAdminNavigator = () => {
         }}
       />
       <Tab.Screen
-        name="Routes"
-        component={RouteOrdersScreen}
-        listeners={{
-          tabPress: (e) => {
-            // Prevent default tab press, navigate within stack
-          },
-        }}
+        name="RoutesTab"
+        component={RoutesStack}
         options={{
           tabBarLabel: 'Routes',
           tabBarIcon: () => <Text style={{ fontSize: 24 }}>🗺️</Text>,
         }}
       />
       <Tab.Screen
-        name="AssessmentTab"
-        component={AssessmentScreen}
+        name="OrdersTab"
+        component={OrdersStack}
         options={{
-          tabBarLabel: 'Assess',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📋</Text>,
+          tabBarLabel: 'Orders',
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>,
         }}
       />
       <Tab.Screen

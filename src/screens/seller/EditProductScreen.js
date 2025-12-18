@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import LocationSelectionModal from '../../components/common/LocationSelectionModal';
 
 const EditProductScreen = ({ route, navigation }) => {
   const { theme } = useTheme();
@@ -16,11 +17,28 @@ const EditProductScreen = ({ route, navigation }) => {
 
   const [price, setPrice] = useState('4.99');
   const [stock, setStock] = useState('45');
+  const [size, setSize] = useState('medium'); // 'small', 'medium', 'large'
+  const [pickupLocation, setPickupLocation] = useState(null);
   const [notes, setNotes] = useState('');
+  const [showSizeModal, setShowSizeModal] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
 
   const handleSave = () => {
     // Demo only – in production this would update stock/pricing only.
+    console.log('Saving:', { price, stock, size, pickupLocation, notes });
     navigation.goBack();
+  };
+
+  const handleSelectLocation = (location) => {
+    setPickupLocation(location);
+    setShowLocationModal(false);
+  };
+
+  const sizeOptions = ['small', 'medium', 'large'];
+  const sizeLabels = {
+    small: 'Small',
+    medium: 'Medium',
+    large: 'Large',
   };
 
   return (
@@ -79,11 +97,69 @@ const EditProductScreen = ({ route, navigation }) => {
             keyboardType="decimal-pad"
           />
           <Input
-            label="Stock quantity"
+            label="Stock quantity (kg)"
             value={stock}
             onChangeText={setStock}
             keyboardType="number-pad"
           />
+          
+          {/* Product Size Dropdown */}
+          <View style={styles.selectContainer}>
+            <Text style={[styles.selectLabel, { color: theme.colors.text.primary }]}>
+              Product size
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.selectButton,
+                {
+                  backgroundColor: theme.isDarkMode
+                    ? theme.colors.teal.soft
+                    : theme.colors.card,
+                  borderColor: theme.colors.border,
+                },
+              ]}
+              onPress={() => setShowSizeModal(true)}
+            >
+              <Text style={[styles.selectButtonText, { color: theme.colors.text.primary }]}>
+                {sizeLabels[size]}
+              </Text>
+              <Text style={[styles.selectArrow, { color: theme.colors.text.secondary }]}>▼</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Pickup Location Selection */}
+          <View style={styles.selectContainer}>
+            <Text style={[styles.selectLabel, { color: theme.colors.text.primary }]}>
+              Pickup location
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.selectButton,
+                {
+                  backgroundColor: theme.isDarkMode
+                    ? theme.colors.teal.soft
+                    : theme.colors.card,
+                  borderColor: theme.colors.border,
+                },
+              ]}
+              onPress={() => setShowLocationModal(true)}
+            >
+              <Text
+                style={[
+                  styles.selectButtonText,
+                  {
+                    color: pickupLocation
+                      ? theme.colors.text.primary
+                      : theme.colors.text.tertiary,
+                  },
+                ]}
+              >
+                {pickupLocation ? pickupLocation.address : 'Select pickup location'}
+              </Text>
+              <Text style={styles.locationIcon}>📍</Text>
+            </TouchableOpacity>
+          </View>
+
           <Input
             label="Notes to admin (optional)"
             value={notes}
@@ -103,6 +179,79 @@ const EditProductScreen = ({ route, navigation }) => {
           </View>
         </Card>
       </ScrollView>
+
+      {/* Size Selection Modal */}
+      <Modal
+        visible={showSizeModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSizeModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSizeModal(false)}
+        >
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: theme.isDarkMode ? theme.colors.background : '#fff' },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
+            <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>
+              Select Product Size
+            </Text>
+            {sizeOptions.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.optionItem,
+                  size === option && {
+                    backgroundColor: theme.isDarkMode
+                      ? theme.colors.teal.main
+                      : theme.colors.primary.main,
+                  },
+                ]}
+                onPress={() => {
+                  setSize(option);
+                  setShowSizeModal(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.optionText,
+                    {
+                      color:
+                        size === option
+                          ? '#fff'
+                          : theme.colors.text.primary,
+                    },
+                  ]}
+                >
+                  {sizeLabels[option]}
+                </Text>
+                {size === option && <Text style={styles.checkmark}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowSizeModal(false)}
+            >
+              <Text style={[styles.cancelButtonText, { color: theme.colors.text.secondary }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Location Selection Modal */}
+      <LocationSelectionModal
+        visible={showLocationModal}
+        onClose={() => setShowLocationModal(false)}
+        onSelectLocation={handleSelectLocation}
+      />
     </SafeAreaView>
   );
 };
@@ -227,6 +376,79 @@ const styles = StyleSheet.create({
   lightModeArchStrip4: {
     backgroundColor: 'rgba(34, 197, 94, 0.3)',
     opacity: 0.6,
+  },
+  selectContainer: {
+    marginBottom: 16,
+  },
+  selectLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  selectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    minHeight: 52,
+  },
+  selectButtonText: {
+    fontSize: 16,
+    flex: 1,
+  },
+  selectArrow: {
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  locationIcon: {
+    fontSize: 18,
+    marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  optionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  optionText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  checkmark: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: '700',
+  },
+  cancelButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

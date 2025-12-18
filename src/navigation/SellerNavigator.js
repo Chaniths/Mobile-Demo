@@ -10,6 +10,7 @@ import DashboardScreen from '../screens/seller/DashboardScreen';
 import ProductsScreen from '../screens/seller/ProductsScreen';
 import AddProductScreen from '../screens/seller/AddProductScreen';
 import EditProductScreen from '../screens/seller/EditProductScreen';
+import ProductCatalogScreen from '../screens/seller/ProductCatalogScreen';
 import TruckTrackingScreen from '../screens/seller/TruckTrackingScreen';
 import OrderDetailScreen from '../screens/seller/OrderDetailScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen'; // Reuse
@@ -93,8 +94,9 @@ const SellerNavigator = () => (
     <Stack.Screen name="SellerTabs" component={SellerTabs} />
     <Stack.Screen name="AddProduct" component={AddProductScreen} />
     <Stack.Screen name="EditProduct" component={EditProductScreen} />
+    <Stack.Screen name="ProductCatalog" component={ProductCatalogScreen} />
     <Stack.Screen name="TruckTracking" component={TruckTrackingScreen} />
-     <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+    <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
   </Stack.Navigator>
 );
 

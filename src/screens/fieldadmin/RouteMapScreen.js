@@ -55,15 +55,20 @@ const RouteMapScreen = ({ navigation, route }) => {
     ],
   };
 
-  const activeOrder = useMemo(
-    () => selectedRoute.orders.find((o) => o.id === activeOrderId) || selectedRoute.orders[0],
-    [activeOrderId, selectedRoute.orders]
-  );
+  const activeOrder = useMemo(() => {
+    // Filter orders with valid coordinates first
+    const ordersWithCoords = selectedRoute.orders.filter(
+      (o) => o.coords && o.coords.latitude && o.coords.longitude
+    );
+    if (ordersWithCoords.length === 0) return null;
+    return ordersWithCoords.find((o) => o.id === activeOrderId) || ordersWithCoords[0];
+  }, [activeOrderId, selectedRoute.orders]);
 
-  const polylineCoords = useMemo(
-    () => [HUB_COORDS, ...selectedRoute.orders.map((o) => o.coords)],
-    [selectedRoute.orders]
-  );
+  const polylineCoords = useMemo(() => {
+    // Filter out orders without coordinates to prevent crashes
+    const ordersWithCoords = selectedRoute.orders.filter((o) => o.coords && o.coords.latitude && o.coords.longitude);
+    return [HUB_COORDS, ...ordersWithCoords.map((o) => o.coords)];
+  }, [selectedRoute.orders]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
@@ -124,14 +129,16 @@ const RouteMapScreen = ({ navigation, route }) => {
             </View>
           </Marker>
 
-          {selectedRoute.orders.map((order, index) => {
-            const isActive = order.id === activeOrderId || (!activeOrderId && index === 0);
-            return (
-              <Marker
-                key={order.id}
-                coordinate={order.coords}
-                onPress={() => setActiveOrderId(order.id)}
-              >
+          {selectedRoute.orders
+            .filter((order) => order.coords && order.coords.latitude && order.coords.longitude)
+            .map((order, index) => {
+              const isActive = order.id === activeOrderId || (!activeOrderId && index === 0);
+              return (
+                <Marker
+                  key={order.id}
+                  coordinate={order.coords}
+                  onPress={() => setActiveOrderId(order.id)}
+                >
                 <View
                   style={[
                     styles.stopMarker,
@@ -165,47 +172,60 @@ const RouteMapScreen = ({ navigation, route }) => {
       </View>
 
       <View style={styles.bottomSheet}>
-        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.activeOrderCard}>
-          <View style={styles.activeOrderHeader}>
-            <View>
-              <Text style={[styles.activeOrderLabel, { color: theme.colors.text.secondary }]}>
-                Current Order
-              </Text>
-              <Text style={[styles.activeOrderId, { color: theme.colors.text.primary }]}>
-                {activeOrder.orderId}
+        {activeOrder ? (
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.activeOrderCard}>
+            <View style={styles.activeOrderHeader}>
+              <View>
+                <Text style={[styles.activeOrderLabel, { color: theme.colors.text.secondary }]}>
+                  Current Order
+                </Text>
+                <Text style={[styles.activeOrderId, { color: theme.colors.text.primary }]}>
+                  {activeOrder.orderId}
+                </Text>
+              </View>
+              <Text style={[styles.activeOrderEta, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                {activeOrder.eta}
               </Text>
             </View>
-            <Text style={[styles.activeOrderEta, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-              {activeOrder.eta}
+            <Text style={[styles.activeOrderCustomer, { color: theme.colors.text.primary }]}>
+              {activeOrder.customer}
             </Text>
-          </View>
-          <Text style={[styles.activeOrderCustomer, { color: theme.colors.text.primary }]}>
-            {activeOrder.customer}
-          </Text>
-          <Text style={[styles.activeOrderAddress, { color: theme.colors.text.secondary }]}>
-            📍 {activeOrder.address}
-          </Text>
-          <View style={styles.activeOrderActions}>
-            <Button
-              title="View Details"
-              onPress={() => navigation.navigate('DeliveryPickup', { order: activeOrder })}
-              style={styles.detailButton}
-            />
-            <Button
-              title="Start Navigation"
-              onPress={() => {}}
-              variant="outline"
-              style={styles.navButton}
-            />
-          </View>
-        </Card>
+            <Text style={[styles.activeOrderAddress, { color: theme.colors.text.secondary }]}>
+              📍 {activeOrder.address}
+            </Text>
+            <View style={styles.activeOrderActions}>
+              <Button
+                title="View Details"
+                onPress={() => navigation.navigate('DeliveryPickup', { order: activeOrder })}
+                style={styles.detailButton}
+              />
+              <Button
+                title="Start Navigation"
+                onPress={() => {}}
+                variant="outline"
+                style={styles.navButton}
+              />
+            </View>
+          </Card>
+        ) : (
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.activeOrderCard}>
+            <Text style={[styles.activeOrderLabel, { color: theme.colors.text.secondary }]}>
+              No orders with valid coordinates available
+            </Text>
+            <Text style={[styles.activeOrderAddress, { color: theme.colors.text.tertiary }]}>
+              Please ensure all orders have location coordinates
+            </Text>
+          </Card>
+        )}
 
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.ordersScroll}
         >
-          {selectedRoute.orders.map((order, index) => (
+          {selectedRoute.orders
+            .filter((order) => order.coords && order.coords.latitude && order.coords.longitude)
+            .map((order, index) => (
             <TouchableOpacity
               key={order.id}
               onPress={() => setActiveOrderId(order.id)}

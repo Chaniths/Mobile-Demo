@@ -79,6 +79,13 @@ const HomeScreen = ({ navigation }) => {
       color: '#6366f1',
       screen: 'TruckCapacity',
     },
+    {
+      id: '9',
+      title: 'View Assigned Orders',
+      icon: '📋',
+      color: '#3b82f6',
+      screen: 'RouteOrders',
+    },
   ];
 
   const pendingTasks = [
@@ -255,12 +262,6 @@ const HomeScreen = ({ navigation }) => {
             title="View Route Map"
             onPress={() => navigation.navigate('RouteMap')}
             style={styles.navButton}
-          />
-          <Button
-            title="View Assigned Orders"
-            onPress={() => navigation.navigate('RouteOrders')}
-            style={styles.navButton}
-            variant="outline"
           />
         </View>
       </ScrollView>

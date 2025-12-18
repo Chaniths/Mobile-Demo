@@ -11,49 +11,11 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
-
-const mockProducts = [
-  {
-    id: '1',
-    name: 'Organic Apples',
-    category: 'Fruits',
-    price: 4.99,
-    stock: 45,
-    image: '🍎',
-    status: 'active',
-  },
-  {
-    id: '2',
-    name: 'Fresh Spinach',
-    category: 'Leafy greens',
-    price: 2.99,
-    stock: 12,
-    image: '🥬',
-    status: 'active',
-  },
-  {
-    id: '3',
-    name: 'Raw Honey',
-    category: 'Pantry',
-    price: 8.99,
-    stock: 8,
-    image: '🍯',
-    status: 'low_stock',
-  },
-  {
-    id: '4',
-    name: 'Tomatoes',
-    category: 'Vegetables',
-    price: 3.99,
-    stock: 0,
-    image: '🍅',
-    status: 'out_of_stock',
-  },
-];
+import { SELLER_PRODUCTS, getProductStatus, getTotalStockForProduct } from '../../utils/sellerProducts';
 
 const ProductsScreen = ({ navigation }) => {
   const { theme } = useTheme();
-  const [products] = useState(mockProducts);
+  const [products] = useState(SELLER_PRODUCTS);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -81,45 +43,67 @@ const ProductsScreen = ({ navigation }) => {
     }
   };
 
-  const renderProduct = ({ item }) => (
-    <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.productCard}>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('EditProduct', { productId: item.id })}
-        style={styles.productContent}
-      >
-        <View style={[styles.productImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-          <Text style={styles.productEmoji}>{item.image}</Text>
-        </View>
-        <View style={styles.productInfo}>
-          <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
-            {item.name}
-          </Text>
-          <Text style={[styles.productCategory, { color: theme.colors.text.secondary }]}>
-            {item.category}
-          </Text>
-          <Text style={[styles.productPrice, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-            ${item.price.toFixed(2)}
-          </Text>
-          <View style={styles.productMeta}>
-            <Text style={[styles.stockText, { color: theme.colors.text.secondary }]}>
-              Stock: {item.stock}
+  const getSizeLabel = (size) => {
+    return size.charAt(0).toUpperCase() + size.slice(1);
+  };
+
+  const renderProduct = ({ item }) => {
+    const productStatus = getProductStatus(item.catalogId);
+    const totalStock = getTotalStockForProduct(item.catalogId);
+    const sizeCount = item.sizeVariants.length;
+
+    return (
+      <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.productCard}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('EditProduct', { 
+            catalogId: item.catalogId,
+            productName: item.productTypeName,
+            productCategory: item.productTypeCategory,
+          })}
+          style={styles.productContent}
+        >
+          <View style={[styles.productImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
+            <Text style={styles.productEmoji}>{item.productTypeImage}</Text>
+          </View>
+          <View style={styles.productInfo}>
+            <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
+              {item.productTypeName}
             </Text>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: `${getStatusColor(item.status)}20` },
-              ]}
-            >
-              <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-                {getStatusLabel(item.status)}
+            <Text style={[styles.productCategory, { color: theme.colors.text.secondary }]}>
+              {item.productTypeCategory}
+            </Text>
+            
+            {/* Size Variants Info */}
+            <View style={styles.sizeVariantsContainer}>
+              <Text style={[styles.sizeVariantsLabel, { color: theme.colors.text.secondary }]}>
+                Sizes: {item.sizeVariants.map(v => getSizeLabel(v.size)).join(', ')}
+              </Text>
+              <Text style={[styles.sizeVariantsPrice, { color: theme.colors.text.tertiary }]}>
+                ${item.sizeVariants[0]?.price?.toFixed(2)} - ${item.sizeVariants[item.sizeVariants.length - 1]?.price?.toFixed(2)}
               </Text>
             </View>
+
+            <View style={styles.productMeta}>
+              <Text style={[styles.stockText, { color: theme.colors.text.secondary }]}>
+                Total Stock: {totalStock} kg ({sizeCount} {sizeCount === 1 ? 'size' : 'sizes'})
+              </Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: `${getStatusColor(productStatus)}20` },
+                ]}
+              >
+                <Text style={[styles.statusText, { color: getStatusColor(productStatus) }]}>
+                  {getStatusLabel(productStatus)}
+                </Text>
+              </View>
+            </View>
           </View>
-        </View>
-        <Text style={[styles.arrow, { color: theme.colors.text.tertiary }]}>→</Text>
-      </TouchableOpacity>
-    </Card>
-  );
+          <Text style={[styles.arrow, { color: theme.colors.text.tertiary }]}>→</Text>
+        </TouchableOpacity>
+      </Card>
+    );
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -143,11 +127,21 @@ const ProductsScreen = ({ navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>My Products</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('AddProduct')}>
-          <Text style={[styles.addButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-            + Request product
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('ProductCatalog')}
+            style={styles.headerButton}
+          >
+            <Text style={[styles.addButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+              + Add from catalog
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('AddProduct')}>
+            <Text style={[styles.requestButton, { color: theme.colors.accent.blue }]}>
+              Request new
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Products List */}
@@ -161,9 +155,9 @@ const ProductsScreen = ({ navigation }) => {
           <EmptyState
             icon={<Text style={styles.emptyIcon}>📦</Text>}
             title="No products yet"
-            message="Ask admin to add your first product to the catalog"
-            actionLabel="Request product"
-            onAction={() => navigation.navigate('AddProduct')}
+            message="Browse the catalog to add products, or request a new product type"
+            actionLabel="Browse Catalog"
+            onAction={() => navigation.navigate('ProductCatalog')}
           />
         }
       />
@@ -231,17 +225,28 @@ const styles = StyleSheet.create({
   },
   header: {
     zIndex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     padding: 20,
+    paddingBottom: 12,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
+    marginBottom: 8,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerButton: {
+    flex: 1,
   },
   addButton: {
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  requestButton: {
+    fontSize: 14,
     fontWeight: '600',
   },
   list: {
@@ -280,14 +285,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 2,
   },
-  productPrice: {
-    fontSize: 18,
-    fontWeight: '700',
+  sizeVariantsContainer: {
+    marginTop: 4,
     marginBottom: 6,
+  },
+  sizeVariantsLabel: {
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  sizeVariantsPrice: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   productMeta: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    marginTop: 4,
   },
   stockText: {
     fontSize: 13,

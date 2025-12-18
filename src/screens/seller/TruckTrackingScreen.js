@@ -38,9 +38,18 @@ const ROUTE_STOPS = [
   },
 ];
 
-const TruckTrackingScreen = ({ navigation }) => {
+const TruckTrackingScreen = ({ route, navigation }) => {
   const { theme } = useTheme();
+  const { orderId } = route.params || {};
   const [activeStopId, setActiveStopId] = useState('you');
+  
+  // Mock order data - in production, fetch based on orderId
+  const orderInfo = orderId ? {
+    orderId: `#ORD-2024-00${orderId}`,
+    status: 'in_transit', // or 'pending', 'confirmed', etc.
+    truckId: 'FR-12',
+    routeName: 'Western Colombo',
+  } : null;
 
   const activeStop = useMemo(
     () => ROUTE_STOPS.find((s) => s.id === activeStopId) ?? ROUTE_STOPS[1],
@@ -85,10 +94,12 @@ const TruckTrackingScreen = ({ navigation }) => {
           </TouchableOpacity>
           <View style={styles.headerText}>
             <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-              Pickup truck tracking
+              {orderInfo ? `Truck tracking - ${orderInfo.orderId}` : 'Pickup truck tracking'}
             </Text>
             <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
-              See when the FreshRoute truck reaches your store so you can have orders ready.
+              {orderInfo 
+                ? `Track the truck carrying order ${orderInfo.orderId}. See when it reaches your store.`
+                : 'See when the FreshRoute truck reaches your store so you can have orders ready.'}
             </Text>
           </View>
         </View>
@@ -167,8 +178,29 @@ const TruckTrackingScreen = ({ navigation }) => {
           </Text>
           <View style={styles.highlightRow}>
             <Text style={[styles.highlightMeta, { color: theme.colors.text.tertiary }]}>
-              Route: Western Colombo · Truck FR-12
+              Route: {orderInfo?.routeName || 'Western Colombo'} · Truck {orderInfo?.truckId || 'FR-12'}
             </Text>
+            {orderInfo && (
+              <View style={[
+                styles.orderStatusBadge,
+                {
+                  backgroundColor: orderInfo.status === 'in_transit' 
+                    ? `${theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}20`
+                    : `${theme.colors.warning}20`,
+                },
+              ]}>
+                <Text style={[
+                  styles.orderStatusText,
+                  {
+                    color: orderInfo.status === 'in_transit'
+                      ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main)
+                      : theme.colors.warning,
+                  },
+                ]}>
+                  {orderInfo.status === 'in_transit' ? 'In Transit' : 'Pending Pickup'}
+                </Text>
+              </View>
+            )}
           </View>
         </Card>
 
@@ -354,6 +386,17 @@ const styles = StyleSheet.create({
   },
   highlightMeta: {
     fontSize: 12,
+    flex: 1,
+  },
+  orderStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  orderStatusText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   sectionTitle: {
     fontSize: 18,

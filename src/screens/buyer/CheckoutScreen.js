@@ -1,16 +1,23 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useDispatch, useSelector } from 'react-redux';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import LocationSelectionModal from '../../components/common/LocationSelectionModal';
 import { clearCart } from '../../store/slices/cartSlice';
 
 const CheckoutScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items);
+  
+  const [isLocationModalVisible, setIsLocationModalVisible] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState({
+    address: '24/B, Green Valley Apartments',
+    coordinates: null,
+  });
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const deliveryFee = cartItems.length > 0 ? 5.99 : 0;
@@ -19,6 +26,11 @@ const CheckoutScreen = ({ navigation }) => {
   const handlePlaceOrder = () => {
     dispatch(clearCart());
     navigation.replace('Cart');
+  };
+
+  const handleSelectLocation = (location) => {
+    setDeliveryAddress(location);
+    setIsLocationModalVisible(false);
   };
 
   return (
@@ -80,18 +92,34 @@ const CheckoutScreen = ({ navigation }) => {
           )}
         </Card>
 
-        {/* Delivery details (static placeholder) */}
-        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.card}>
-          <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
-            Delivery details
-          </Text>
-          <Text style={[styles.itemName, { color: theme.colors.text.primary }]}>
-            24/B, Green Valley Apartments
-          </Text>
-          <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
-            Default address • You can wire this to real profile data later
-          </Text>
-        </Card>
+        {/* Delivery details */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setIsLocationModalVisible(true)}
+        >
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.card}>
+            <View style={styles.deliveryHeader}>
+              <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
+                Delivery details
+              </Text>
+              <Text style={[styles.editText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                Edit
+              </Text>
+            </View>
+            <Text style={[styles.itemName, { color: theme.colors.text.primary }]}>
+              {deliveryAddress.address}
+            </Text>
+            {deliveryAddress.coordinates ? (
+              <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
+                Location set • Tap to change
+              </Text>
+            ) : (
+              <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
+                Default address • Tap to select location
+              </Text>
+            )}
+          </Card>
+        </TouchableOpacity>
 
         {/* Payment summary */}
         <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.card}>
@@ -133,6 +161,13 @@ const CheckoutScreen = ({ navigation }) => {
           style={styles.placeOrderButton}
         />
       </View>
+
+      {/* Location Selection Modal */}
+      <LocationSelectionModal
+        visible={isLocationModalVisible}
+        onClose={() => setIsLocationModalVisible(false)}
+        onSelectLocation={handleSelectLocation}
+      />
     </SafeAreaView>
   );
 };
@@ -225,6 +260,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 8,
+  },
+  deliveryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  editText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   itemRow: {
     flexDirection: 'row',
