@@ -145,7 +145,7 @@ const HomeScreen = ({ navigation }) => {
               Good Morning
             </Text>
             <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
-              Field Admin
+              Chanith Wijekoon
             </Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
@@ -184,7 +184,7 @@ const HomeScreen = ({ navigation }) => {
             {quickActions.map((action) => (
               <TouchableOpacity
                 key={action.id}
-                onPress={() => navigation.navigate(action.screen)}
+                // onPress={() => navigation.navigate(action.screen)}
               >
                 <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard}>
                   <View style={[styles.actionIconContainer, { backgroundColor: `${action.color}20` }]}>
