@@ -1,20 +1,27 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, Polyline } from 'react-native-maps';
-import { useTheme } from '../../hooks/useTheme';
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
-import { DRIVER_DELIVERIES, HUB_COORDS, findDeliveryById } from './deliveriesData';
+import React, { useMemo } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import MapView, { Marker, Polyline } from "react-native-maps";
+import { useTheme } from "../../hooks/useTheme";
+import Card from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import {
+  DRIVER_DELIVERIES,
+  HUB_COORDS,
+  findDeliveryById,
+} from "./deliveriesData";
 
 const DeliveryDetailScreen = ({ route, navigation }) => {
   const { theme } = useTheme();
   const { deliveryId } = route.params || {};
 
-  const delivery = useMemo(
-    () => findDeliveryById(deliveryId),
-    [deliveryId]
-  );
+  const delivery = useMemo(() => findDeliveryById(deliveryId), [deliveryId]);
 
   const region = {
     latitude: delivery.coords.latitude,
@@ -26,7 +33,7 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
-      edges={['top']}
+      edges={["top"]}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -35,13 +42,24 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
         {/* Header */}
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={[styles.backText, { color: theme.colors.primary.main }]}>← Back</Text>
+            <Text
+              style={[styles.backText, { color: theme.colors.primary.main }]}
+            >
+              ← Back
+            </Text>
           </TouchableOpacity>
           <View style={styles.headerInfo}>
-            <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>
+            <Text
+              style={[styles.orderId, { color: theme.colors.text.primary }]}
+            >
               {delivery.orderId}
             </Text>
-            <Text style={[styles.customerName, { color: theme.colors.text.secondary }]}>
+            <Text
+              style={[
+                styles.customerName,
+                { color: theme.colors.text.secondary },
+              ]}
+            >
               {delivery.customer}
             </Text>
           </View>
@@ -63,43 +81,66 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
               />
 
               <Marker coordinate={HUB_COORDS}>
-                <View style={[styles.hubMarker, { backgroundColor: theme.colors.primary.light }]}>
+                <View
+                  style={[
+                    styles.hubMarker,
+                    { backgroundColor: theme.colors.primary.light },
+                  ]}
+                >
                   <Text style={styles.hubEmoji}>🏬</Text>
                 </View>
               </Marker>
 
               <Marker coordinate={delivery.coords}>
-                <View style={[styles.stopMarker, { borderColor: theme.colors.primary.main }]}>
+                <View
+                  style={[
+                    styles.stopMarker,
+                    { borderColor: theme.colors.primary.main },
+                  ]}
+                >
                   <Text style={[styles.stopEmoji]}>📦</Text>
                 </View>
               </Marker>
             </MapView>
           </View>
-          <Text style={[styles.mapHint, { color: theme.colors.text.secondary }]}>
-            Optimized route from hub to this customer. Hook this up to live GPS and routing when ready.
+          <Text
+            style={[styles.mapHint, { color: theme.colors.text.secondary }]}
+          >
+            Optimized route from hub to this customer. Hook this up to live GPS
+            and routing when ready.
           </Text>
         </Card>
 
         {/* Meta cards */}
         <View style={styles.metaRow}>
           <Card style={styles.metaCard}>
-            <Text style={[styles.metaLabel, { color: theme.colors.text.secondary }]}>
+            <Text
+              style={[styles.metaLabel, { color: theme.colors.text.secondary }]}
+            >
               ETA
             </Text>
-            <Text style={[styles.metaValue, { color: theme.colors.text.primary }]}>
+            <Text
+              style={[styles.metaValue, { color: theme.colors.text.primary }]}
+            >
               {delivery.etaMinutes} min
             </Text>
           </Card>
           <Card style={styles.metaCard}>
-            <Text style={[styles.metaLabel, { color: theme.colors.text.secondary }]}>
+            <Text
+              style={[styles.metaLabel, { color: theme.colors.text.secondary }]}
+            >
               Distance
             </Text>
-            <Text style={[styles.metaValue, { color: theme.colors.text.primary }]}>
+            <Text
+              style={[styles.metaValue, { color: theme.colors.text.primary }]}
+            >
               {delivery.distance}
             </Text>
           </Card>
           <Card style={styles.metaCard}>
-            <Text style={[styles.metaLabel, { color: theme.colors.text.secondary }]}>
+            <Text
+              style={[styles.metaLabel, { color: theme.colors.text.secondary }]}
+            >
               Priority
             </Text>
             <Text
@@ -107,37 +148,45 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
                 styles.metaValue,
                 {
                   color:
-                    delivery.priority === 'high'
+                    delivery.priority === "high"
                       ? theme.colors.error
                       : theme.colors.text.primary,
                 },
               ]}
             >
-              {delivery.priority === 'high' ? 'High' : 'Normal'}
+              {delivery.priority === "high" ? "High" : "Normal"}
             </Text>
           </Card>
         </View>
 
         {/* Address & contact */}
         <Card style={styles.infoCard}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+          <Text
+            style={[styles.sectionTitle, { color: theme.colors.text.primary }]}
+          >
             Delivery details
           </Text>
           <View style={styles.infoRow}>
             <Text style={styles.infoIcon}>📍</Text>
-            <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
+            <Text
+              style={[styles.infoText, { color: theme.colors.text.secondary }]}
+            >
               {delivery.address}
             </Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoIcon}>👤</Text>
-            <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
+            <Text
+              style={[styles.infoText, { color: theme.colors.text.secondary }]}
+            >
               {delivery.customer}
             </Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoIcon}>⏰</Text>
-            <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
+            <Text
+              style={[styles.infoText, { color: theme.colors.text.secondary }]}
+            >
               Preferred delivery window: {delivery.time}
             </Text>
           </View>
@@ -147,13 +196,17 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
         <View style={styles.actions}>
           <Button
             title="Start navigation"
-            onPress={() => navigation.navigate('Route')}
+            onPress={() =>
+              navigation.navigate("Route", { deliveryId: delivery.id })
+            }
             style={styles.actionButton}
           />
           <Button
             title="Report an issue"
             variant="outline"
-            onPress={() => navigation.navigate('ReportIssue', { deliveryId: delivery.id })}
+            onPress={() =>
+              navigation.navigate("ReportIssue", { deliveryId: delivery.id })
+            }
             style={styles.actionButton}
           />
         </View>
@@ -171,21 +224,21 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 8,
     marginBottom: 16,
   },
   backText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   headerInfo: {
     marginLeft: 16,
   },
   orderId: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   customerName: {
     fontSize: 14,
@@ -198,7 +251,7 @@ const styles = StyleSheet.create({
   mapContainer: {
     height: 220,
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   hubMarker: {
     padding: 6,
@@ -210,7 +263,7 @@ const styles = StyleSheet.create({
   stopMarker: {
     padding: 6,
     borderRadius: 999,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderWidth: 2,
   },
   stopEmoji: {
@@ -221,7 +274,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   metaRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 16,
     gap: 10,
   },
@@ -235,7 +288,7 @@ const styles = StyleSheet.create({
   },
   metaValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: 4,
   },
   infoCard: {
@@ -244,12 +297,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 10,
   },
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 6,
   },
   infoIcon: {
@@ -261,7 +314,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   actions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginTop: 4,
   },
@@ -271,5 +324,3 @@ const styles = StyleSheet.create({
 });
 
 export default DeliveryDetailScreen;
-
-

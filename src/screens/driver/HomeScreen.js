@@ -1,32 +1,34 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-} from 'react-native';
-import { useTheme } from '../../hooks/useTheme';
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
-import Avatar from '../../components/common/Avatar';
-import { DRIVER_DELIVERIES } from './deliveriesData';
+} from "react-native";
+import { useTheme } from "../../hooks/useTheme";
+import Card from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import Avatar from "../../components/common/Avatar";
+import { DRIVER_DELIVERIES, ROUTE_METADATA } from "./deliveriesData";
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
 
   const todayStats = [
-    { id: '1', label: 'Deliveries', value: '12', icon: '📦', color: '#3b82f6' },
-    { id: '2', label: 'Completed', value: '8', icon: '✓', color: '#22c55e' },
-    { id: '3', label: 'Remaining', value: '4', icon: '⏰', color: '#f59e0b' },
-    { id: '4', label: 'Earnings', value: '$240', icon: '💰', color: '#8b5cf6' },
+    { id: "1", label: "Deliveries", value: "12", icon: "📦", color: "#3b82f6" },
+    { id: "2", label: "Completed", value: "8", icon: "✓", color: "#22c55e" },
+    { id: "3", label: "Remaining", value: "4", icon: "⏰", color: "#f59e0b" },
+    { id: "4", label: "Earnings", value: "$240", icon: "💰", color: "#8b5cf6" },
   ];
 
   const upcomingDeliveries = DRIVER_DELIVERIES;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView 
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         style={styles.scrollView}
@@ -34,14 +36,18 @@ const HomeScreen = ({ navigation }) => {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { color: theme.colors.text.secondary }]}>
+            <Text
+              style={[styles.greeting, { color: theme.colors.text.secondary }]}
+            >
               Good Morning
             </Text>
-            <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
+            <Text
+              style={[styles.userName, { color: theme.colors.text.primary }]}
+            >
               Driver Mike
             </Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
             <Avatar name="Mike" size="medium" />
           </TouchableOpacity>
         </View>
@@ -49,41 +55,104 @@ const HomeScreen = ({ navigation }) => {
         {/* Active Route Card */}
         <Card style={styles.activeRouteCard} elevation="lg">
           <View style={styles.routeHeader}>
-            <Text style={[styles.routeTitle, { color: theme.colors.text.primary }]}>
-              Active Route
-            </Text>
-            <View style={[styles.activeBadge, { backgroundColor: `${theme.colors.success}20` }]}>
-              <View style={[styles.activeDot, { backgroundColor: theme.colors.success }]} />
-              <Text style={[styles.activeText, { color: theme.colors.success }]}>
+            <View>
+              <Text
+                style={[styles.routeTitle, { color: theme.colors.text.primary }]}
+              >
+                Active Route
+              </Text>
+              <Text style={[styles.routeId, { color: theme.colors.text.tertiary }]}>
+                {ROUTE_METADATA.routeId} • {ROUTE_METADATA.truckNumber}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.activeBadge,
+                { backgroundColor: `${theme.colors.success}20` },
+              ]}
+            >
+              <View
+                style={[
+                  styles.activeDot,
+                  { backgroundColor: theme.colors.success },
+                ]}
+              />
+              <Text
+                style={[styles.activeText, { color: theme.colors.success }]}
+              >
                 In Progress
               </Text>
             </View>
           </View>
-          <Text style={[styles.routeDetails, { color: theme.colors.text.secondary }]}>
-            12 stops • 45.8 km • Est. 4h 20m
+
+          {/* VRP Optimization Badge */}
+          <View style={styles.optimizationBadge}>
+            <View style={[styles.badgePill, { backgroundColor: `${theme.colors.primary.main}15` }]}>
+              <Text style={styles.badgeIcon}>🎯</Text>
+              <Text style={[styles.badgeText, { color: theme.colors.primary.main }]}>
+                VRP Optimized
+              </Text>
+            </View>
+            <Text style={[styles.assignedText, { color: theme.colors.text.tertiary }]}>
+              Assigned at {ROUTE_METADATA.assignedAt}
+            </Text>
+          </View>
+
+          <Text
+            style={[
+              styles.routeDetails,
+              { color: theme.colors.text.secondary },
+            ]}
+          >
+            {DRIVER_DELIVERIES.length} stops • {ROUTE_METADATA.totalDistance} • Est. {ROUTE_METADATA.estimatedDuration}
           </Text>
+
+          {/* Efficiency metric */}
+          <View style={styles.efficiencyRow}>
+            <Text style={[styles.efficiencyText, { color: theme.colors.success }]}>
+              ↓ {ROUTE_METADATA.distanceSaved} distance saved vs standard route
+            </Text>
+          </View>
+
           <Button
             title="View Route Map"
-            onPress={() => navigation.navigate('Route')}
+            onPress={() => navigation.navigate("Route")}
             style={styles.routeButton}
           />
         </Card>
 
         {/* Today's Stats */}
         <View style={styles.statsSection}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+          <Text
+            style={[styles.sectionTitle, { color: theme.colors.text.primary }]}
+          >
             Today's Performance
           </Text>
           <View style={styles.statsGrid}>
             {todayStats.map((stat) => (
               <Card key={stat.id} style={styles.statCard}>
-                <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
+                <View
+                  style={[
+                    styles.statIcon,
+                    { backgroundColor: `${stat.color}20` },
+                  ]}
+                >
                   <Text style={styles.statIconText}>{stat.icon}</Text>
                 </View>
-                <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
+                <Text
+                  style={[
+                    styles.statValue,
+                    { color: theme.colors.text.primary },
+                  ]}
+                >
                   {stat.value}
                 </Text>
-                <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>
+                <Text
+                  style={[
+                    styles.statLabel,
+                    { color: theme.colors.text.secondary },
+                  ]}
+                >
                   {stat.label}
                 </Text>
               </Card>
@@ -94,11 +163,20 @@ const HomeScreen = ({ navigation }) => {
         {/* Upcoming Deliveries */}
         <View style={styles.deliveriesSection}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: theme.colors.text.primary },
+              ]}
+            >
               Next Deliveries
             </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('AllDeliveries')}>
-              <Text style={[styles.seeAll, { color: theme.colors.primary.main }]}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("AllDeliveries")}
+            >
+              <Text
+                style={[styles.seeAll, { color: theme.colors.primary.main }]}
+              >
                 See All
               </Text>
             </TouchableOpacity>
@@ -107,38 +185,86 @@ const HomeScreen = ({ navigation }) => {
             <Card
               key={delivery.id}
               style={styles.deliveryCard}
-              onPress={() => navigation.navigate('DeliveryDetail', { deliveryId: delivery.id })}
+              onPress={() =>
+                navigation.navigate("DeliveryDetail", {
+                  deliveryId: delivery.id,
+                })
+              }
             >
-              {delivery.priority === 'high' && (
-                <View style={[styles.priorityStrip, { backgroundColor: theme.colors.error }]} />
+              {delivery.priority === "high" && (
+                <View
+                  style={[
+                    styles.priorityStrip,
+                    { backgroundColor: theme.colors.error },
+                  ]}
+                />
               )}
               <View style={styles.deliveryHeader}>
                 <View>
-                  <Text style={[styles.orderNumber, { color: theme.colors.text.primary }]}>
+                  <Text
+                    style={[
+                      styles.orderNumber,
+                      { color: theme.colors.text.primary },
+                    ]}
+                  >
                     {delivery.orderId}
                   </Text>
-                  <Text style={[styles.customerName, { color: theme.colors.text.secondary }]}>
+                  <Text
+                    style={[
+                      styles.customerName,
+                      { color: theme.colors.text.secondary },
+                    ]}
+                  >
                     {delivery.customer}
                   </Text>
                 </View>
-                <Text style={[styles.deliveryTime, { color: theme.colors.primary.main }]}>
+                <Text
+                  style={[
+                    styles.deliveryTime,
+                    { color: theme.colors.primary.main },
+                  ]}
+                >
                   {delivery.time}
                 </Text>
               </View>
               <View style={styles.deliveryDetails}>
-                <Text style={[styles.deliveryIcon, { color: theme.colors.text.tertiary }]}>
+                <Text
+                  style={[
+                    styles.deliveryIcon,
+                    { color: theme.colors.text.tertiary },
+                  ]}
+                >
                   📍
                 </Text>
-                <Text style={[styles.address, { color: theme.colors.text.secondary }]}>
+                <Text
+                  style={[
+                    styles.address,
+                    { color: theme.colors.text.secondary },
+                  ]}
+                >
                   {delivery.address}
                 </Text>
               </View>
               <View style={styles.deliveryFooter}>
-                <Text style={[styles.distance, { color: theme.colors.text.tertiary }]}>
+                <Text
+                  style={[
+                    styles.distance,
+                    { color: theme.colors.text.tertiary },
+                  ]}
+                >
                   {delivery.distance} away
                 </Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Route')}>
-                  <Text style={[styles.startButton, { color: theme.colors.primary.main }]}>
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("Route", { deliveryId: delivery.id })
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.startButton,
+                      { color: theme.colors.primary.main },
+                    ]}
+                  >
                     Start →
                   </Text>
                 </TouchableOpacity>
@@ -151,7 +277,7 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.quickActions}>
           <Button
             title="Report Issue"
-            onPress={() => navigation.navigate('ReportIssue')}
+            onPress={() => navigation.navigate("ReportIssue")}
             variant="outline"
             style={styles.actionButton}
           />
@@ -179,9 +305,9 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 20,
   },
   greeting: {
@@ -190,7 +316,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   activeRouteCard: {
     marginHorizontal: 20,
@@ -198,18 +324,53 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   routeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   routeTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
+  },
+  routeId: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  optimizationBadge: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 10,
+  },
+  badgePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  badgeIcon: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  assignedText: {
+    fontSize: 10,
+  },
+  efficiencyRow: {
+    marginBottom: 8,
+  },
+  efficiencyText: {
+    fontSize: 11,
+    fontWeight: "600",
   },
   activeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -222,7 +383,7 @@ const styles = StyleSheet.create({
   },
   activeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   routeDetails: {
     fontSize: 14,
@@ -237,36 +398,36 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 16,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   seeAll: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginHorizontal: -4,
   },
   statCard: {
-    width: '47%',
-    margin: '1.5%',
-    alignItems: 'center',
+    width: "47%",
+    margin: "1.5%",
+    alignItems: "center",
     paddingVertical: 20,
   },
   statIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 12,
   },
   statIconText: {
@@ -274,7 +435,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 4,
   },
   statLabel: {
@@ -287,25 +448,25 @@ const styles = StyleSheet.create({
   deliveryCard: {
     marginBottom: 12,
     padding: 16,
-    position: 'relative',
-    overflow: 'hidden',
+    position: "relative",
+    overflow: "hidden",
   },
   priorityStrip: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     bottom: 0,
     width: 4,
   },
   deliveryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   orderNumber: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 4,
   },
   customerName: {
@@ -313,11 +474,11 @@ const styles = StyleSheet.create({
   },
   deliveryTime: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   deliveryDetails: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   deliveryIcon: {
@@ -330,19 +491,19 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   deliveryFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   distance: {
     fontSize: 13,
   },
   startButton: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   quickActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 16,
     marginBottom: 24,
   },
@@ -353,4 +514,3 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
-
