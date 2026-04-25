@@ -11,21 +11,45 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import { useTheme } from "../../hooks/useTheme";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
-import {
-  DRIVER_DELIVERIES,
-  HUB_COORDS,
-  findDeliveryById,
-} from "./deliveriesData";
+import Loader from "../../components/common/Loader";
+import EmptyState from "../../components/common/EmptyState";
+import { useDriverData } from "../../hooks/useDriverData";
+
+const HUB_COORDS = { latitude: 13.0707, longitude: 80.2507 };
 
 const DeliveryDetailScreen = ({ route, navigation }) => {
   const { theme } = useTheme();
   const { deliveryId } = route.params || {};
+  const { data, loading, reload } = useDriverData();
 
-  const delivery = useMemo(() => findDeliveryById(deliveryId), [deliveryId]);
+  const delivery = useMemo(() => {
+    return data.orders.find((order) => order.id === deliveryId) || null;
+  }, [data.orders, deliveryId]);
 
+  if (loading) {
+    return <Loader fullScreen text="Loading delivery details..." />;
+  }
+
+  if (!delivery) {
+    return (
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
+      >
+        <EmptyState
+          icon={<Text style={styles.emptyIcon}>📦</Text>}
+          title="Delivery not found"
+          message="This delivery is no longer available from backend."
+          actionLabel="Reload"
+          onAction={reload}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  const coords = delivery.coordinates || HUB_COORDS;
   const region = {
-    latitude: delivery.coords.latitude,
-    longitude: delivery.coords.longitude,
+    latitude: coords.latitude,
+    longitude: coords.longitude,
     latitudeDelta: 0.08,
     longitudeDelta: 0.08,
   };
@@ -39,7 +63,6 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text
@@ -65,53 +88,29 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* Map */}
         <Card style={styles.mapCard}>
           <View style={styles.mapContainer}>
             <MapView
               style={StyleSheet.absoluteFill}
               initialRegion={region}
               showsUserLocation={false}
-              showsCompass={false}
             >
               <Polyline
-                coordinates={[HUB_COORDS, delivery.coords]}
+                coordinates={[HUB_COORDS, coords]}
                 strokeColor={theme.colors.primary.main}
                 strokeWidth={4}
               />
-
-              <Marker coordinate={HUB_COORDS}>
-                <View
-                  style={[
-                    styles.hubMarker,
-                    { backgroundColor: theme.colors.primary.light },
-                  ]}
-                >
-                  <Text style={styles.hubEmoji}>🏬</Text>
-                </View>
-              </Marker>
-
-              <Marker coordinate={delivery.coords}>
-                <View
-                  style={[
-                    styles.stopMarker,
-                    { borderColor: theme.colors.primary.main },
-                  ]}
-                >
-                  <Text style={[styles.stopEmoji]}>📦</Text>
-                </View>
-              </Marker>
+              <Marker coordinate={HUB_COORDS} />
+              <Marker coordinate={coords} />
             </MapView>
           </View>
           <Text
             style={[styles.mapHint, { color: theme.colors.text.secondary }]}
           >
-            Optimized route from hub to this customer. Hook this up to live GPS
-            and routing when ready.
+            Live route from backend destination.
           </Text>
         </Card>
 
-        {/* Meta cards */}
         <View style={styles.metaRow}>
           <Card style={styles.metaCard}>
             <Text
@@ -134,7 +133,7 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
             <Text
               style={[styles.metaValue, { color: theme.colors.text.primary }]}
             >
-              {delivery.distance}
+              {delivery.distanceKm.toFixed(1)} km
             </Text>
           </Card>
           <Card style={styles.metaCard}>
@@ -159,7 +158,6 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
           </Card>
         </View>
 
-        {/* Address & contact */}
         <Card style={styles.infoCard}>
           <Text
             style={[styles.sectionTitle, { color: theme.colors.text.primary }]}
@@ -183,16 +181,15 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
             </Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoIcon}>⏰</Text>
+            <Text style={styles.infoIcon}>📋</Text>
             <Text
               style={[styles.infoText, { color: theme.colors.text.secondary }]}
             >
-              Preferred delivery window: {delivery.time}
+              Status: {delivery.status}
             </Text>
           </View>
         </Card>
 
-        {/* Actions */}
         <View style={styles.actions}>
           <Button
             title="Start navigation"
@@ -216,111 +213,33 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 120,
-  },
+  container: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 120 },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 8,
     marginBottom: 16,
   },
-  backText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  headerInfo: {
-    marginLeft: 16,
-  },
-  orderId: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  customerName: {
-    fontSize: 14,
-    marginTop: 2,
-  },
-  mapCard: {
-    padding: 12,
-    marginBottom: 16,
-  },
-  mapContainer: {
-    height: 220,
-    borderRadius: 16,
-    overflow: "hidden",
-  },
-  hubMarker: {
-    padding: 6,
-    borderRadius: 999,
-  },
-  hubEmoji: {
-    fontSize: 16,
-  },
-  stopMarker: {
-    padding: 6,
-    borderRadius: 999,
-    backgroundColor: "#fff",
-    borderWidth: 2,
-  },
-  stopEmoji: {
-    fontSize: 16,
-  },
-  mapHint: {
-    fontSize: 12,
-    marginTop: 8,
-  },
-  metaRow: {
-    flexDirection: "row",
-    marginBottom: 16,
-    gap: 10,
-  },
-  metaCard: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  metaLabel: {
-    fontSize: 12,
-  },
-  metaValue: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginTop: 4,
-  },
-  infoCard: {
-    padding: 14,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  infoIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 4,
-  },
-  actionButton: {
-    flex: 1,
-  },
+  backText: { fontSize: 14, fontWeight: "600" },
+  headerInfo: { marginLeft: 16 },
+  orderId: { fontSize: 18, fontWeight: "700" },
+  customerName: { fontSize: 14, marginTop: 2 },
+  mapCard: { padding: 12, marginBottom: 16 },
+  mapContainer: { height: 220, borderRadius: 16, overflow: "hidden" },
+  mapHint: { fontSize: 12, marginTop: 8 },
+  metaRow: { flexDirection: "row", marginBottom: 16, gap: 10 },
+  metaCard: { flex: 1, paddingVertical: 10, paddingHorizontal: 12 },
+  metaLabel: { fontSize: 12 },
+  metaValue: { fontSize: 16, fontWeight: "700", marginTop: 4 },
+  infoCard: { padding: 14, marginBottom: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: "700", marginBottom: 10 },
+  infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
+  infoIcon: { fontSize: 16, marginRight: 8 },
+  infoText: { flex: 1, fontSize: 14 },
+  actions: { flexDirection: "row", gap: 12, marginTop: 4 },
+  actionButton: { flex: 1 },
+  emptyIcon: { fontSize: 64 },
 });
 
 export default DeliveryDetailScreen;

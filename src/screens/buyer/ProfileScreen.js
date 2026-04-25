@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -7,30 +7,33 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
-} from 'react-native';
-import { useDispatch } from 'react-redux';
-import { useTheme } from '../../hooks/useTheme';
-import { logout } from '../../store/slices/authSlice';
-import Card from '../../components/common/Card';
-import Avatar from '../../components/common/Avatar';
+} from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+import { useTheme } from "../../hooks/useTheme";
+import { logoutAsync } from "../../store/slices/authSlice";
+import Card from "../../components/common/Card";
+import Avatar from "../../components/common/Avatar";
 
 const ProfileScreen = ({ navigation }) => {
   const { theme, isDarkMode, toggleTheme } = useTheme();
   const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
 
   const menuItems = [
-    { id: '1', icon: '👤', title: 'Edit Profile', screen: 'EditProfile' },
-    { id: '2', icon: '📍', title: 'Addresses', screen: 'Addresses' },
-    { id: '3', icon: '💳', title: 'Payment Methods', screen: 'PaymentMethods' },
-    { id: '4', icon: '🔔', title: 'Notifications', screen: 'Notifications' },
-    { id: '5', icon: '❤️', title: 'Wishlist', screen: 'Wishlist' },
-    { id: '6', icon: '⭐', title: 'My Reviews', screen: 'MyReviews' },
-    { id: '7', icon: '❓', title: 'Help & Support', screen: 'Help' },
-    { id: '8', icon: '📄', title: 'Terms & Privacy', screen: 'Terms' },
+    { id: "1", icon: "👤", title: "Edit Profile", screen: "EditProfile" },
+    { id: "2", icon: "📍", title: "Addresses", screen: "Addresses" },
+    { id: "3", icon: "💳", title: "Payment Methods", screen: "PaymentMethods" },
+    { id: "4", icon: "🔔", title: "Notifications", screen: "Notifications" },
+    { id: "5", icon: "❤️", title: "Wishlist", screen: "Wishlist" },
+    { id: "6", icon: "⭐", title: "My Reviews", screen: "MyReviews" },
+    { id: "7", icon: "❓", title: "Help & Support", screen: "Help" },
+    { id: "8", icon: "📄", title: "Terms & Privacy", screen: "Terms" },
   ];
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>
@@ -38,23 +41,26 @@ const ProfileScreen = ({ navigation }) => {
         </Text>
       </View>
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         style={styles.scrollView}
       >
-
         {/* User Info */}
         <Card style={styles.userCard}>
-          <Avatar name="John Doe" size="large" />
+          <Avatar name={user?.name || "Driver"} size="large" />
           <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
-            John Doe
+            {user?.name || "Driver"}
           </Text>
-          <Text style={[styles.userEmail, { color: theme.colors.text.secondary }]}>
-            john.doe@example.com
+          <Text
+            style={[styles.userEmail, { color: theme.colors.text.secondary }]}
+          >
+            {user?.email || "Not available"}
           </Text>
-          <Text style={[styles.userPhone, { color: theme.colors.text.tertiary }]}>
-            +1 234 567 8900
+          <Text
+            style={[styles.userPhone, { color: theme.colors.text.tertiary }]}
+          >
+            {user?.phone || "Phone not available"}
           </Text>
         </Card>
 
@@ -62,12 +68,22 @@ const ProfileScreen = ({ navigation }) => {
         <Card style={styles.themeCard}>
           <View style={styles.themeRow}>
             <View style={styles.themeInfo}>
-              <Text style={styles.themeIcon}>{isDarkMode ? '🌙' : '☀️'}</Text>
+              <Text style={styles.themeIcon}>{isDarkMode ? "🌙" : "☀️"}</Text>
               <View>
-                <Text style={[styles.themeTitle, { color: theme.colors.text.primary }]}>
-                  {isDarkMode ? 'Dark Mode' : 'Light Mode'}
+                <Text
+                  style={[
+                    styles.themeTitle,
+                    { color: theme.colors.text.primary },
+                  ]}
+                >
+                  {isDarkMode ? "Dark Mode" : "Light Mode"}
                 </Text>
-                <Text style={[styles.themeSubtitle, { color: theme.colors.text.secondary }]}>
+                <Text
+                  style={[
+                    styles.themeSubtitle,
+                    { color: theme.colors.text.secondary },
+                  ]}
+                >
                   Toggle app appearance
                 </Text>
               </View>
@@ -94,11 +110,21 @@ const ProfileScreen = ({ navigation }) => {
               <Card style={styles.menuItem}>
                 <View style={styles.menuItemContent}>
                   <Text style={styles.menuIcon}>{item.icon}</Text>
-                  <Text style={[styles.menuTitle, { color: theme.colors.text.primary }]}>
+                  <Text
+                    style={[
+                      styles.menuTitle,
+                      { color: theme.colors.text.primary },
+                    ]}
+                  >
                     {item.title}
                   </Text>
                 </View>
-                <Text style={[styles.menuArrow, { color: theme.colors.text.tertiary }]}>
+                <Text
+                  style={[
+                    styles.menuArrow,
+                    { color: theme.colors.text.tertiary },
+                  ]}
+                >
                   →
                 </Text>
               </Card>
@@ -110,25 +136,19 @@ const ProfileScreen = ({ navigation }) => {
         <TouchableOpacity
           style={[styles.logoutButton, { backgroundColor: theme.colors.error }]}
           onPress={() => {
-            Alert.alert(
-              'Logout',
-              'Are you sure you want to logout?',
-              [
-                {
-                  text: 'Cancel',
-                  style: 'cancel',
+            Alert.alert("Logout", "Are you sure you want to logout?", [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Logout",
+                style: "destructive",
+                onPress: () => {
+                  dispatch(logoutAsync());
                 },
-                {
-                  text: 'Logout',
-                  style: 'destructive',
-                  onPress: () => {
-                    // Dispatch logout action - will clear auth state
-                    // AppNavigator will automatically redirect to Auth flow
-                    dispatch(logout());
-                  },
-                },
-              ]
-            );
+              },
+            ]);
           }}
         >
           <Text style={styles.logoutText}>Logout</Text>
@@ -156,21 +176,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 16,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   userCard: {
-    alignItems: 'center',
+    alignItems: "center",
     marginHorizontal: 20,
     marginBottom: 16,
     padding: 24,
   },
   userName: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: 16,
     marginBottom: 4,
   },
@@ -186,13 +206,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   themeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   themeInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   themeIcon: {
@@ -201,7 +221,7 @@ const styles = StyleSheet.create({
   },
   themeTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 2,
   },
   themeSubtitle: {
@@ -212,15 +232,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   menuItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
     padding: 16,
   },
   menuItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   menuIcon: {
@@ -229,7 +249,7 @@ const styles = StyleSheet.create({
   },
   menuTitle: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   menuArrow: {
     fontSize: 20,
@@ -239,19 +259,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
     padding: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   logoutText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   version: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 12,
     marginVertical: 24,
   },
 });
 
 export default ProfileScreen;
-

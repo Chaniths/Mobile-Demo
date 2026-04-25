@@ -1,18 +1,18 @@
-import React from 'react';
-import { Text } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../hooks/useTheme';
+import React from "react";
+import { Text } from "react-native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createStackNavigator } from "@react-navigation/stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../hooks/useTheme";
 
 // Driver Screens
-import HomeScreen from '../screens/driver/HomeScreen';
-import RouteScreen from '../screens/driver/RouteScreen';
-import OrdersScreen from '../screens/buyer/OrdersScreen'; // Reuse for deliveries tab
-import ProfileScreen from '../screens/buyer/ProfileScreen'; // Reuse
-import DeliveryDetailScreen from '../screens/driver/DeliveryDetailScreen';
-import AllDeliveriesScreen from '../screens/driver/AllDeliveriesScreen';
-import ReportIssueScreen from '../screens/driver/ReportIssueScreen';
+import HomeScreen from "../screens/driver/HomeScreen";
+import RouteScreen from "../screens/driver/RouteScreen";
+import OrdersScreen from "../screens/driver/OrdersScreen";
+import ProfileScreen from "../screens/buyer/ProfileScreen"; // Reuse
+import DeliveryDetailScreen from "../screens/driver/DeliveryDetailScreen";
+import AllDeliveriesScreen from "../screens/driver/AllDeliveriesScreen";
+import ReportIssueScreen from "../screens/driver/ReportIssueScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -23,6 +23,15 @@ const HomeStack = () => (
     <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
     <Stack.Screen name="AllDeliveries" component={AllDeliveriesScreen} />
     <Stack.Screen name="ReportIssue" component={ReportIssueScreen} />
+  </Stack.Navigator>
+);
+
+const DeliveriesStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="DriverOrders" component={OrdersScreen} />
+    <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
+    <Stack.Screen name="ReportIssue" component={ReportIssueScreen} />
+    <Stack.Screen name="Route" component={RouteScreen} />
   </Stack.Navigator>
 );
 
@@ -43,20 +52,20 @@ const DriverNavigator = () => {
           height: 55 + insets.bottom,
           paddingBottom: 0 + insets.bottom,
           paddingTop: 8,
-          position: 'absolute',
+          position: "absolute",
           left: 16,
           right: 16,
           bottom: 0,
           borderRadius: 24,
           elevation: 8,
-          shadowColor: '#000',
+          shadowColor: "#000",
           shadowOpacity: 0.08,
           shadowOffset: { width: 0, height: 4 },
           shadowRadius: 12,
         },
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '600',
+          fontWeight: "600",
         },
       }}
     >
@@ -64,7 +73,7 @@ const DriverNavigator = () => {
         name="HomeTab"
         component={HomeStack}
         options={{
-          tabBarLabel: 'Home',
+          tabBarLabel: "Home",
           tabBarIcon: () => <Text style={{ fontSize: 24 }}>🏠</Text>,
         }}
       />
@@ -72,15 +81,15 @@ const DriverNavigator = () => {
         name="Route"
         component={RouteScreen}
         options={{
-          tabBarLabel: 'Route',
+          tabBarLabel: "Route",
           tabBarIcon: () => <Text style={{ fontSize: 24 }}>🗺️</Text>,
         }}
       />
       <Tab.Screen
         name="Deliveries"
-        component={OrdersScreen}
+        component={DeliveriesStack}
         options={{
-          tabBarLabel: 'Deliveries',
+          tabBarLabel: "Deliveries",
           tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>,
         }}
       />
@@ -88,7 +97,7 @@ const DriverNavigator = () => {
         name="Profile"
         component={ProfileScreen}
         options={{
-          tabBarLabel: 'Profile',
+          tabBarLabel: "Profile",
           tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>,
         }}
       />
@@ -97,4 +106,3 @@ const DriverNavigator = () => {
 };
 
 export default DriverNavigator;
-

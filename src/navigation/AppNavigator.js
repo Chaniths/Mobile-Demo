@@ -1,40 +1,61 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import { useSelector } from 'react-redux';
-import { useTheme } from '../hooks/useTheme';
+import React, { useEffect } from "react";
+import { AppState, View, Text, StyleSheet } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import { useDispatch, useSelector } from "react-redux";
+import { useTheme } from "../hooks/useTheme";
+import { restoreSessionAsync } from "../store/slices/authSlice";
+import { driverTrackingService } from "../services/location/driverTrackingService";
 
 // Navigators
-import AuthNavigator from './AuthNavigator';
-import BuyerNavigator from './BuyerNavigator';
-import SellerNavigator from './SellerNavigator';
-import DriverNavigator from './DriverNavigator';
-import FieldAdminNavigator from './FieldAdminNavigator';
+import AuthNavigator from "./AuthNavigator";
+import BuyerNavigator from "./BuyerNavigator";
+import SellerNavigator from "./SellerNavigator";
+import DriverNavigator from "./DriverNavigator";
+import FieldAdminNavigator from "./FieldAdminNavigator";
 
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, isLoading } = useSelector(
+    (state) => state.auth,
+  );
   const { theme, loadThemePreference } = useTheme();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     // Load saved theme preference on app start
     loadThemePreference();
+    dispatch(restoreSessionAsync());
   }, [loadThemePreference]);
+
+  useEffect(() => {
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      (nextState) => {
+        if (nextState === "background" || nextState === "inactive") {
+          void driverTrackingService.handleAppExit();
+        }
+      },
+    );
+
+    return () => {
+      appStateSubscription.remove();
+    };
+  }, []);
 
   // Determine which navigator to show based on user role
   const getRoleNavigator = () => {
     if (!user || !user.role) return null;
 
     switch (user.role) {
-      case 'buyer':
+      case "buyer":
         return BuyerNavigator;
-      case 'seller':
+      case "seller":
         return SellerNavigator;
-      case 'driver':
+      case "driver":
         return DriverNavigator;
-      case 'fieldadmin':
+      case "fieldadmin":
         return FieldAdminNavigator;
       default:
         return BuyerNavigator;
@@ -52,7 +73,7 @@ const AppNavigator = () => {
             cardStyle: { backgroundColor: theme.colors.background },
           }}
         >
-          {!isAuthenticated || !RoleNavigator ? (
+          {isLoading || !isAuthenticated || !RoleNavigator ? (
             <Stack.Screen name="Auth" component={AuthNavigator} />
           ) : (
             <Stack.Screen name="Main" component={RoleNavigator} />
@@ -65,11 +86,13 @@ const AppNavigator = () => {
           style={[
             styles.footer,
             {
-              backgroundColor: 'transparent',
+              backgroundColor: "transparent",
             },
           ]}
         >
-          <Text style={[styles.footerText, { color: theme.colors.text.tertiary }]}>
+          <Text
+            style={[styles.footerText, { color: theme.colors.text.tertiary }]}
+          >
             © {new Date().getFullYear()} FreshRoute. All rights reserved.
           </Text>
         </View>
@@ -83,11 +106,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   footer: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 17,
-    alignItems: 'center',
+    alignItems: "center",
     paddingBottom: 0,
   },
   footerText: {

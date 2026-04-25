@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -6,85 +6,151 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { useTheme } from "../../hooks/useTheme";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
-import {
-  DRIVER_DELIVERIES,
-  HUB_COORDS,
-  findDeliveryById,
-  ROUTE_METADATA,
-} from "./deliveriesData";
+import Loader from "../../components/common/Loader";
+import EmptyState from "../../components/common/EmptyState";
+import { useDriverData } from "../../hooks/useDriverData";
+import { useDriverTracking } from "../../hooks/useDriverTracking";
+
+const HUB_COORDS = { latitude: 13.0707, longitude: 80.2507 };
 
 const RouteScreen = ({ route, navigation }) => {
   const { theme } = useTheme();
   const { deliveryId } = route?.params || {};
+  const { data, loading, refreshing, error, refresh, reload } = useDriverData();
 
-  // If a specific delivery is provided, use only that delivery, otherwise show all
-  const STOPS = useMemo(() => {
-    if (deliveryId) {
-      const delivery = findDeliveryById(deliveryId);
-      return [delivery];
-    }
-    return DRIVER_DELIVERIES;
-  }, [deliveryId]);
+  const routeData = data.activeRoute || data.route;
+  const allStops = useMemo(() => {
+    const source = routeData?.stops?.length ? routeData.stops : data.orders;
+    if (!source.length) return [];
 
-  const [activeStopId, setActiveStopId] = useState(STOPS[0].id);
+    if (!deliveryId) return source;
+    const selected = source.find((stop) => stop.id === deliveryId);
+    return selected ? [selected] : source;
+  }, [data.orders, deliveryId, routeData]);
 
-  // Update active stop when deliveryId changes
+  const [activeStopId, setActiveStopId] = useState(allStops[0]?.id || null);
+
   useEffect(() => {
+    if (!allStops.length) {
+      setActiveStopId(null);
+      return;
+    }
+
     if (deliveryId) {
       setActiveStopId(deliveryId);
+      return;
     }
-  }, [deliveryId]);
 
-  const activeStop = useMemo(
-    () => STOPS.find((s) => s.id === activeStopId) ?? STOPS[0],
-    [activeStopId],
+    setActiveStopId((current) => current || allStops[0].id);
+  }, [allStops, deliveryId]);
+
+  const activeStop = useMemo(() => {
+    if (!allStops.length) return null;
+    return allStops.find((stop) => stop.id === activeStopId) || allStops[0];
+  }, [activeStopId, allStops]);
+
+  const stopsWithCoords = useMemo(
+    () =>
+      allStops.filter(
+        (stop) => stop.coordinates?.latitude && stop.coordinates?.longitude,
+      ),
+    [allStops],
   );
 
-  const polylineCoords = useMemo(
-    () => [HUB_COORDS, ...STOPS.map((s) => s.coords)],
-    [STOPS],
-  );
+  const polylineCoords = useMemo(() => {
+    return [HUB_COORDS, ...stopsWithCoords.map((stop) => stop.coordinates)];
+  }, [stopsWithCoords]);
 
-  // Calculate map region based on active stop or all stops
   const mapRegion = useMemo(() => {
-    if (deliveryId) {
-      // For single delivery, center on the delivery location
+    if (activeStop?.coordinates) {
       return {
-        latitude: activeStop.coords.latitude,
-        longitude: activeStop.coords.longitude,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
+        latitude: activeStop.coordinates.latitude,
+        longitude: activeStop.coordinates.longitude,
+        latitudeDelta: 0.06,
+        longitudeDelta: 0.06,
       };
     }
-    // For all deliveries, center on hub
+
     return {
       latitude: HUB_COORDS.latitude,
       longitude: HUB_COORDS.longitude,
       latitudeDelta: 0.08,
       longitudeDelta: 0.08,
     };
-  }, [deliveryId, activeStop]);
+  }, [activeStop]);
 
-  // Handle navigation button press
+  const {
+    isTracking,
+    sessionId,
+    statusLabel,
+    socketMessage,
+    error: trackingError,
+    startTracking,
+    stopTracking,
+    clearError,
+  } = useDriverTracking(routeData, activeStop?.currentStopId || activeStop?.id);
+
+  const handleStartTracking = async () => {
+    try {
+      await startTracking();
+      Alert.alert(
+        "Tracking Started",
+        "Live location tracking session has started successfully.",
+      );
+    } catch (err) {
+      const message =
+        (typeof err === "object" && err && "message" in err && err.message) ||
+        "Could not start tracking. Please try again.";
+      Alert.alert("Tracking Error", message);
+    }
+  };
+
+  const handleStopTracking = async () => {
+    await stopTracking();
+    Alert.alert("Tracking Stopped", "Tracking session ended successfully.");
+  };
+
   const handleStartNavigation = () => {
+    if (!activeStop) return;
+
     Alert.alert(
       "Start Navigation",
-      `In production, this would open your preferred navigation app (Google Maps, Waze, etc.) with directions to:\n\n${activeStop.address}`,
-      [{ text: "OK" }]
+      `Open turn-by-turn navigation for:\n\n${activeStop.address}`,
+      [{ text: "OK" }],
     );
   };
+
+  if (loading) {
+    return <Loader fullScreen text="Loading route data..." />;
+  }
+
+  if (!allStops.length) {
+    return (
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
+      >
+        <EmptyState
+          icon={<Text style={styles.emptyIcon}>🗺️</Text>}
+          title="No route assigned"
+          message={error || "No active route/orders were returned by backend."}
+          actionLabel="Reload"
+          onAction={reload}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={[styles.title, { color: theme.colors.text.primary }]}>
@@ -93,147 +159,164 @@ const RouteScreen = ({ route, navigation }) => {
           <Text
             style={[styles.subtitle, { color: theme.colors.text.secondary }]}
           >
-            {STOPS.length} {STOPS.length === 1 ? "stop" : "stops"} • optimized
-            path
+            {allStops.length} {allStops.length === 1 ? "stop" : "stops"}
           </Text>
-          {!deliveryId && (
-            <View style={styles.routeMetaRow}>
-              <Text style={[styles.routeMetaText, { color: theme.colors.text.tertiary }]}>
-                {ROUTE_METADATA.routeId} • {ROUTE_METADATA.truckNumber}
-              </Text>
-            </View>
-          )}
-        </View>
-        <View>
-          <View
+          <Text
             style={[
-              styles.statusPill,
-              { backgroundColor: `${theme.colors.success}20` },
+              styles.routeMetaText,
+              { color: theme.colors.text.tertiary },
             ]}
           >
-            <View
-              style={[
-                styles.statusDot,
-                { backgroundColor: theme.colors.success },
-              ]}
-            />
-            <Text style={[styles.statusText, { color: theme.colors.success }]}>
-              On duty
-            </Text>
-          </View>
-          {!deliveryId && (
-            <View style={[styles.vrpBadge, { backgroundColor: `${theme.colors.primary.main}15` }]}>
-              <Text style={styles.vrpIcon}>🎯</Text>
-              <Text style={[styles.vrpText, { color: theme.colors.primary.main }]}>
-                VRP
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Map */}
-      <View style={styles.mapWrapper}>
-        <MapView
-          style={styles.map}
-          initialRegion={mapRegion}
-          showsUserLocation={false}
-          showsCompass={false}
-          showsMyLocationButton={false}
-        >
-          <Polyline
-            coordinates={polylineCoords}
-            strokeColor={theme.colors.primary.main}
-            strokeWidth={4}
-          />
-
-          <Marker coordinate={HUB_COORDS}>
-            <View
-              style={[
-                styles.hubMarker,
-                { backgroundColor: theme.colors.primary.light },
-              ]}
-            >
-              <Text style={styles.hubEmoji}>🏬</Text>
-            </View>
-          </Marker>
-
-          {STOPS.map((stop, index) => {
-            const isActive = stop.id === activeStopId;
-            return (
-              <Marker key={stop.id} coordinate={stop.coords}>
-                <View
-                  style={[
-                    styles.stopMarker,
-                    {
-                      backgroundColor: isActive
-                        ? theme.colors.primary.main
-                        : theme.colors.card,
-                      borderColor: theme.colors.primary.main,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.stopMarkerText,
-                      { color: isActive ? "#fff" : theme.colors.text.primary },
-                    ]}
-                  >
-                    {index + 1}
-                  </Text>
-                </View>
-              </Marker>
-            );
-          })}
-        </MapView>
-
-        <View
-          style={[styles.mapOverlay, { backgroundColor: theme.colors.card }]}
-        >
-          <Text
-            style={[styles.overlayText, { color: theme.colors.text.primary }]}
-          >
-            Next stop in {activeStop.etaMinutes} min • {activeStop.distanceKm}{" "}
-            km
+            Route ID: {routeData?.id || "N/A"}
           </Text>
         </View>
       </View>
 
-      {/* Bottom sheet with stops */}
-      <View style={styles.bottomSheet}>
-        {/* Optimization Info - only show for full route */}
-        {!deliveryId && (
-          <Card style={styles.optimizationCard}>
-            <View style={styles.optimizationRow}>
-              <View style={styles.optimizationItem}>
-                <Text style={[styles.optimizationLabel, { color: theme.colors.text.secondary }]}>
-                  Distance Saved
-                </Text>
-                <Text style={[styles.optimizationValue, { color: theme.colors.success }]}>
-                  ↓ {ROUTE_METADATA.distanceSaved}
-                </Text>
-              </View>
-              <View style={styles.optimizationDivider} />
-              <View style={styles.optimizationItem}>
-                <Text style={[styles.optimizationLabel, { color: theme.colors.text.secondary }]}>
-                  Fuel Saved
-                </Text>
-                <Text style={[styles.optimizationValue, { color: theme.colors.success }]}>
-                  {ROUTE_METADATA.fuelSaved}
-                </Text>
-              </View>
-              <View style={styles.optimizationDivider} />
-              <View style={styles.optimizationItem}>
-                <Text style={[styles.optimizationLabel, { color: theme.colors.text.secondary }]}>
-                  Algorithm
-                </Text>
-                <Text style={[styles.optimizationValue, { color: theme.colors.primary.main }]}>
-                  {ROUTE_METADATA.optimizationAlgorithm}
-                </Text>
-              </View>
-            </View>
+      <View style={styles.mapWrapper}>
+        {stopsWithCoords.length > 0 ? (
+          <MapView
+            style={styles.map}
+            initialRegion={mapRegion}
+            showsCompass={false}
+            showsMyLocationButton={false}
+          >
+            <Polyline
+              coordinates={polylineCoords}
+              strokeColor={theme.colors.primary.main}
+              strokeWidth={4}
+            />
+            <Marker coordinate={HUB_COORDS} />
+            {stopsWithCoords.map((stop, index) => {
+              const isActive = stop.id === activeStop?.id;
+              return (
+                <Marker key={stop.id} coordinate={stop.coordinates}>
+                  <View
+                    style={[
+                      styles.stopMarker,
+                      {
+                        backgroundColor: isActive
+                          ? theme.colors.primary.main
+                          : theme.colors.card,
+                        borderColor: theme.colors.primary.main,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.stopMarkerText,
+                        {
+                          color: isActive ? "#fff" : theme.colors.text.primary,
+                        },
+                      ]}
+                    >
+                      {index + 1}
+                    </Text>
+                  </View>
+                </Marker>
+              );
+            })}
+          </MapView>
+        ) : (
+          <View
+            style={[styles.noMapCard, { backgroundColor: theme.colors.card }]}
+          >
+            <Text
+              style={[styles.noMapText, { color: theme.colors.text.secondary }]}
+            >
+              This route has no coordinates yet from backend.
+            </Text>
+          </View>
+        )}
+      </View>
+
+      <ScrollView
+        style={styles.bottomSheet}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} />
+        }
+      >
+        {(error || trackingError) && (
+          <Card style={styles.errorCard}>
+            {!!error && (
+              <Text
+                style={[
+                  styles.errorText,
+                  { color: theme.colors.error || "#d32f2f" },
+                ]}
+              >
+                {error}
+              </Text>
+            )}
+            {!!trackingError && (
+              <Text
+                style={[
+                  styles.errorText,
+                  { color: theme.colors.error || "#d32f2f" },
+                ]}
+              >
+                {trackingError}
+              </Text>
+            )}
+            <Button
+              title="Dismiss"
+              size="small"
+              onPress={clearError}
+              style={styles.retryButton}
+            />
           </Card>
         )}
+
+        <Card style={styles.trackingCard}>
+          <Text
+            style={[styles.trackingTitle, { color: theme.colors.text.primary }]}
+          >
+            Live Tracking
+          </Text>
+          <Text
+            style={[
+              styles.trackingStatus,
+              { color: theme.colors.text.secondary },
+            ]}
+          >
+            {statusLabel}
+          </Text>
+          {!!socketMessage && (
+            <Text
+              style={[
+                styles.trackingMessage,
+                { color: theme.colors.text.tertiary },
+              ]}
+            >
+              {socketMessage}
+            </Text>
+          )}
+          {sessionId && (
+            <Text
+              style={[
+                styles.sessionIdText,
+                { color: theme.colors.primary.main },
+              ]}
+            >
+              Session: {sessionId}
+            </Text>
+          )}
+
+          <View style={styles.trackingButtons}>
+            <Button
+              title={isTracking ? "Tracking Active" : "Start Tracking"}
+              onPress={handleStartTracking}
+              disabled={isTracking}
+              style={styles.actionButton}
+            />
+            <Button
+              title="Stop Tracking"
+              variant="outline"
+              onPress={handleStopTracking}
+              disabled={!isTracking}
+              style={styles.actionButton}
+            />
+          </View>
+        </Card>
 
         <Card style={styles.activeStopCard}>
           <View style={styles.activeStopHeader}>
@@ -270,10 +353,11 @@ const RouteScreen = ({ route, navigation }) => {
                   { color: theme.colors.text.secondary },
                 ]}
               >
-                {activeStop.distanceKm} km
+                {activeStop.distanceKm.toFixed(1)} km
               </Text>
             </View>
           </View>
+
           <View style={styles.addressRow}>
             <Text style={styles.addressIcon}>📍</Text>
             <Text
@@ -285,6 +369,7 @@ const RouteScreen = ({ route, navigation }) => {
               {activeStop.address}
             </Text>
           </View>
+
           <Button
             title="Start navigation"
             onPress={handleStartNavigation}
@@ -303,8 +388,8 @@ const RouteScreen = ({ route, navigation }) => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.stopsScroll}
           >
-            {STOPS.map((stop, index) => {
-              const isActive = stop.id === activeStopId;
+            {allStops.map((stop, index) => {
+              const isActive = stop.id === activeStop?.id;
               return (
                 <TouchableOpacity
                   key={stop.id}
@@ -367,7 +452,7 @@ const RouteScreen = ({ route, navigation }) => {
                         { color: theme.colors.text.secondary },
                       ]}
                     >
-                      {stop.etaMinutes} min • {stop.distanceKm} km
+                      {stop.etaMinutes} min • {stop.distanceKm.toFixed(1)} km
                     </Text>
                   </Card>
                 </TouchableOpacity>
@@ -375,15 +460,13 @@ const RouteScreen = ({ route, navigation }) => {
             })}
           </ScrollView>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -392,225 +475,82 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
-  headerLeft: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  subtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  routeMetaRow: {
-    marginTop: 4,
-  },
-  routeMetaText: {
-    fontSize: 10,
-  },
-  statusPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    marginBottom: 6,
-  },
-  vrpBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    justifyContent: "center",
-  },
-  vrpIcon: {
-    fontSize: 10,
-    marginRight: 2,
-  },
-  vrpText: {
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
+  headerLeft: { flex: 1 },
+  title: { fontSize: 20, fontWeight: "700" },
+  subtitle: { fontSize: 12, marginTop: 2 },
+  routeMetaText: { fontSize: 11, marginTop: 4 },
   mapWrapper: {
-    flex: 0.9,
-    marginHorizontal: 16,
-    marginTop: 8,
+    height: 260,
+    marginHorizontal: 20,
     borderRadius: 16,
     overflow: "hidden",
   },
-  map: {
-    flex: 1,
-  },
-  hubMarker: {
-    padding: 8,
-    borderRadius: 16,
-  },
-  hubEmoji: {
-    fontSize: 18,
-  },
+  map: { flex: 1 },
   stopMarker: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1.5,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
   },
-  stopMarkerText: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  mapOverlay: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    alignItems: "center",
-  },
-  overlayText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  bottomSheet: {
-    flex: 1.1,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 28,
-  },
-  optimizationCard: {
-    marginBottom: 8,
-    padding: 10,
-  },
-  optimizationRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-  },
-  optimizationItem: {
+  stopMarkerText: { fontSize: 12, fontWeight: "700" },
+  noMapCard: {
     flex: 1,
+    justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 20,
   },
-  optimizationLabel: {
-    fontSize: 10,
-    marginBottom: 4,
-  },
-  optimizationValue: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  optimizationDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: "#e5e5e5",
-  },
-  activeStopCard: {
-    marginBottom: 8,
-    padding: 14,
-  },
+  noMapText: { fontSize: 14, textAlign: "center" },
+  bottomSheet: { flex: 1, marginTop: 12, paddingHorizontal: 20 },
+  errorCard: { marginBottom: 12 },
+  errorText: { fontSize: 13, fontWeight: "600", marginBottom: 6 },
+  retryButton: { alignSelf: "flex-start" },
+  trackingCard: { marginBottom: 12 },
+  trackingTitle: { fontSize: 16, fontWeight: "700", marginBottom: 6 },
+  trackingStatus: { fontSize: 13 },
+  trackingMessage: { fontSize: 12, marginTop: 4 },
+  sessionIdText: { fontSize: 12, marginTop: 6, fontWeight: "700" },
+  trackingButtons: { flexDirection: "row", gap: 10, marginTop: 12 },
+  actionButton: { flex: 1 },
+  activeStopCard: { marginBottom: 14 },
   activeStopHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  activeStopLabel: {
-    fontSize: 12,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
-  activeStopCustomer: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  activeStopMeta: {
-    alignItems: "flex-end",
-  },
-  metaPrimary: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  metaSecondary: {
-    fontSize: 11,
-    marginTop: 2,
-  },
-  addressRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 8,
-  },
-  addressIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
-  addressText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  navButton: {
-    marginTop: 4,
-  },
-  stopsListWrapper: {
-    marginTop: 0,
-  },
-  stopsTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  stopsScroll: {
-    paddingVertical: 4,
-  },
-  stopCard: {
-    width: 140,
-    marginRight: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-  },
+  activeStopLabel: { fontSize: 12 },
+  activeStopCustomer: { fontSize: 18, fontWeight: "700", marginTop: 2 },
+  activeStopMeta: { alignItems: "flex-end" },
+  metaPrimary: { fontSize: 14, fontWeight: "700" },
+  metaSecondary: { fontSize: 12 },
+  addressRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  addressIcon: { fontSize: 14, marginRight: 8 },
+  addressText: { flex: 1, fontSize: 13 },
+  navButton: {},
+  stopsListWrapper: { marginBottom: 120 },
+  stopsTitle: { fontSize: 16, fontWeight: "700", marginBottom: 10 },
+  stopsScroll: { paddingRight: 8 },
+  stopCard: { width: 170, marginRight: 10 },
   stopCardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 8,
   },
   stopNumber: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 6,
+    marginRight: 8,
   },
-  stopNumberText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  stopOrderId: {
-    fontSize: 11,
-  },
-  stopCustomer: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  stopMeta: {
-    fontSize: 11,
-  },
+  stopNumberText: { fontSize: 12, fontWeight: "700" },
+  stopOrderId: { fontSize: 11 },
+  stopCustomer: { fontSize: 14, fontWeight: "600" },
+  stopMeta: { fontSize: 12, marginTop: 6 },
+  emptyIcon: { fontSize: 64 },
 });
 
 export default RouteScreen;

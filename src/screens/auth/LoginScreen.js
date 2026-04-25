@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,64 +7,59 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useDispatch } from 'react-redux';
-import { useTheme } from '../../hooks/useTheme';
-import { loginFailure, loginStart, loginSuccess } from '../../store/slices/authSlice';
-import { findUserByCredentials } from '../../utils/demoUsers';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useDispatch } from "react-redux";
+import { useTheme } from "../../hooks/useTheme";
+import { loginDriverAsync } from "../../store/slices/authSlice";
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
 
 const LoginScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const dispatch = useDispatch();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("mike@freshroute.com");
+  const [password, setPassword] = useState("driver123");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [authError, setAuthError] = useState('');
+  const [authError, setAuthError] = useState("");
 
   const handleLogin = async () => {
     // Validation
     const newErrors = {};
-    if (!email) newErrors.email = 'Email is required';
-    if (!password) newErrors.password = 'Password is required';
-    
+    if (!email) newErrors.email = "Email is required";
+    if (!password) newErrors.password = "Password is required";
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
     setLoading(true);
-    setAuthError('');
-    dispatch(loginStart());
-
-    setTimeout(() => {
-      const user = findUserByCredentials(email, password);
-
-      if (user) {
-        dispatch(
-          loginSuccess({
-            user,
-            token: `demo_token_${user.role}`,
-          })
-        );
-      } else {
-        const message = 'Invalid email or password';
-        setAuthError(message);
-        dispatch(loginFailure(message));
-      }
-
+    setAuthError("");
+    try {
+      await dispatch(
+        loginDriverAsync({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      ).unwrap();
+    } catch (error) {
+      const message =
+        typeof error === "string" ? error : "Login failed. Please try again.";
+      setAuthError(message);
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.flex}
       >
         <ScrollView
@@ -73,13 +68,20 @@ const LoginScreen = ({ navigation }) => {
         >
           {/* Logo/Header */}
           <View style={styles.header}>
-            <View style={[styles.logo, { backgroundColor: theme.colors.primary.main }]}>
+            <View
+              style={[
+                styles.logo,
+                { backgroundColor: theme.colors.primary.main },
+              ]}
+            >
               <Text style={styles.logoText}>🌱</Text>
             </View>
             <Text style={[styles.title, { color: theme.colors.text.primary }]}>
               Welcome Back
             </Text>
-            <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
+            <Text
+              style={[styles.subtitle, { color: theme.colors.text.secondary }]}
+            >
               Sign in to continue to FreshRoute
             </Text>
           </View>
@@ -92,7 +94,7 @@ const LoginScreen = ({ navigation }) => {
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
-                setErrors({ ...errors, email: '' });
+                setErrors({ ...errors, email: "" });
               }}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -105,23 +107,28 @@ const LoginScreen = ({ navigation }) => {
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
-                setErrors({ ...errors, password: '' });
+                setErrors({ ...errors, password: "" });
               }}
               secureTextEntry={!showPassword}
               error={errors.password}
               rightIcon={
                 <Text style={{ color: theme.colors.primary.main }}>
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                  {showPassword ? "👁️" : "👁️‍🗨️"}
                 </Text>
               }
               onRightIconPress={() => setShowPassword(!showPassword)}
             />
 
             <TouchableOpacity
-              onPress={() => navigation.navigate('ForgotPassword')}
+              onPress={() => navigation.navigate("ForgotPassword")}
               style={styles.forgotPassword}
             >
-              <Text style={[styles.forgotText, { color: theme.colors.primary.main }]}>
+              <Text
+                style={[
+                  styles.forgotText,
+                  { color: theme.colors.primary.main },
+                ]}
+              >
                 Forgot Password?
               </Text>
             </TouchableOpacity>
@@ -134,7 +141,12 @@ const LoginScreen = ({ navigation }) => {
             />
 
             {!!authError && (
-              <Text style={[styles.errorText, { color: theme.colors.error?.main || '#d32f2f' }]}>
+              <Text
+                style={[
+                  styles.errorText,
+                  { color: theme.colors.error?.main || "#d32f2f" },
+                ]}
+              >
                 {authError}
               </Text>
             )}
@@ -142,11 +154,21 @@ const LoginScreen = ({ navigation }) => {
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={[styles.footerText, { color: theme.colors.text.secondary }]}>
-              Don't have an account?{' '}
+            <Text
+              style={[
+                styles.footerText,
+                { color: theme.colors.text.secondary },
+              ]}
+            >
+              Don't have an account?{" "}
             </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={[styles.signupText, { color: theme.colors.primary.main }]}>
+            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+              <Text
+                style={[
+                  styles.signupText,
+                  { color: theme.colors.primary.main },
+                ]}
+              >
                 Sign Up
               </Text>
             </TouchableOpacity>
@@ -167,18 +189,18 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 24,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   logo: {
     width: 80,
     height: 80,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 20,
   },
   logoText: {
@@ -186,46 +208,45 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
   },
   form: {
     marginBottom: 24,
   },
   forgotPassword: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginBottom: 24,
   },
   forgotText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   loginButton: {
     marginTop: 8,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
   footerText: {
     fontSize: 14,
   },
   signupText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   errorText: {
     marginTop: 12,
     fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
 });
 
 export default LoginScreen;
-
