@@ -15,21 +15,29 @@ import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
 
 const statusColors = {
-  scheduled: '#3b82f6',
-  in_transit: '#06b6d4',
-  delivered: '#22c55e',
-  pending: '#f59e0b',
-  cancelled: '#ef4444',
-  processing: '#8b5cf6',
+  ASSIGNED: '#3b82f6',
+  BATCHED: '#2563eb',
+  IN_TRANSIT: '#06b6d4',
+  DELIVERED: '#22c55e',
+  PENDING: '#f59e0b',
+  PAID: '#f59e0b',
+  PAYMENT_PENDING: '#f59e0b',
+  PAYMENT_FAILED: '#ef4444',
+  CANCELLED: '#ef4444',
+  FAILED: '#ef4444',
 };
 
 const statusLabels = {
-  scheduled: 'Scheduled',
-  in_transit: 'In Transit',
-  delivered: 'Delivered',
-  pending: 'Pending',
-  cancelled: 'Cancelled',
-  processing: 'Processing',
+  ASSIGNED: 'Assigned',
+  BATCHED: 'Batched',
+  IN_TRANSIT: 'In Transit',
+  DELIVERED: 'Delivered',
+  PENDING: 'Pending',
+  PAID: 'Paid',
+  PAYMENT_PENDING: 'Payment Pending',
+  PAYMENT_FAILED: 'Payment Failed',
+  CANCELLED: 'Cancelled',
+  FAILED: 'Failed',
 };
 
 const OrdersScreen = ({ navigation }) => {
@@ -45,16 +53,7 @@ const OrdersScreen = ({ navigation }) => {
           id: order.id,
           orderId: `#${order.orderNumber}`,
           date: new Date(order.placedAt).toLocaleDateString(),
-          status:
-            order.status === 'IN_TRANSIT'
-              ? 'in_transit'
-              : order.status === 'DELIVERED'
-              ? 'delivered'
-              : order.status === 'ASSIGNED' || order.status === 'BATCHED'
-              ? 'scheduled'
-              : order.status === 'PAID' || order.status === 'PENDING'
-              ? 'pending'
-              : 'processing',
+          status: order.status,
           customer: order.customer,
           address: order.address,
           coords: order.coords,
@@ -75,7 +74,24 @@ const OrdersScreen = ({ navigation }) => {
   }, [activeTab]);
 
   const filteredOrders = useMemo(
-    () => (activeTab === 'all' ? orders : orders.filter((order) => order.status === activeTab)),
+    () =>
+      activeTab === 'all'
+        ? orders
+        : orders.filter((order) => {
+            if (activeTab === 'scheduled') {
+              return order.status === 'ASSIGNED' || order.status === 'BATCHED';
+            }
+            if (activeTab === 'in_transit') {
+              return order.status === 'IN_TRANSIT';
+            }
+            if (activeTab === 'delivered') {
+              return order.status === 'DELIVERED';
+            }
+            if (activeTab === 'pending') {
+              return ['PENDING', 'PAID', 'PAYMENT_PENDING', 'PAYMENT_FAILED'].includes(order.status);
+            }
+            return true;
+          }),
     [activeTab, orders]
   );
 
@@ -93,11 +109,11 @@ const OrdersScreen = ({ navigation }) => {
         <View
           style={[
             styles.statusBadge,
-            { backgroundColor: `${statusColors[item.status]}20` },
+            { backgroundColor: `${statusColors[item.status] ?? '#64748b'}20` },
           ]}
         >
-          <Text style={[styles.statusText, { color: statusColors[item.status] }]}>
-            {statusLabels[item.status]}
+          <Text style={[styles.statusText, { color: statusColors[item.status] ?? '#64748b' }]}>
+            {statusLabels[item.status] ?? item.status}
           </Text>
         </View>
       </View>
@@ -161,7 +177,7 @@ const OrdersScreen = ({ navigation }) => {
           variant="outline"
           style={styles.actionButton}
         />
-        {item.status === 'scheduled' || item.status === 'in_transit' ? (
+        {item.status === 'ASSIGNED' || item.status === 'BATCHED' || item.status === 'IN_TRANSIT' ? (
           <Button
             title="View on Map"
             onPress={() => {

@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { useSelector } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
@@ -15,19 +16,41 @@ import fieldAdminApi from '../../api/fieldAdminApi';
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
+  const authUser = useSelector((state) => state.auth.user);
   const [overview, setOverview] = useState(null);
   const [pendingTasks, setPendingTasks] = useState([]);
   const [latestAggregationRun, setLatestAggregationRun] = useState(null);
+  const [inTransitCount, setInTransitCount] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [overviewData, tasksData] = await Promise.all([
+        const [overviewData, inTransitOrders, scheduledOrders] = await Promise.all([
           fieldAdminApi.getDashboardOverview(),
-          fieldAdminApi.getAssignedTasks(),
+          fieldAdminApi.getOrdersByTab('in_transit'),
+          fieldAdminApi.getOrdersByTab('scheduled'),
         ]);
         setOverview(overviewData);
-        setPendingTasks(tasksData.slice(0, 5));
+        setInTransitCount(inTransitOrders?.length ?? 0);
+        const mergedOrders = [...(inTransitOrders ?? []), ...(scheduledOrders ?? [])];
+        const dedupedOrders = mergedOrders.filter(
+          (order, index, array) => array.findIndex((entry) => entry.id === order.id) === index
+        );
+        const mappedPending = dedupedOrders
+          .filter((order) => order.status !== 'DELIVERED')
+          .slice(0, 6)
+          .map((order) => ({
+            id: order.id,
+            type: 'DELIVERY',
+            orderId: order.orderNumber ? `#${order.orderNumber}` : '#TASK',
+            customer: order.customer || null,
+            address: order.address || null,
+            route: order.route?.routeNumber || null,
+            items: order.totalAmount ? `Total: ${order.totalAmount}` : null,
+            priority: order.status === 'IN_TRANSIT' ? 'high' : 'normal',
+            status: order.status,
+          }));
+        setPendingTasks(mappedPending);
         const runs = await fieldAdminApi.getAggregationRuns(1);
         setLatestAggregationRun(runs?.[0] ?? null);
       } catch (error) {
@@ -41,16 +64,17 @@ const HomeScreen = ({ navigation }) => {
     () => [
       { id: '1', label: 'Orders Assigned', value: String(overview?.assignedOrders ?? 0), icon: '📦', color: '#3b82f6' },
       { id: '2', label: 'Assessments', value: String(overview?.assessments ?? 0), icon: '✓', color: '#22c55e' },
-      { id: '3', label: 'Pending Quality', value: String(overview?.pendingQuality ?? 0), icon: '⏰', color: '#f59e0b' },
+      { id: '3', label: 'In Transit', value: String(inTransitCount), icon: '🚚', color: '#f59e0b' },
       { id: '4', label: 'Routes Today', value: String(overview?.routesToday ?? 0), icon: '🗺️', color: '#8b5cf6' },
     ],
-    [overview]
+    [overview, inTransitCount]
   );
 
   const quickActions = [
     {
       id: '1',
       title: 'Confirm Quality',
+      subtitle: 'Approve received items',
       icon: '✅',
       color: '#22c55e',
       screen: 'QualityConfirm',
@@ -58,6 +82,7 @@ const HomeScreen = ({ navigation }) => {
     {
       id: '2',
       title: 'Reject Product',
+      subtitle: 'Submit product rejection',
       icon: '❌',
       color: '#ef4444',
       screen: 'SellerReject',
@@ -65,6 +90,7 @@ const HomeScreen = ({ navigation }) => {
     {
       id: '3',
       title: 'Mark Delivery',
+      subtitle: 'Complete order handover',
       icon: '📦',
       color: '#3b82f6',
       screen: 'DeliveryPickup',
@@ -72,6 +98,7 @@ const HomeScreen = ({ navigation }) => {
     {
       id: '4',
       title: 'Assessments',
+      subtitle: 'Rate drivers, buyers, sellers',
       icon: '📋',
       color: '#8b5cf6',
       screen: 'Assessment',
@@ -79,6 +106,7 @@ const HomeScreen = ({ navigation }) => {
     {
       id: '5',
       title: 'Report Damage',
+      subtitle: 'Log delivery damage',
       icon: '⚠️',
       color: '#f59e0b',
       screen: 'DamageReport',
@@ -86,44 +114,42 @@ const HomeScreen = ({ navigation }) => {
     {
       id: '6',
       title: 'Refund Initiation',
+      subtitle: 'Start approved refunds',
       icon: '💰',
       color: '#06b6d4',
       screen: 'RefundInitiation',
     },
-    {
-      id: '7',
-      title: 'Route Reassessment',
-      icon: '🔄',
-      color: '#10b981',
-      screen: 'RouteReassessment',
-    },
+    // Temporarily hidden based on current product priority:
+    // {
+    //   id: '7',
+    //   title: 'Route Reassessment',
+    //   icon: '🔄',
+    //   color: '#10b981',
+    //   screen: 'RouteReassessment',
+    // },
     {
       id: '8',
       title: 'Truck Capacity',
+      subtitle: 'Adjust vehicle capacity',
       icon: '🚚',
       color: '#6366f1',
       screen: 'TruckCapacity',
     },
-    {
-      id: '9',
-      title: 'View Assigned Orders',
-      icon: '📋',
-      color: '#3b82f6',
-      screen: 'RouteOrders',
-    },
+    // Temporarily hidden based on current product priority:
+    // {
+    //   id: '9',
+    //   title: 'View Assigned Orders',
+    //   icon: '📋',
+    //   color: '#3b82f6',
+    //   screen: 'RouteOrders',
+    // },
   ];
 
-  const mappedTasks = pendingTasks.map((task) => ({
-    id: task.id,
-    type: task.type,
-    orderId: task.order?.orderNumber ? `#${task.order.orderNumber}` : task.route?.routeNumber || '#TASK',
-    customer: task.buyer?.user?.name || null,
-    seller: task.seller?.user?.name || null,
-    address: task.address,
-    route: task.route?.routeNumber || null,
-    items: task.order ? `Total: ${task.order.totalAmount}` : null,
-    priority: task.status === 'IN_PROGRESS' ? 'high' : 'normal',
-  }));
+  const displayName =
+    authUser?.name ||
+    authUser?.fullName ||
+    [authUser?.firstName, authUser?.lastName].filter(Boolean).join(' ') ||
+    'Field Admin';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
@@ -155,7 +181,7 @@ const HomeScreen = ({ navigation }) => {
               Good Morning
             </Text>
             <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
-              Chanith Wijekoon
+              {displayName}
             </Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
@@ -195,17 +221,26 @@ const HomeScreen = ({ navigation }) => {
               <TouchableOpacity
                 key={action.id}
                 onPress={() => navigation.navigate(action.screen)}
+                style={styles.actionItem}
               >
                 <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard}>
-                  <View style={[styles.actionIconContainer, { backgroundColor: `${action.color}20` }]}>
-                    <Text style={styles.actionIcon}>{action.icon}</Text>
+                  <View style={styles.actionTopRow}>
+                    <View style={[styles.actionIconContainer, { backgroundColor: `${action.color}20` }]}>
+                      <Text style={styles.actionIcon}>{action.icon}</Text>
+                    </View>
+                    <Text style={[styles.actionArrow, { color: action.color }]}>→</Text>
                   </View>
-                  <Text
-                    style={[styles.actionTitle, { color: theme.colors.text.primary }]}
-                    numberOfLines={2}
-                  >
-                    {action.title}
-                  </Text>
+                  <View style={styles.actionTextWrap}>
+                    <Text
+                      style={[styles.actionTitle, { color: theme.colors.text.primary }]}
+                      numberOfLines={2}
+                    >
+                      {action.title}
+                    </Text>
+                    <Text style={[styles.actionSubtitle, { color: theme.colors.text.secondary }]} numberOfLines={2}>
+                      {action.subtitle}
+                    </Text>
+                  </View>
                 </Card>
               </TouchableOpacity>
             ))}
@@ -224,7 +259,14 @@ const HomeScreen = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
           </View>
-          {mappedTasks.map((task) => (
+          {pendingTasks.length === 0 ? (
+            <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.taskCard}>
+              <Text style={[styles.taskDetail, { color: theme.colors.text.secondary }]}>
+                No pending delivery tasks right now.
+              </Text>
+            </Card>
+          ) : null}
+          {pendingTasks.map((task) => (
             <Card variant={theme.isDarkMode ? "glass" : "default"} key={task.id} style={styles.taskCard}>
               <View style={styles.taskHeader}>
                 <View style={styles.taskInfo}>
@@ -257,7 +299,7 @@ const HomeScreen = ({ navigation }) => {
                 </View>
               </View>
               <Text style={[styles.taskDetail, { color: theme.colors.text.secondary }]}>
-                {task.seller || task.customer || task.driver}
+                {task.customer || task.driver}
                 {task.address && ` • ${task.address}`}
                 {task.route && ` • ${task.route}`}
                 {task.items && ` • ${task.items}`}
@@ -433,27 +475,45 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
   },
+  actionItem: {
+    width: '48%',
+  },
   actionCard: {
-    width: '23%',
-    minWidth: 80,
+    minHeight: 122,
     padding: 12,
+    borderRadius: 14,
+  },
+  actionTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 10,
   },
   actionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
   },
   actionIcon: {
     fontSize: 20,
   },
+  actionArrow: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  actionTextWrap: {
+    flex: 1,
+  },
   actionTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  actionSubtitle: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   tasksSection: {
     marginBottom: 24,

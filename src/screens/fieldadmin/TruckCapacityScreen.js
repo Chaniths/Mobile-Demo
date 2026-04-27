@@ -40,12 +40,19 @@ const TruckCapacityScreen = ({ navigation, route }) => {
             driverId: r.driver.id,
             licensePlate: r.truck.vehicleNumber ?? 'Unknown',
             driver: r.driver?.user?.name ?? 'Driver',
-            currentCapacity: String(r.truck.maxWeight ?? 0),
+            currentCapacity: String(r.truck.currentLoadWeight ?? 0),
             maxCapacity: String(r.truck.maxWeight ?? 0),
+            currentLoadVolume: String(r.truck.currentLoadVolume ?? 0),
+            maxVolume: String(r.truck.maxVolume ?? 0),
+            currentLoadStops: String(r.truck.currentLoadStops ?? 0),
+            maxStops: String(r.truck.maxStops ?? 0),
             unit: 'kg',
           }));
         setTrucks(mapped);
-        if (mapped.length > 0) setTruck(mapped[0]);
+        if (mapped.length > 0) {
+          setTruck(mapped[0]);
+          setCapacity(mapped[0].currentCapacity);
+        }
       } catch {
         Alert.alert('Error', 'Failed to load trucks.');
       }
@@ -54,8 +61,8 @@ const TruckCapacityScreen = ({ navigation, route }) => {
   }, []);
 
   const handleUpdateCapacity = () => {
-    if (!capacity.trim() || isNaN(capacity) || parseFloat(capacity) < 0 || parseFloat(capacity) > 100) {
-      alert('Please enter a valid capacity (0-100)');
+    if (!capacity.trim() || isNaN(capacity) || parseFloat(capacity) < 0) {
+      alert('Please enter a valid capacity value');
       return;
     }
     if (!truck.driverId) {
@@ -74,7 +81,9 @@ const TruckCapacityScreen = ({ navigation, route }) => {
       .catch(() => Alert.alert('Error', 'Failed to update truck capacity.'));
   };
 
-  const capacityPercent = (parseFloat(truck.currentCapacity) / parseFloat(truck.maxCapacity)) * 100;
+  const currentWeight = parseFloat(truck.currentCapacity || '0');
+  const maxWeight = parseFloat(truck.maxCapacity || '0');
+  const capacityPercent = maxWeight > 0 ? (currentWeight / maxWeight) * 100 : 0;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
@@ -110,7 +119,13 @@ const TruckCapacityScreen = ({ navigation, route }) => {
           Select Truck
         </Text>
         {trucks.map((t) => (
-          <TouchableOpacity key={t.id} onPress={() => setTruck(t)}>
+          <TouchableOpacity
+            key={t.id}
+            onPress={() => {
+              setTruck(t);
+              setCapacity(t.currentCapacity);
+            }}
+          >
             <Card
               variant={theme.isDarkMode ? "glass" : "default"}
               style={[
@@ -167,6 +182,12 @@ const TruckCapacityScreen = ({ navigation, route }) => {
               {truck.currentCapacity} / {truck.maxCapacity} {truck.unit} ({Math.round(capacityPercent)}%)
             </Text>
           </View>
+          <Text style={[styles.detail, { color: theme.colors.text.secondary }]}>
+            Volume: {Number(truck.currentLoadVolume ?? 0).toFixed(3)} / {truck.maxVolume ?? '0'} m3
+          </Text>
+          <Text style={[styles.detail, { color: theme.colors.text.secondary }]}>
+            Stops: {truck.currentLoadStops ?? '0'} / {truck.maxStops ?? '-'}
+          </Text>
         </Card>
 
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
