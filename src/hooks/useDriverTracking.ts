@@ -4,8 +4,16 @@ import { driverTrackingService, type TrackingState } from '../services/location/
 import type { DriverRoute } from '../types/driver';
 
 const defaultState: TrackingState = {
+  trackingStatus: 'idle',
   isTracking: false,
-  sessionId: null,
+  activeSessionId: null,
+  latestServerPoint: null,
+  renderPosition: null,
+  renderHeading: 0,
+  polylinePoints: [],
+  pendingPointQueue: [],
+  lastSequence: 0,
+  followMode: true,
   socketMessage: '',
   socketStatus: 'disconnected',
   error: null,
@@ -21,13 +29,19 @@ export const useDriverTracking = (routeData: DriverRoute | null, currentStopId?:
   }, []);
 
   useEffect(() => {
+    driverTrackingService.setCurrentRoute(routeData?.id);
     driverTrackingService.setCurrentStop(currentStopId);
-  }, [currentStopId]);
+  }, [currentStopId, routeData?.id]);
 
   useEffect(() => {
     if (!token) return;
-    driverTrackingService.ensureSocketConnected();
-  }, [token]);
+
+    void driverTrackingService.bootstrap({
+      token,
+      routeId: routeData?.id,
+      stopId: currentStopId,
+    });
+  }, [routeData?.id, token]);
 
   const startTracking = async () => {
     if (!token) {
@@ -45,9 +59,25 @@ export const useDriverTracking = (routeData: DriverRoute | null, currentStopId?:
     await driverTrackingService.stopTracking({ endSession: true });
   };
 
+  const setFollowMode = (enabled: boolean) => {
+    driverTrackingService.setFollowMode(enabled);
+  };
+
+  const toggleFollowMode = () => {
+    driverTrackingService.toggleFollowMode();
+  };
+
   const statusLabel = useMemo(() => {
-    if (state.isTracking && state.sessionId) {
-      return `Tracking active (${state.sessionId})`;
+    if (state.trackingStatus === 'starting') {
+      return 'Starting live tracking...';
+    }
+
+    if (state.trackingStatus === 'stopping') {
+      return 'Stopping live tracking...';
+    }
+
+    if (state.trackingStatus === 'tracking' && state.activeSessionId) {
+      return `Tracking active (${state.activeSessionId})`;
     }
 
     switch (state.socketStatus) {
@@ -67,6 +97,8 @@ export const useDriverTracking = (routeData: DriverRoute | null, currentStopId?:
     statusLabel,
     startTracking,
     stopTracking,
+    setFollowMode,
+    toggleFollowMode,
     clearError: driverTrackingService.resetError,
   };
 };

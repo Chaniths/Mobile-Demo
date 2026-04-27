@@ -18,9 +18,23 @@ const notify = (payload: ListenerPayload) => {
   listeners.forEach((listener) => listener(payload));
 };
 
+const formatConnectError = (message?: string) => {
+  const lowerMessage = (message || '').toLowerCase();
+
+  if (lowerMessage.includes('unauthorized') || lowerMessage.includes('forbidden') || lowerMessage.includes('token')) {
+    return 'Session expired. Please sign in again.';
+  }
+
+  if (lowerMessage.includes('timeout')) {
+    return 'Live tracking connection timed out.';
+  }
+
+  return message || 'Socket connection failed.';
+};
+
 const bindEvents = (activeSocket: Socket) => {
   activeSocket.on('connect', () => {
-    notify({ status: 'connected' });
+    notify({ status: 'connected', message: 'Live tracking connected.' });
   });
 
   activeSocket.on('disconnect', (reason: string) => {
@@ -35,8 +49,12 @@ const bindEvents = (activeSocket: Socket) => {
     notify({ status: 'reconnecting', message: 'Reconnecting live updates...' });
   });
 
+  activeSocket.on('reconnect', () => {
+    notify({ status: 'connected', message: 'Live tracking reconnected.' });
+  });
+
   activeSocket.on('connect_error', (error: Error) => {
-    notify({ status: 'disconnected', message: error.message || 'Socket connection failed.' });
+    notify({ status: 'disconnected', message: formatConnectError(error.message) });
   });
 
   activeSocket.on('error', (payload: { event: string; message: string }) => {
@@ -49,6 +67,7 @@ export const driverSocketService = {
     if (socket && socketToken === token) {
       if (!socket.connected && !socket.active) {
         notify({ status: 'connecting', message: 'Connecting live updates...' });
+        socket.auth = { token };
         socket.connect();
       }
       return socket;

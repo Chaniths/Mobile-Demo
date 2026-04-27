@@ -7,6 +7,8 @@ import type {
   DriverUser,
   DriverLoginRequest,
   DriverLoginResponse,
+  DriverLiveSeedPoint,
+  DriverLiveSeedResponse,
 } from '../types/driver';
 
 const dataOrSelf = <T>(payload: any): T => {
@@ -80,6 +82,49 @@ const normalizeStats = (raw: any): DriverStats => ({
   earningsToday: asNumber(raw?.earningsToday ?? raw?.todayEarnings ?? 0, 0),
 });
 
+const normalizeLiveSeedPoint = (raw: any): DriverLiveSeedPoint | null => {
+  const latitude = asNumber(raw?.latitude ?? raw?.coords?.latitude ?? raw?.location?.latitude, NaN);
+  const longitude = asNumber(raw?.longitude ?? raw?.coords?.longitude ?? raw?.location?.longitude, NaN);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  return {
+    id: asString(raw?.id || raw?._id, ''),
+    latitude,
+    longitude,
+    accuracy: typeof raw?.accuracy === 'number' ? raw.accuracy : undefined,
+    heading: typeof raw?.heading === 'number' ? raw.heading : undefined,
+    speed: typeof raw?.speed === 'number' ? raw.speed : undefined,
+    currentRouteId: asString(raw?.currentRouteId || raw?.routeId, ''),
+    currentStopId: asString(raw?.currentStopId || raw?.stopId, ''),
+    timestamp: raw?.timestamp ?? raw?.createdAt,
+    sequence: asNumber(raw?.sequence, 0),
+    serverTimestamp: raw?.serverTimestamp ?? raw?.serverTime,
+    latestKnownPosition: raw?.latestKnownPosition,
+    serverTime: raw?.serverTime,
+  };
+};
+
+const normalizeLiveSeed = (raw: any): DriverLiveSeedResponse => {
+  const rawPoints = Array.isArray(raw?.points) ? raw.points : [];
+  const points = rawPoints.map(normalizeLiveSeedPoint).filter(Boolean) as DriverLiveSeedPoint[];
+
+  return {
+    session: raw?.session
+      ? {
+          id: asString(raw?.session?.id || raw?.session?._id, ''),
+          routeId: asString(raw?.session?.routeId, ''),
+          startedAt: raw?.session?.startedAt,
+        }
+      : null,
+    points,
+    latestKnownPosition: raw?.latestKnownPosition || null,
+    serverTime: raw?.serverTime,
+  };
+};
+
 export const driverApi = {
   async healthCheck(): Promise<any> {
     const response = await httpClient.get(appConfig.endpoints.health);
@@ -102,6 +147,21 @@ export const driverApi = {
   async getMe(): Promise<DriverUser> {
     const response = await httpClient.get(appConfig.endpoints.driverMe);
     return normalizeUser(dataOrSelf<any>(response.data));
+  },
+
+  async getLiveSeed(limit = 30, token?: string): Promise<DriverLiveSeedResponse> {
+    const response = await httpClient.get(
+      `${appConfig.endpoints.driverLiveSeed}?limit=${limit}`,
+      token
+        ? {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        : undefined,
+    );
+
+    return normalizeLiveSeed(dataOrSelf<any>(response.data));
   },
 
   async getStats(): Promise<DriverStats> {

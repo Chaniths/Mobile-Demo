@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,8 @@ const RouteScreen = ({ route, navigation }) => {
   const { theme } = useTheme();
   const { deliveryId } = route?.params || {};
   const { data, loading, refreshing, error, refresh, reload } = useDriverData();
+  const mapRef = useRef(null);
+  const lastCameraUpdateRef = useRef(0);
 
   const routeData = data.activeRoute || data.route;
   const allStops = useMemo(() => {
@@ -64,38 +66,69 @@ const RouteScreen = ({ route, navigation }) => {
     [allStops],
   );
 
-  const polylineCoords = useMemo(() => {
+  const routePolylineCoords = useMemo(() => {
     return [HUB_COORDS, ...stopsWithCoords.map((stop) => stop.coordinates)];
   }, [stopsWithCoords]);
 
-  const mapRegion = useMemo(() => {
-    if (activeStop?.coordinates) {
-      return {
-        latitude: activeStop.coordinates.latitude,
-        longitude: activeStop.coordinates.longitude,
-        latitudeDelta: 0.06,
-        longitudeDelta: 0.06,
-      };
-    }
-
-    return {
-      latitude: HUB_COORDS.latitude,
-      longitude: HUB_COORDS.longitude,
-      latitudeDelta: 0.08,
-      longitudeDelta: 0.08,
-    };
-  }, [activeStop]);
-
   const {
     isTracking,
-    sessionId,
+    activeSessionId,
+    trackingStatus,
     statusLabel,
     socketMessage,
     error: trackingError,
+    renderPosition,
+    renderHeading,
+    polylinePoints,
+    followMode,
+    setFollowMode,
+    toggleFollowMode,
+    latestServerPoint,
+    pendingPointQueue,
     startTracking,
     stopTracking,
     clearError,
   } = useDriverTracking(routeData, activeStop?.currentStopId || activeStop?.id);
+
+  const livePolylineCoords = useMemo(() => {
+    return polylinePoints.length > 1 ? polylinePoints : routePolylineCoords;
+  }, [polylinePoints, routePolylineCoords]);
+
+  const mapRegion = useMemo(() => {
+    const center =
+      renderPosition ||
+      livePolylineCoords[livePolylineCoords.length - 1] ||
+      activeStop?.coordinates ||
+      HUB_COORDS;
+
+    return {
+      latitude: center.latitude,
+      longitude: center.longitude,
+      latitudeDelta: 0.06,
+      longitudeDelta: 0.06,
+    };
+  }, [activeStop, livePolylineCoords, renderPosition]);
+
+  useEffect(() => {
+    if (!mapRef.current || !renderPosition || !followMode) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastCameraUpdateRef.current < 450) {
+      return;
+    }
+
+    lastCameraUpdateRef.current = now;
+    mapRef.current.animateCamera(
+      {
+        center: renderPosition,
+        heading: renderHeading,
+        pitch: 0,
+      },
+      { duration: 650 },
+    );
+  }, [followMode, renderHeading, renderPosition]);
 
   const handleStartTracking = async () => {
     try {
@@ -115,6 +148,10 @@ const RouteScreen = ({ route, navigation }) => {
   const handleStopTracking = async () => {
     await stopTracking();
     Alert.alert("Tracking Stopped", "Tracking session ended successfully.");
+  };
+
+  const handleToggleFollow = () => {
+    toggleFollowMode();
   };
 
   const handleStartNavigation = () => {
@@ -173,57 +210,92 @@ const RouteScreen = ({ route, navigation }) => {
       </View>
 
       <View style={styles.mapWrapper}>
-        {stopsWithCoords.length > 0 ? (
-          <MapView
-            style={styles.map}
-            initialRegion={mapRegion}
-            showsCompass={false}
-            showsMyLocationButton={false}
-          >
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          initialRegion={mapRegion}
+          showsCompass={false}
+          showsMyLocationButton={false}
+          onPanDrag={() => {
+            if (followMode) {
+              setFollowMode(false);
+            }
+          }}
+        >
+          {livePolylineCoords.length > 1 && (
             <Polyline
-              coordinates={polylineCoords}
+              coordinates={livePolylineCoords}
               strokeColor={theme.colors.primary.main}
               strokeWidth={4}
             />
-            <Marker coordinate={HUB_COORDS} />
-            {stopsWithCoords.map((stop, index) => {
-              const isActive = stop.id === activeStop?.id;
-              return (
-                <Marker key={stop.id} coordinate={stop.coordinates}>
-                  <View
+          )}
+
+          <Marker coordinate={HUB_COORDS} />
+
+          {stopsWithCoords.map((stop, index) => {
+            const isActive = stop.id === activeStop?.id;
+            return (
+              <Marker key={stop.id} coordinate={stop.coordinates}>
+                <View
+                  style={[
+                    styles.stopMarker,
+                    {
+                      backgroundColor: isActive
+                        ? theme.colors.primary.main
+                        : theme.colors.card,
+                      borderColor: theme.colors.primary.main,
+                    },
+                  ]}
+                >
+                  <Text
                     style={[
-                      styles.stopMarker,
+                      styles.stopMarkerText,
                       {
-                        backgroundColor: isActive
-                          ? theme.colors.primary.main
-                          : theme.colors.card,
-                        borderColor: theme.colors.primary.main,
+                        color: isActive ? "#fff" : theme.colors.text.primary,
                       },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.stopMarkerText,
-                        {
-                          color: isActive ? "#fff" : theme.colors.text.primary,
-                        },
-                      ]}
-                    >
-                      {index + 1}
-                    </Text>
-                  </View>
-                </Marker>
-              );
-            })}
-          </MapView>
-        ) : (
-          <View
-            style={[styles.noMapCard, { backgroundColor: theme.colors.card }]}
-          >
+                    {index + 1}
+                  </Text>
+                </View>
+              </Marker>
+            );
+          })}
+
+          {renderPosition && (
+            <Marker coordinate={renderPosition} anchor={{ x: 0.5, y: 0.5 }}>
+              <View
+                style={[
+                  styles.driverMarker,
+                  {
+                    backgroundColor: theme.colors.primary.main,
+                    transform: [{ rotate: `${renderHeading}deg` }],
+                  },
+                ]}
+              >
+                <View style={styles.driverDotOuter}>
+                  <View
+                    style={[
+                      styles.driverDotInner,
+                      { backgroundColor: theme.colors.card },
+                    ]}
+                  />
+                </View>
+              </View>
+            </Marker>
+          )}
+        </MapView>
+
+        {stopsWithCoords.length === 0 && !renderPosition && (
+          <View style={styles.mapHintOverlay} pointerEvents="none">
             <Text
-              style={[styles.noMapText, { color: theme.colors.text.secondary }]}
+              style={[
+                styles.mapHintText,
+                { color: theme.colors.text.secondary },
+              ]}
             >
-              This route has no coordinates yet from backend.
+              No route coordinates yet. The live driver marker will appear here
+              once live-seed or tracking data arrives.
             </Text>
           </View>
         )}
@@ -280,6 +352,15 @@ const RouteScreen = ({ route, navigation }) => {
           >
             {statusLabel}
           </Text>
+          <Text
+            style={[
+              styles.trackingStatusMeta,
+              { color: theme.colors.text.tertiary },
+            ]}
+          >
+            {trackingStatus.toUpperCase()} •{" "}
+            {socketMessage || "Awaiting live updates"}
+          </Text>
           {!!socketMessage && (
             <Text
               style={[
@@ -290,16 +371,25 @@ const RouteScreen = ({ route, navigation }) => {
               {socketMessage}
             </Text>
           )}
-          {sessionId && (
+          {activeSessionId && (
             <Text
               style={[
                 styles.sessionIdText,
                 { color: theme.colors.primary.main },
               ]}
             >
-              Session: {sessionId}
+              Session: {activeSessionId}
             </Text>
           )}
+          <Text
+            style={[
+              styles.trackingStatusMeta,
+              { color: theme.colors.text.tertiary },
+            ]}
+          >
+            Queue: {pendingPointQueue.length} • Latest sequence:{" "}
+            {latestServerPoint?.sequence ?? "-"}
+          </Text>
 
           <View style={styles.trackingButtons}>
             <Button
@@ -316,6 +406,12 @@ const RouteScreen = ({ route, navigation }) => {
               style={styles.actionButton}
             />
           </View>
+          <Button
+            title={followMode ? "Follow Mode On" : "Follow Mode Off"}
+            variant="outline"
+            onPress={handleToggleFollow}
+            style={styles.followButton}
+          />
         </Card>
 
         <Card style={styles.activeStopCard}>
@@ -486,6 +582,51 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   map: { flex: 1 },
+  mapHintOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    backgroundColor: "rgba(0,0,0,0.03)",
+  },
+  mapHintText: {
+    textAlign: "center",
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "500",
+  },
+  driverMarker: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.28,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 5,
+    overflow: "visible",
+  },
+  driverDotOuter: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#ffffff",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.8)",
+  },
+  driverDotInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   stopMarker: {
     width: 30,
     height: 30,
@@ -509,10 +650,12 @@ const styles = StyleSheet.create({
   trackingCard: { marginBottom: 12 },
   trackingTitle: { fontSize: 16, fontWeight: "700", marginBottom: 6 },
   trackingStatus: { fontSize: 13 },
+  trackingStatusMeta: { fontSize: 11, marginTop: 4 },
   trackingMessage: { fontSize: 12, marginTop: 4 },
   sessionIdText: { fontSize: 12, marginTop: 6, fontWeight: "700" },
   trackingButtons: { flexDirection: "row", gap: 10, marginTop: 12 },
   actionButton: { flex: 1 },
+  followButton: { marginTop: 10 },
   activeStopCard: { marginBottom: 14 },
   activeStopHeader: {
     flexDirection: "row",

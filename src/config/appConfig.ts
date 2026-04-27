@@ -5,10 +5,16 @@ interface EnvironmentConfig {
   socketUrl: string;
 }
 
+const localApiBaseUrl = 'http://192.168.1.10:5000/api/v1';
+const localSocketUrl = 'http://192.168.1.10:5000';
+
+const envApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+const envSocketUrl = process.env.EXPO_PUBLIC_SOCKET_URL?.trim();
+
 const ENVIRONMENTS: Record<EnvironmentName, EnvironmentConfig> = {
   local: {
-    apiBaseUrl: 'http://192.168.1.10:5000/api/v1',
-    socketUrl: 'http://192.168.1.10:5000',
+    apiBaseUrl: envApiBaseUrl || localApiBaseUrl,
+    socketUrl: envSocketUrl || localSocketUrl,
   },
   production: {
     apiBaseUrl: 'https://api.freshroute.com/api/v1',
@@ -27,6 +33,7 @@ export const appConfig = {
     health: '/health',
     driverLogin: '/auth/driver/login',
     driverMe: '/driver/me',
+    driverLiveSeed: '/driver/me/live-seed',
     driverStats: '/driver/me/stats',
     driverActiveRoute: '/driver/me/active-route',
     driverRoute: '/driver/me/route',

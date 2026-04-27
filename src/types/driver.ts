@@ -41,6 +41,38 @@ export interface DriverRoute {
   stops: DriverOrder[];
 }
 
+export interface DriverTrackingCoordinates {
+  latitude: number;
+  longitude: number;
+}
+
+export interface DriverLiveSeedPoint extends DriverTrackingCoordinates {
+  id?: string;
+  accuracy?: number;
+  heading?: number;
+  speed?: number;
+  currentRouteId?: string;
+  currentStopId?: string;
+  timestamp?: string | number;
+  sequence: number;
+  serverTimestamp?: string | number;
+  latestKnownPosition?: DriverTrackingCoordinates | null;
+  serverTime?: string | number;
+}
+
+export interface DriverLiveSeedSession {
+  id: string;
+  routeId?: string;
+  startedAt?: string;
+}
+
+export interface DriverLiveSeedResponse {
+  session: DriverLiveSeedSession | null;
+  points: DriverLiveSeedPoint[];
+  latestKnownPosition?: DriverTrackingCoordinates | null;
+  serverTime?: string | number;
+}
+
 export interface DriverDashboardData {
   me: DriverUser | null;
   stats: DriverStats | null;
