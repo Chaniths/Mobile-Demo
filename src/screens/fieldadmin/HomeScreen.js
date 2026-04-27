@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,16 +11,41 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
+import fieldAdminApi from '../../api/fieldAdminApi';
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
+  const [overview, setOverview] = useState(null);
+  const [pendingTasks, setPendingTasks] = useState([]);
+  const [latestAggregationRun, setLatestAggregationRun] = useState(null);
 
-  const todayStats = [
-    { id: '1', label: 'Orders Assigned', value: '24', icon: '📦', color: '#3b82f6' },
-    { id: '2', label: 'Assessments', value: '18', icon: '✓', color: '#22c55e' },
-    { id: '3', label: 'Pending Quality', value: '6', icon: '⏰', color: '#f59e0b' },
-    { id: '4', label: 'Routes Today', value: '8', icon: '🗺️', color: '#8b5cf6' },
-  ];
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [overviewData, tasksData] = await Promise.all([
+          fieldAdminApi.getDashboardOverview(),
+          fieldAdminApi.getAssignedTasks(),
+        ]);
+        setOverview(overviewData);
+        setPendingTasks(tasksData.slice(0, 5));
+        const runs = await fieldAdminApi.getAggregationRuns(1);
+        setLatestAggregationRun(runs?.[0] ?? null);
+      } catch (error) {
+        console.error('Failed to load field admin dashboard:', error?.message || error);
+      }
+    };
+    loadData();
+  }, []);
+
+  const todayStats = useMemo(
+    () => [
+      { id: '1', label: 'Orders Assigned', value: String(overview?.assignedOrders ?? 0), icon: '📦', color: '#3b82f6' },
+      { id: '2', label: 'Assessments', value: String(overview?.assessments ?? 0), icon: '✓', color: '#22c55e' },
+      { id: '3', label: 'Pending Quality', value: String(overview?.pendingQuality ?? 0), icon: '⏰', color: '#f59e0b' },
+      { id: '4', label: 'Routes Today', value: String(overview?.routesToday ?? 0), icon: '🗺️', color: '#8b5cf6' },
+    ],
+    [overview]
+  );
 
   const quickActions = [
     {
@@ -88,32 +113,17 @@ const HomeScreen = ({ navigation }) => {
     },
   ];
 
-  const pendingTasks = [
-    {
-      id: '1',
-      type: 'Quality Check',
-      orderId: '#ORD-2024-045',
-      seller: 'Green Market',
-      items: 'Tomatoes, Spinach',
-      priority: 'high',
-    },
-    {
-      id: '2',
-      type: 'Delivery',
-      orderId: '#ORD-2024-042',
-      customer: 'John Doe',
-      address: '123 Main St',
-      priority: 'normal',
-    },
-    {
-      id: '3',
-      type: 'Assessment',
-      orderId: '#ORD-2024-040',
-      driver: 'Mike Johnson',
-      route: 'Route #12',
-      priority: 'normal',
-    },
-  ];
+  const mappedTasks = pendingTasks.map((task) => ({
+    id: task.id,
+    type: task.type,
+    orderId: task.order?.orderNumber ? `#${task.order.orderNumber}` : task.route?.routeNumber || '#TASK',
+    customer: task.buyer?.user?.name || null,
+    seller: task.seller?.user?.name || null,
+    address: task.address,
+    route: task.route?.routeNumber || null,
+    items: task.order ? `Total: ${task.order.totalAmount}` : null,
+    priority: task.status === 'IN_PROGRESS' ? 'high' : 'normal',
+  }));
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
@@ -214,7 +224,7 @@ const HomeScreen = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
           </View>
-          {pendingTasks.map((task) => (
+          {mappedTasks.map((task) => (
             <Card variant={theme.isDarkMode ? "glass" : "default"} key={task.id} style={styles.taskCard}>
               <View style={styles.taskHeader}>
                 <View style={styles.taskInfo}>
@@ -254,6 +264,35 @@ const HomeScreen = ({ navigation }) => {
               </Text>
             </Card>
           ))}
+        </View>
+
+        {/* Aggregation Run Observability */}
+        <View style={styles.tasksSection}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+            Latest Aggregation Run
+          </Text>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.taskCard}>
+            {latestAggregationRun ? (
+              <>
+                <Text style={[styles.taskOrderId, { color: theme.colors.text.primary }]}>
+                  Run #{latestAggregationRun.id.slice(0, 8)}
+                </Text>
+                <Text style={[styles.taskDetail, { color: theme.colors.text.secondary }]}>
+                  Status: {latestAggregationRun.status}
+                </Text>
+                <Text style={[styles.taskDetail, { color: theme.colors.text.secondary }]}>
+                  Eligible: {latestAggregationRun.totalEligible} • Rejected: {latestAggregationRun.totalRejected}
+                </Text>
+                <Text style={[styles.taskDetail, { color: theme.colors.text.secondary }]}>
+                  Batches: {latestAggregationRun.batchesCreatedCount} • Clusters: {latestAggregationRun.totalClusters}
+                </Text>
+              </>
+            ) : (
+              <Text style={[styles.taskDetail, { color: theme.colors.text.secondary }]}>
+                No aggregation run history yet.
+              </Text>
+            )}
+          </Card>
         </View>
 
         {/* Navigation Buttons */}

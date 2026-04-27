@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,65 +10,54 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import fieldAdminApi from '../../api/fieldAdminApi';
 
 const RouteOrdersScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
-  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [routes, setRoutes] = useState([]);
 
-  const routes = [
-    {
-      id: '1',
-      routeId: 'Route #12',
-      driver: 'Mike Johnson',
-      truck: 'WP ABC-1234',
-      stops: 8,
-      distance: '45.8 km',
-      status: 'In Progress',
-      orders: [
-        {
-          id: '1',
-          orderId: '#ORD-2024-001',
-          customer: 'John Doe',
-          address: '123 Main St, Downtown',
-          coords: { latitude: 13.0827, longitude: 80.2707 },
-          items: ['Tomatoes 5kg', 'Spinach 10 bunches'],
-          status: 'In Transit',
-          eta: '10:30 AM',
-        },
-        {
-          id: '2',
-          orderId: '#ORD-2024-002',
-          customer: 'Jane Smith',
-          address: '456 Oak Ave, Midtown',
-          coords: { latitude: 13.0627, longitude: 80.2907 },
-          items: ['Carrots 3kg', 'Cabbage 2pcs'],
-          status: 'Scheduled',
-          eta: '11:00 AM',
-        },
-      ],
-    },
-    {
-      id: '2',
-      routeId: 'Route #15',
-      driver: 'Sarah Williams',
-      truck: 'WP XYZ-5678',
-      stops: 6,
-      distance: '32.4 km',
-      status: 'Scheduled',
-      orders: [
-        {
-          id: '3',
-          orderId: '#ORD-2024-004',
-          customer: 'Bob Johnson',
-          address: '789 Lake Rd, Riverside',
-          coords: { latitude: 13.0427, longitude: 80.2607 },
-          items: ['Mangoes 5kg', 'Bananas 8pcs'],
-          status: 'Scheduled',
-          eta: '02:00 PM',
-        },
-      ],
-    },
-  ];
+  useEffect(() => {
+    const loadRoutes = async () => {
+      try {
+        const [routeData, orderData] = await Promise.all([
+          fieldAdminApi.getRoutes(),
+          fieldAdminApi.getOrdersByTab('all'),
+        ]);
+
+        const mapped = routeData.map((route) => {
+          const routeOrders = orderData.filter((order) => order.route?.id === route.id);
+          return {
+            id: route.id,
+            routeId: route.routeNumber,
+            driver: route.driver?.user?.name || 'Pending',
+            truck: route.truck?.vehicleNumber || 'Not assigned',
+            stops: route._count?.stops || 0,
+            distance: route.totalDistance ? `${route.totalDistance} km` : '-',
+            status: route.status,
+            orders: routeOrders.map((order) => ({
+              id: order.id,
+              orderId: `#${order.orderNumber}`,
+              customer: order.customer,
+              address: order.address,
+              coords: order.coords,
+              items: [`${order.itemCount} item(s)`],
+              status: order.status,
+              eta: order.eta
+                ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : 'TBD',
+            })),
+          };
+        });
+
+        setRoutes(mapped);
+      } catch (error) {
+        console.error('Failed to load route orders:', error?.message || error);
+        setRoutes([]);
+      }
+    };
+
+    loadRoutes();
+  }, []);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
@@ -121,7 +110,7 @@ const RouteOrdersScreen = ({ navigation, route }) => {
                   styles.statusBadge,
                   {
                     backgroundColor:
-                      route.status === 'In Progress' ? `${theme.colors.success}20` : `${theme.colors.info}20`,
+                      route.status === 'IN_PROGRESS' ? `${theme.colors.success}20` : `${theme.colors.info}20`,
                   },
                 ]}
               >
@@ -129,7 +118,7 @@ const RouteOrdersScreen = ({ navigation, route }) => {
                   style={[
                     styles.statusText,
                     {
-                      color: route.status === 'In Progress' ? theme.colors.success : theme.colors.info,
+                      color: route.status === 'IN_PROGRESS' ? theme.colors.success : theme.colors.info,
                     },
                   ]}
                 >

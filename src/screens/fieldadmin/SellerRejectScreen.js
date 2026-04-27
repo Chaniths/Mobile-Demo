@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,27 +6,100 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Alert,
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import fieldAdminApi from '../../api/fieldAdminApi';
 
 const SellerRejectScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
   const [reason, setReason] = useState('');
   const [selectedReason, setSelectedReason] = useState('');
+  const [orders, setOrders] = useState([]);
+  const [selectedOrderId, setSelectedOrderId] = useState(route?.params?.order?.id ?? null);
+  const [selectedItemId, setSelectedItemId] = useState(route?.params?.item?.id ?? null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [isOrderPickerVisible, setIsOrderPickerVisible] = useState(false);
+  const [isItemPickerVisible, setIsItemPickerVisible] = useState(false);
+  const [orderSearch, setOrderSearch] = useState('');
+  const [itemSearch, setItemSearch] = useState('');
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        setLoading(true);
+        const scheduledOrders = await fieldAdminApi.getOrdersByTab('scheduled');
+        const fallbackOrders = scheduledOrders?.length ? scheduledOrders : await fieldAdminApi.getOrdersByTab('all');
+        const normalized = fallbackOrders ?? [];
+        setOrders(normalized);
+        if (!selectedOrderId && normalized.length > 0) {
+          setSelectedOrderId(normalized[0].id);
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Failed to load assigned orders.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadOrders();
+  }, []);
 
-  const item = route?.params?.item || {
-    id: '1',
-    name: 'Heirloom Tomatoes',
-    quantity: '5kg',
-  };
+  const selectedOrder = useMemo(
+    () => orders.find((entry) => entry.id === selectedOrderId) || null,
+    [orders, selectedOrderId]
+  );
 
-  const order = route?.params?.order || {
-    orderId: '#ORD-2024-045',
-    seller: 'Green Market',
-  };
+  useEffect(() => {
+    const availableItems = selectedOrder?.items ?? [];
+    if (!availableItems.length) {
+      setSelectedItemId(null);
+      return;
+    }
+    const itemExists = availableItems.some((entry) => entry.id === selectedItemId);
+    if (!itemExists) {
+      setSelectedItemId(availableItems[0].id);
+    }
+  }, [selectedOrder, selectedItemId]);
+
+  const item = useMemo(() => {
+    const found = (selectedOrder?.items ?? []).find((entry) => entry.id === selectedItemId);
+    if (!found) return null;
+    return {
+      id: found.id,
+      name: found.name,
+      quantity: `${found.quantity} ${found.unit}`,
+    };
+  }, [selectedOrder, selectedItemId]);
+
+  const order = useMemo(() => {
+    if (!selectedOrder) return null;
+    return {
+      id: selectedOrder.id,
+      orderId: selectedOrder.orderNumber,
+      customer: selectedOrder.customer,
+      routeNumber: selectedOrder.route?.routeNumber ?? '-',
+    };
+  }, [selectedOrder]);
+
+  const filteredOrders = useMemo(() => {
+    const query = orderSearch.trim().toLowerCase();
+    if (!query) return orders;
+    return orders.filter((entry) =>
+      `${entry.orderNumber ?? ''} ${entry.customer ?? ''}`.toLowerCase().includes(query)
+    );
+  }, [orders, orderSearch]);
+
+  const filteredItems = useMemo(() => {
+    const query = itemSearch.trim().toLowerCase();
+    const items = selectedOrder?.items ?? [];
+    if (!query) return items;
+    return items.filter((entry) => entry.name?.toLowerCase().includes(query));
+  }, [selectedOrder, itemSearch]);
 
   const rejectionReasons = [
     'Poor Quality',
@@ -39,17 +112,35 @@ const SellerRejectScreen = ({ navigation, route }) => {
   ];
 
   const handleReject = () => {
+    if (!item?.id) {
+      Alert.alert('Unavailable', 'No order item selected.');
+      return;
+    }
     if (!selectedReason && !reason.trim()) {
       alert('Please provide a rejection reason');
       return;
     }
-    // In real app, this would make an API call
-    console.log('Product rejected:', {
-      item,
-      order: order.orderId,
-      reason: selectedReason || reason,
-    });
-    navigation.goBack();
+    setSubmitting(true);
+    fieldAdminApi
+      .submitQualityReview({
+        orderItemId: item.id,
+        rejected: true,
+        approvedQuantity: 0,
+        notes: selectedReason || reason,
+      })
+      .then(() => {
+        Alert.alert('Success', 'Rejection submitted.');
+        setReason('');
+        setSelectedReason('');
+        return fieldAdminApi.getOrdersByTab('scheduled');
+      })
+      .then((refreshedOrders) => {
+        if (refreshedOrders) {
+          setOrders(refreshedOrders);
+        }
+      })
+      .catch(() => Alert.alert('Error', 'Failed to submit rejection.'))
+      .finally(() => setSubmitting(false));
   };
 
   return (
@@ -83,7 +174,48 @@ const SellerRejectScreen = ({ navigation, route }) => {
           <View style={{ width: 60 }} />
         </View>
 
+        {loading ? <ActivityIndicator color={theme.colors.primary.main} style={{ marginBottom: 16 }} /> : null}
+        {!loading && !order ? (
+          <Text style={{ color: theme.colors.text.secondary, marginBottom: 16 }}>
+            No assigned orders available for rejection.
+          </Text>
+        ) : null}
+
+        {order ? (
+          <>
+            <TouchableOpacity
+              style={[
+                styles.openPickerButton,
+                {
+                  borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
+                  backgroundColor: theme.isDarkMode ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+                },
+              ]}
+              onPress={() => setIsOrderPickerVisible(true)}
+            >
+              <Text style={[styles.openPickerText, { color: theme.colors.text.primary }]}>{`Order: ${order.orderId}`}</Text>
+              <Text style={[styles.openPickerChevron, { color: theme.colors.primary.main }]}>▼</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.openPickerButton,
+                {
+                  borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
+                  backgroundColor: theme.isDarkMode ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+                },
+              ]}
+              onPress={() => setIsItemPickerVisible(true)}
+            >
+              <Text style={[styles.openPickerText, { color: theme.colors.text.primary }]}>
+                {item ? `Item: ${item.name}` : 'Select item'}
+              </Text>
+              <Text style={[styles.openPickerChevron, { color: theme.colors.primary.main }]}>▼</Text>
+            </TouchableOpacity>
+          </>
+        ) : null}
+
         {/* Product Info */}
+        {item && order ? (
         <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.productCard}>
           <Text style={[styles.label, { color: theme.colors.text.secondary }]}>
             Product
@@ -102,14 +234,17 @@ const SellerRejectScreen = ({ navigation, route }) => {
             {order.orderId}
           </Text>
           <Text style={[styles.label, { color: theme.colors.text.secondary }]}>
-            Seller
+            Customer
           </Text>
           <Text style={[styles.seller, { color: theme.colors.text.primary }]}>
-            {order.seller}
+            {order.customer}
           </Text>
         </Card>
+        ) : null}
 
         {/* Rejection Reasons */}
+        {item ? (
+        <>
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Select Rejection Reason
         </Text>
@@ -171,8 +306,9 @@ const SellerRejectScreen = ({ navigation, route }) => {
         {/* Actions */}
         <View style={styles.actionsContainer}>
           <Button
-            title="Submit Rejection"
+            title={submitting ? 'Submitting...' : 'Submit Rejection'}
             onPress={handleReject}
+            disabled={submitting}
             style={styles.rejectButton}
           />
           <Button
@@ -182,7 +318,143 @@ const SellerRejectScreen = ({ navigation, route }) => {
             style={styles.cancelButton}
           />
         </View>
+        </>
+        ) : null}
       </ScrollView>
+      <Modal
+        visible={isOrderPickerVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsOrderPickerVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setIsOrderPickerVisible(false)} />
+          <View
+            style={[
+              styles.modalSheet,
+              { backgroundColor: theme.colors.surface, borderColor: theme.isDarkMode ? 'rgba(255,255,255,0.08)' : '#e2e8f0' },
+            ]}
+          >
+            <View style={styles.modalHandle} />
+            <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select Assigned Order</Text>
+            <TextInput
+              style={[
+                styles.modalSearchInput,
+                {
+                  color: theme.colors.text.primary,
+                  borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
+                  backgroundColor: theme.isDarkMode ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+                },
+              ]}
+              placeholder="Search order/customer..."
+              placeholderTextColor={theme.colors.text.tertiary}
+              value={orderSearch}
+              onChangeText={setOrderSearch}
+            />
+            <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
+              {filteredOrders.map((entry) => {
+                const active = entry.id === selectedOrderId;
+                return (
+                  <TouchableOpacity
+                    key={entry.id}
+                    style={[
+                      styles.modalListItem,
+                      { borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb' },
+                      active && {
+                        borderColor: theme.colors.primary.main,
+                        backgroundColor: theme.isDarkMode ? 'rgba(45, 122, 135, 0.25)' : 'rgba(22, 163, 74, 0.12)',
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedOrderId(entry.id);
+                      setIsOrderPickerVisible(false);
+                    }}
+                  >
+                    <View>
+                      <Text style={[styles.modalPrimaryText, { color: theme.colors.text.primary }]}>{entry.orderNumber}</Text>
+                      <Text style={[styles.modalSecondaryText, { color: theme.colors.text.secondary }]}>
+                        {entry.customer} • {entry.items?.length ?? 0} items
+                      </Text>
+                    </View>
+                    {active ? <Text style={[styles.modalSelectedTick, { color: theme.colors.primary.main }]}>✓</Text> : null}
+                  </TouchableOpacity>
+                );
+              })}
+              {filteredOrders.length === 0 ? (
+                <Text style={[styles.modalEmptyText, { color: theme.colors.text.secondary }]}>No matching orders.</Text>
+              ) : null}
+            </ScrollView>
+            <Button title="Close" onPress={() => setIsOrderPickerVisible(false)} style={styles.modalCloseButton} />
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={isItemPickerVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsItemPickerVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setIsItemPickerVisible(false)} />
+          <View
+            style={[
+              styles.modalSheet,
+              { backgroundColor: theme.colors.surface, borderColor: theme.isDarkMode ? 'rgba(255,255,255,0.08)' : '#e2e8f0' },
+            ]}
+          >
+            <View style={styles.modalHandle} />
+            <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select Product Item</Text>
+            <TextInput
+              style={[
+                styles.modalSearchInput,
+                {
+                  color: theme.colors.text.primary,
+                  borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
+                  backgroundColor: theme.isDarkMode ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+                },
+              ]}
+              placeholder="Search item..."
+              placeholderTextColor={theme.colors.text.tertiary}
+              value={itemSearch}
+              onChangeText={setItemSearch}
+            />
+            <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
+              {filteredItems.map((entry) => {
+                const active = entry.id === selectedItemId;
+                return (
+                  <TouchableOpacity
+                    key={entry.id}
+                    style={[
+                      styles.modalListItem,
+                      { borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb' },
+                      active && {
+                        borderColor: theme.colors.primary.main,
+                        backgroundColor: theme.isDarkMode ? 'rgba(45, 122, 135, 0.25)' : 'rgba(22, 163, 74, 0.12)',
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedItemId(entry.id);
+                      setIsItemPickerVisible(false);
+                    }}
+                  >
+                    <View>
+                      <Text style={[styles.modalPrimaryText, { color: theme.colors.text.primary }]}>{entry.name}</Text>
+                      <Text style={[styles.modalSecondaryText, { color: theme.colors.text.secondary }]}>
+                        {entry.quantity} {entry.unit}
+                      </Text>
+                    </View>
+                    {active ? <Text style={[styles.modalSelectedTick, { color: theme.colors.primary.main }]}>✓</Text> : null}
+                  </TouchableOpacity>
+                );
+              })}
+              {filteredItems.length === 0 ? (
+                <Text style={[styles.modalEmptyText, { color: theme.colors.text.secondary }]}>No matching items.</Text>
+              ) : null}
+            </ScrollView>
+            <Button title="Close" onPress={() => setIsItemPickerVisible(false)} style={styles.modalCloseButton} />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -265,6 +537,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
   },
+  openPickerButton: {
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  openPickerText: { fontSize: 14, fontWeight: '600', flex: 1, marginRight: 8 },
+  openPickerChevron: { fontSize: 14, fontWeight: '700' },
   productCard: {
     padding: 16,
     marginBottom: 24,
@@ -333,6 +617,56 @@ const styles = StyleSheet.create({
   cancelButton: {
     marginBottom: 0,
   },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 20,
+    maxHeight: '72%',
+  },
+  modalHandle: {
+    alignSelf: 'center',
+    width: 48,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: '#94a3b8',
+    marginBottom: 12,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12, textAlign: 'center' },
+  modalSearchInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+    fontSize: 14,
+  },
+  modalList: { maxHeight: 340 },
+  modalListItem: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalPrimaryText: { fontSize: 15, fontWeight: '700' },
+  modalSecondaryText: { fontSize: 12, marginTop: 4 },
+  modalSelectedTick: { fontSize: 16, fontWeight: '700' },
+  modalEmptyText: { textAlign: 'center', paddingVertical: 16, fontSize: 13 },
+  modalCloseButton: { marginTop: 4 },
   // Light mode arch strips with green colors
   lightModeArchStrip1: {
     backgroundColor: 'rgba(22, 163, 74, 0.3)',

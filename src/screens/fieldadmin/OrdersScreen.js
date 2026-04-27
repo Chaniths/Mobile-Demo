@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,107 +12,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import EmptyState from '../../components/common/EmptyState';
 import Button from '../../components/common/Button';
-
-const mockOrders = [
-  {
-    id: '1',
-    orderId: '#ORD-2024-001',
-    date: 'Dec 18, 2024',
-    status: 'scheduled',
-    customer: 'John Doe',
-    address: '123 Main St, Downtown',
-    coords: { latitude: 13.0827, longitude: 80.2707 },
-    items: 3,
-    total: 45.99,
-    route: 'Route #12',
-    driver: 'Mike Johnson',
-    eta: '10:30 AM',
-  },
-  {
-    id: '2',
-    orderId: '#ORD-2024-002',
-    date: 'Dec 18, 2024',
-    status: 'in_transit',
-    customer: 'Jane Smith',
-    address: '456 Oak Ave, Midtown',
-    coords: { latitude: 13.0627, longitude: 80.2907 },
-    items: 2,
-    total: 32.50,
-    route: 'Route #12',
-    driver: 'Mike Johnson',
-    eta: '11:00 AM',
-  },
-  {
-    id: '3',
-    orderId: '#ORD-2024-003',
-    date: 'Dec 18, 2024',
-    status: 'in_transit',
-    customer: 'Bob Johnson',
-    address: '789 Lake Rd, Riverside',
-    coords: { latitude: 13.0427, longitude: 80.2607 },
-    items: 4,
-    total: 67.25,
-    route: 'Route #15',
-    driver: 'Sarah Williams',
-    eta: '02:00 PM',
-  },
-  {
-    id: '4',
-    orderId: '#ORD-2024-004',
-    date: 'Dec 17, 2024',
-    status: 'delivered',
-    customer: 'Alice Brown',
-    address: '321 Park St, Uptown',
-    coords: { latitude: 13.0927, longitude: 80.2807 },
-    items: 1,
-    total: 18.75,
-    route: 'Route #10',
-    driver: 'Tom Wilson',
-    eta: 'Delivered',
-  },
-  {
-    id: '5',
-    orderId: '#ORD-2024-005',
-    date: 'Dec 18, 2024',
-    status: 'scheduled',
-    customer: 'Charlie Davis',
-    address: '654 Elm St, Suburb',
-    coords: { latitude: 13.0527, longitude: 80.2507 },
-    items: 5,
-    total: 89.50,
-    route: 'Route #15',
-    driver: 'Sarah Williams',
-    eta: '03:30 PM',
-  },
-  {
-    id: '6',
-    orderId: '#ORD-2024-006',
-    date: 'Dec 17, 2024',
-    status: 'delivered',
-    customer: 'Diana Miller',
-    address: '987 Pine Ave, Downtown',
-    coords: { latitude: 13.0727, longitude: 80.2407 },
-    items: 2,
-    total: 42.00,
-    route: 'Route #10',
-    driver: 'Tom Wilson',
-    eta: 'Delivered',
-  },
-  {
-    id: '7',
-    orderId: '#ORD-2024-007',
-    date: 'Dec 18, 2024',
-    status: 'pending',
-    customer: 'Eve Wilson',
-    address: '147 Maple Dr, Midtown',
-    coords: null, // No coordinates for unassigned orders
-    items: 3,
-    total: 55.75,
-    route: 'Not assigned',
-    driver: 'Pending',
-    eta: 'TBD',
-  },
-];
+import fieldAdminApi from '../../api/fieldAdminApi';
 
 const statusColors = {
   scheduled: '#3b82f6',
@@ -135,10 +35,49 @@ const statusLabels = {
 const OrdersScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('all');
+  const [orders, setOrders] = useState([]);
 
-  const filteredOrders = activeTab === 'all'
-    ? mockOrders
-    : mockOrders.filter((order) => order.status === activeTab);
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        const data = await fieldAdminApi.getOrdersByTab(activeTab);
+        const mapped = data.map((order) => ({
+          id: order.id,
+          orderId: `#${order.orderNumber}`,
+          date: new Date(order.placedAt).toLocaleDateString(),
+          status:
+            order.status === 'IN_TRANSIT'
+              ? 'in_transit'
+              : order.status === 'DELIVERED'
+              ? 'delivered'
+              : order.status === 'ASSIGNED' || order.status === 'BATCHED'
+              ? 'scheduled'
+              : order.status === 'PAID' || order.status === 'PENDING'
+              ? 'pending'
+              : 'processing',
+          customer: order.customer,
+          address: order.address,
+          coords: order.coords,
+          items: order.itemCount,
+          total: order.totalAmount,
+          route: order.route?.routeNumber || 'Not assigned',
+          driver: order.driver?.name || 'Pending',
+          eta: order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'TBD',
+          raw: order,
+        }));
+        setOrders(mapped);
+      } catch (error) {
+        console.error('Failed to load orders:', error?.message || error);
+        setOrders([]);
+      }
+    };
+    loadOrders();
+  }, [activeTab]);
+
+  const filteredOrders = useMemo(
+    () => (activeTab === 'all' ? orders : orders.filter((order) => order.status === activeTab)),
+    [activeTab, orders]
+  );
 
   const renderOrder = ({ item }) => (
     <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.orderCard}>

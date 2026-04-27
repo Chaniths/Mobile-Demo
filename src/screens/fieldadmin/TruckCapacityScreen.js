@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import fieldAdminApi from '../../api/fieldAdminApi';
 
 const TruckCapacityScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -25,25 +27,51 @@ const TruckCapacityScreen = ({ navigation, route }) => {
 
   const [capacity, setCapacity] = useState(truck.currentCapacity);
   const [notes, setNotes] = useState('');
+  const [trucks, setTrucks] = useState([]);
 
-  const trucks = [
-    { id: 'truck-001', licensePlate: 'WP ABC-1234', driver: 'Mike Johnson', capacity: '75/100 kg' },
-    { id: 'truck-002', licensePlate: 'WP XYZ-5678', driver: 'Sarah Williams', capacity: '45/100 kg' },
-    { id: 'truck-003', licensePlate: 'WP DEF-9012', driver: 'Tom Brown', capacity: '90/100 kg' },
-  ];
+  useEffect(() => {
+    const loadTrucks = async () => {
+      try {
+        const routes = await fieldAdminApi.getRoutes();
+        const mapped = routes
+          .filter((r) => r?.truck?.id && r?.driver?.id)
+          .map((r) => ({
+            id: r.truck.id,
+            driverId: r.driver.id,
+            licensePlate: r.truck.vehicleNumber ?? 'Unknown',
+            driver: r.driver?.user?.name ?? 'Driver',
+            currentCapacity: String(r.truck.maxWeight ?? 0),
+            maxCapacity: String(r.truck.maxWeight ?? 0),
+            unit: 'kg',
+          }));
+        setTrucks(mapped);
+        if (mapped.length > 0) setTruck(mapped[0]);
+      } catch {
+        Alert.alert('Error', 'Failed to load trucks.');
+      }
+    };
+    loadTrucks();
+  }, []);
 
   const handleUpdateCapacity = () => {
     if (!capacity.trim() || isNaN(capacity) || parseFloat(capacity) < 0 || parseFloat(capacity) > 100) {
       alert('Please enter a valid capacity (0-100)');
       return;
     }
-    // In real app, this would make an API call
-    console.log('Capacity updated:', {
-      truckId: truck.id,
-      capacity: parseFloat(capacity),
-      notes,
-    });
-    navigation.goBack();
+    if (!truck.driverId) {
+      Alert.alert('Error', 'No driver linked to this truck.');
+      return;
+    }
+    fieldAdminApi
+      .updateTruckCapacity({
+        driverId: truck.driverId,
+        vehicleCapacity: parseFloat(capacity),
+      })
+      .then(() => {
+        Alert.alert('Success', notes ? `Capacity updated. Note: ${notes}` : 'Capacity updated.');
+        navigation.goBack();
+      })
+      .catch(() => Alert.alert('Error', 'Failed to update truck capacity.'));
   };
 
   const capacityPercent = (parseFloat(truck.currentCapacity) / parseFloat(truck.maxCapacity)) * 100;
@@ -100,7 +128,7 @@ const TruckCapacityScreen = ({ navigation, route }) => {
                 Driver: {t.driver}
               </Text>
               <Text style={[styles.truckCapacity, { color: theme.colors.text.secondary }]}>
-                Capacity: {t.capacity}
+                Capacity: {t.currentCapacity}/{t.maxCapacity} {t.unit}
               </Text>
             </Card>
           </TouchableOpacity>

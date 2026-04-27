@@ -3,7 +3,8 @@
 
 const ENV = {
   dev: {
-    apiUrl: 'http://localhost:5001/api',
+    // For Android emulator use: http://10.0.2.2:5001/api/v1
+    apiUrl: 'http://localhost:5001/api/v1',
     wsUrl: 'ws://localhost:5001',
   },
   staging: {

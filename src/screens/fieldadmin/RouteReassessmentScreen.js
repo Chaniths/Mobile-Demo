@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,46 +6,58 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import fieldAdminApi from '../../api/fieldAdminApi';
 
 const RouteReassessmentScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
   const [changes, setChanges] = useState('');
   const [selectedRoute, setSelectedRoute] = useState(null);
+  const [routes, setRoutes] = useState([]);
 
-  const routes = [
-    {
-      id: '1',
-      routeId: 'Route #12',
-      driver: 'Mike Johnson',
-      stops: 8,
-      distance: '45.8 km',
-      status: 'In Progress',
-      orders: ['#ORD-001', '#ORD-002', '#ORD-003'],
-    },
-    {
-      id: '2',
-      routeId: 'Route #15',
-      driver: 'Sarah Williams',
-      stops: 6,
-      distance: '32.4 km',
-      status: 'Scheduled',
-      orders: ['#ORD-004', '#ORD-005'],
-    },
-  ];
+  useEffect(() => {
+    const loadRoutes = async () => {
+      try {
+        const data = await fieldAdminApi.getRoutes();
+        const mapped = data.map((r) => ({
+          id: r.id,
+          routeId: r.routeNumber,
+          driver: r.driver?.user?.name ?? 'Unassigned',
+          stops: r.stops?.length ?? 0,
+          distance: r.totalDistance ? `${r.totalDistance} km` : 'N/A',
+          status: r.status,
+          orders: (r.batch?.orders ?? []).map((o) => o.orderNumber),
+        }));
+        setRoutes(mapped);
+      } catch {
+        Alert.alert('Error', 'Failed to load routes.');
+      }
+    };
+    loadRoutes();
+  }, []);
 
   const handleReassess = () => {
     if (!selectedRoute || !changes.trim()) {
       alert('Please select a route and describe the changes');
       return;
     }
-    // In real app, this would make an API call
-    console.log('Route reassessed:', { route: selectedRoute.routeId, changes });
-    navigation.goBack();
+    fieldAdminApi
+      .submitRouteReassessment({
+        routeId: selectedRoute.id,
+        reason: changes,
+        oldData: { routeNumber: selectedRoute.routeId },
+        newData: { note: changes },
+      })
+      .then(() => {
+        Alert.alert('Success', 'Route reassessment submitted.');
+        navigation.goBack();
+      })
+      .catch(() => Alert.alert('Error', 'Failed to submit reassessment.'));
   };
 
   return (

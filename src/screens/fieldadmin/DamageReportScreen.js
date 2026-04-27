@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Alert,
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import fieldAdminApi from '../../api/fieldAdminApi';
 
 const DamageReportScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -18,16 +22,61 @@ const DamageReportScreen = ({ navigation, route }) => {
   const [severity, setSeverity] = useState('');
   const [description, setDescription] = useState('');
   const [affectedItems, setAffectedItems] = useState('');
+  const [orders, setOrders] = useState([]);
+  const [selectedOrderId, setSelectedOrderId] = useState(route?.params?.order?.id ?? null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const [orderSearch, setOrderSearch] = useState('');
 
-  const order = route?.params?.order || {
-    id: '1',
-    orderId: '#ORD-2024-042',
-    customer: 'John Doe',
-    items: [
-      { name: 'Heirloom Tomatoes', quantity: '5kg' },
-      { name: 'Organic Spinach', quantity: '10 bunches' },
-    ],
-  };
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        setLoading(true);
+        const [inTransitOrders, deliveredOrders] = await Promise.all([
+          fieldAdminApi.getOrdersByTab('in_transit'),
+          fieldAdminApi.getOrdersByTab('delivered'),
+        ]);
+        const mergedOrders = [...(inTransitOrders ?? []), ...(deliveredOrders ?? [])];
+        const dedupedOrders = mergedOrders.filter(
+          (order, index, array) => array.findIndex((entry) => entry.id === order.id) === index
+        );
+        setOrders(dedupedOrders);
+        if (!selectedOrderId && dedupedOrders.length) {
+          setSelectedOrderId(dedupedOrders[0].id);
+        }
+      } catch {
+        Alert.alert('Error', 'Failed to load order.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadOrders();
+  }, []);
+
+  const selectedOrder = useMemo(
+    () => orders.find((entry) => entry.id === selectedOrderId) || null,
+    [orders, selectedOrderId]
+  );
+
+  const order = useMemo(() => {
+    if (!selectedOrder) return null;
+    return {
+      id: selectedOrder.id,
+      orderId: selectedOrder.orderNumber ?? selectedOrder.id,
+      customer: selectedOrder.customer ?? 'Customer',
+      stopId: selectedOrder.deliveryStopId ?? null,
+      status: selectedOrder.status ?? 'N/A',
+    };
+  }, [selectedOrder]);
+
+  const filteredOrders = useMemo(() => {
+    const query = orderSearch.trim().toLowerCase();
+    if (!query) return orders;
+    return orders.filter((entry) =>
+      `${entry.orderNumber ?? ''} ${entry.customer ?? ''} ${entry.status ?? ''}`.toLowerCase().includes(query)
+    );
+  }, [orders, orderSearch]);
 
   const damageTypes = ['Product Damage', 'Packaging Damage', 'Transport Damage', 'Other'];
   const severityLevels = ['Minor', 'Moderate', 'Severe', 'Critical'];
@@ -37,15 +86,21 @@ const DamageReportScreen = ({ navigation, route }) => {
       alert('Please fill all required fields');
       return;
     }
-    // In real app, this would make an API call
-    console.log('Damage reported:', {
-      orderId: order.orderId,
-      damageType,
-      severity,
-      description,
-      affectedItems,
-    });
-    navigation.goBack();
+    setSubmitting(true);
+    fieldAdminApi
+      .submitDamageReport({
+        stopId: order?.stopId,
+        description: `${damageType} | ${severity} | ${description}${affectedItems ? ` | Items: ${affectedItems}` : ''}`,
+      })
+      .then(() => {
+        Alert.alert('Success', 'Damage report submitted.');
+        setDamageType('');
+        setSeverity('');
+        setDescription('');
+        setAffectedItems('');
+      })
+      .catch(() => Alert.alert('Error', 'Failed to submit damage report.'))
+      .finally(() => setSubmitting(false));
   };
 
   return (
@@ -78,11 +133,37 @@ const DamageReportScreen = ({ navigation, route }) => {
           <View style={{ width: 60 }} />
         </View>
 
+        {loading ? <ActivityIndicator color={theme.colors.primary.main} style={{ marginBottom: 16 }} /> : null}
+        {order ? (
+          <TouchableOpacity
+            style={[
+              styles.openPickerButton,
+              {
+                borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
+                backgroundColor: theme.isDarkMode ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+              },
+            ]}
+            onPress={() => setIsPickerVisible(true)}
+          >
+            <Text style={[styles.openPickerText, { color: theme.colors.text.primary }]}>
+              {`Order: ${order.orderId}`}
+            </Text>
+            <Text style={[styles.openPickerChevron, { color: theme.colors.primary.main }]}>▼</Text>
+          </TouchableOpacity>
+        ) : null}
+        {!loading && !order ? (
+          <Text style={{ color: theme.colors.text.secondary, marginBottom: 16 }}>
+            No delivered or in-transit orders available.
+          </Text>
+        ) : null}
+
         <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.orderCard}>
           <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Order ID</Text>
-          <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>{order.orderId}</Text>
+          <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>{order?.orderId ?? '-'}</Text>
           <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Customer</Text>
-          <Text style={[styles.detail, { color: theme.colors.text.primary }]}>{order.customer}</Text>
+          <Text style={[styles.detail, { color: theme.colors.text.primary }]}>{order?.customer ?? '-'}</Text>
+          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Status</Text>
+          <Text style={[styles.detail, { color: theme.colors.text.primary }]}>{order?.status ?? '-'}</Text>
         </Card>
 
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
@@ -182,11 +263,79 @@ const DamageReportScreen = ({ navigation, route }) => {
         </Card>
 
         <Button
-          title="Submit Damage Report"
+          title={submitting ? 'Submitting...' : 'Submit Damage Report'}
           onPress={handleSubmitReport}
+          disabled={submitting || !order}
           style={styles.submitButton}
         />
       </ScrollView>
+      <Modal
+        visible={isPickerVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsPickerVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setIsPickerVisible(false)} />
+          <View
+            style={[
+              styles.modalSheet,
+              { backgroundColor: theme.colors.surface, borderColor: theme.isDarkMode ? 'rgba(255,255,255,0.08)' : '#e2e8f0' },
+            ]}
+          >
+            <View style={styles.modalHandle} />
+            <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select Order</Text>
+            <TextInput
+              style={[
+                styles.modalSearchInput,
+                {
+                  color: theme.colors.text.primary,
+                  borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
+                  backgroundColor: theme.isDarkMode ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+                },
+              ]}
+              placeholder="Search order/customer/status..."
+              placeholderTextColor={theme.colors.text.tertiary}
+              value={orderSearch}
+              onChangeText={setOrderSearch}
+            />
+            <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
+              {filteredOrders.map((entry) => {
+                const active = entry.id === selectedOrderId;
+                return (
+                  <TouchableOpacity
+                    key={entry.id}
+                    style={[
+                      styles.modalListItem,
+                      { borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb' },
+                      active && {
+                        borderColor: theme.colors.primary.main,
+                        backgroundColor: theme.isDarkMode ? 'rgba(45, 122, 135, 0.25)' : 'rgba(22, 163, 74, 0.12)',
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedOrderId(entry.id);
+                      setIsPickerVisible(false);
+                    }}
+                  >
+                    <View>
+                      <Text style={[styles.modalOrderNumber, { color: theme.colors.text.primary }]}>{entry.orderNumber}</Text>
+                      <Text style={[styles.modalOrderMeta, { color: theme.colors.text.secondary }]}>
+                        {entry.customer} • {entry.status}
+                      </Text>
+                    </View>
+                    {active ? <Text style={[styles.modalSelectedTick, { color: theme.colors.primary.main }]}>✓</Text> : null}
+                  </TouchableOpacity>
+                );
+              })}
+              {filteredOrders.length === 0 ? (
+                <Text style={[styles.modalEmptyText, { color: theme.colors.text.secondary }]}>No matching orders.</Text>
+              ) : null}
+            </ScrollView>
+            <Button title="Close" onPress={() => setIsPickerVisible(false)} style={styles.modalCloseButton} />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -263,6 +412,18 @@ const styles = StyleSheet.create({
   },
   backButton: { fontSize: 16, fontWeight: '600' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
+  openPickerButton: {
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  openPickerText: { fontSize: 14, fontWeight: '600', flex: 1, marginRight: 8 },
+  openPickerChevron: { fontSize: 14, fontWeight: '700' },
   orderCard: { padding: 16, marginBottom: 24 },
   label: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   orderId: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
@@ -278,6 +439,56 @@ const styles = StyleSheet.create({
   inputCard: { padding: 16, marginBottom: 24 },
   input: { fontSize: 14, minHeight: 100, textAlignVertical: 'top' },
   submitButton: { marginTop: 8 },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 20,
+    maxHeight: '72%',
+  },
+  modalHandle: {
+    alignSelf: 'center',
+    width: 48,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: '#94a3b8',
+    marginBottom: 12,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12, textAlign: 'center' },
+  modalSearchInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+    fontSize: 14,
+  },
+  modalList: { maxHeight: 320 },
+  modalListItem: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalOrderNumber: { fontSize: 15, fontWeight: '700' },
+  modalOrderMeta: { fontSize: 12, marginTop: 4 },
+  modalSelectedTick: { fontSize: 16, fontWeight: '700' },
+  modalEmptyText: { textAlign: 'center', paddingVertical: 16, fontSize: 13 },
+  modalCloseButton: { marginTop: 4 },
   // Light mode arch strips with green colors
   lightModeArchStrip1: {
     backgroundColor: 'rgba(22, 163, 74, 0.3)',

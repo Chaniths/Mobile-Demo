@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,17 +6,27 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
+  Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import fieldAdminApi from '../../api/fieldAdminApi';
 
 const AssessmentScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
   const [selectedType, setSelectedType] = useState(null); // 'driver', 'buyer', 'seller'
+  const [selectedCandidateId, setSelectedCandidateId] = useState(null);
   const [rating, setRating] = useState(0);
   const [comments, setComments] = useState('');
+  const [candidates, setCandidates] = useState({ drivers: [], buyers: [], sellers: [] });
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const [candidateSearch, setCandidateSearch] = useState('');
 
   const assessmentTypes = [
     { id: 'driver', label: 'Driver Assessment', icon: '🚚', color: '#3b82f6' },
@@ -24,40 +34,79 @@ const AssessmentScreen = ({ navigation, route }) => {
     { id: 'seller', label: 'Seller Assessment', icon: '🏪', color: '#f59e0b' },
   ];
 
-  const mockSubjects = {
-    driver: {
-      id: 'driver-001',
-      name: 'Mike Johnson',
-      orderId: '#ORD-2024-042',
-      route: 'Route #12',
-    },
-    buyer: {
-      id: 'buyer-001',
-      name: 'John Doe',
-      orderId: '#ORD-2024-042',
-      totalOrders: 24,
-    },
-    seller: {
-      id: 'seller-001',
-      name: 'Green Market',
-      orderId: '#ORD-2024-042',
-      qualityScore: 4.5,
-    },
-  };
+  useEffect(() => {
+    const loadCandidates = async () => {
+      try {
+        setLoading(true);
+        const data = await fieldAdminApi.getAssessmentCandidates();
+        setCandidates(data);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to load assessment candidates.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCandidates();
+  }, []);
+
+  const candidateList = useMemo(() => {
+    if (!selectedType) return [];
+    const map = {
+      driver: candidates.drivers,
+      buyer: candidates.buyers,
+      seller: candidates.sellers,
+    };
+    return map[selectedType] || [];
+  }, [selectedType, candidates]);
+
+  useEffect(() => {
+    if (!selectedType) {
+      setSelectedCandidateId(null);
+      setIsPickerVisible(false);
+      return;
+    }
+    const defaultCandidate = candidateList[0] || null;
+    setSelectedCandidateId(defaultCandidate?.id ?? null);
+  }, [selectedType, candidateList]);
+
+  const currentSubject = useMemo(
+    () => candidateList.find((candidate) => candidate.id === selectedCandidateId) || null,
+    [candidateList, selectedCandidateId]
+  );
+
+  const filteredCandidates = useMemo(() => {
+    const query = candidateSearch.trim().toLowerCase();
+    if (!query) return candidateList;
+    return candidateList.filter((candidate) => candidate.name?.toLowerCase().includes(query));
+  }, [candidateList, candidateSearch]);
 
   const handleSubmitAssessment = () => {
     if (!selectedType || rating === 0 || !comments.trim()) {
       alert('Please complete all fields');
       return;
     }
-    // In real app, this would make an API call
-    console.log('Assessment submitted:', {
-      type: selectedType,
-      subject: mockSubjects[selectedType],
-      rating,
-      comments,
-    });
-    navigation.goBack();
+    if (!currentSubject?.id) {
+      Alert.alert('Unavailable', 'No candidate found for selected assessment type.');
+      return;
+    }
+    const submit = async () => {
+      try {
+        setSubmitting(true);
+        await fieldAdminApi.submitAssessment({
+          type: selectedType,
+          targetUserId: currentSubject.id,
+          rating,
+          comment: comments,
+        });
+        Alert.alert('Success', 'Assessment submitted.');
+        navigation.goBack();
+      } catch (error) {
+        Alert.alert('Error', 'Failed to submit assessment.');
+      } finally {
+        setSubmitting(false);
+      }
+    };
+    submit();
   };
 
   return (
@@ -123,21 +172,31 @@ const AssessmentScreen = ({ navigation, route }) => {
 
         {selectedType && (
           <>
+            {loading ? <ActivityIndicator color={theme.colors.primary.main} style={{ marginBottom: 16 }} /> : null}
             <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.subjectCard}>
               <Text style={[styles.label, { color: theme.colors.text.secondary }]}>
                 {selectedType === 'driver' ? 'Driver' : selectedType === 'buyer' ? 'Buyer' : 'Seller'}
               </Text>
+              {candidateList.length > 0 ? (
+                <TouchableOpacity
+                  style={[
+                    styles.openPickerButton,
+                    {
+                      borderColor: theme.colors.border,
+                      backgroundColor: theme.isDarkMode ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+                    },
+                  ]}
+                  onPress={() => setIsPickerVisible(true)}
+                >
+                  <Text style={[styles.openPickerText, { color: theme.colors.text.primary }]}>
+                    {currentSubject?.name ? `Selected: ${currentSubject.name}` : 'Select candidate'}
+                  </Text>
+                  <Text style={[styles.openPickerChevron, { color: theme.colors.primary.main }]}>▼</Text>
+                </TouchableOpacity>
+              ) : null}
               <Text style={[styles.subjectName, { color: theme.colors.text.primary }]}>
-                {mockSubjects[selectedType].name}
+                {currentSubject?.name ?? 'No assigned candidate'}
               </Text>
-              <Text style={[styles.subjectDetail, { color: theme.colors.text.secondary }]}>
-                Order: {mockSubjects[selectedType].orderId}
-              </Text>
-              {selectedType === 'driver' && (
-                <Text style={[styles.subjectDetail, { color: theme.colors.text.secondary }]}>
-                  Route: {mockSubjects[selectedType].route}
-                </Text>
-              )}
             </Card>
 
             <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
@@ -173,13 +232,97 @@ const AssessmentScreen = ({ navigation, route }) => {
             </Card>
 
             <Button
-              title="Submit Assessment"
+              title={submitting ? 'Submitting...' : 'Submit Assessment'}
               onPress={handleSubmitAssessment}
+              disabled={submitting || !currentSubject}
               style={styles.submitButton}
             />
           </>
         )}
       </ScrollView>
+
+      <Modal
+        visible={isPickerVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setIsPickerVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setIsPickerVisible(false)} />
+          <View
+            style={[
+              styles.modalSheet,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.isDarkMode ? 'rgba(255,255,255,0.08)' : '#e2e8f0',
+              },
+            ]}
+          >
+            <View style={styles.modalHandle} />
+            <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>
+              Choose {selectedType === 'driver' ? 'Driver' : selectedType === 'buyer' ? 'Buyer' : 'Seller'}
+            </Text>
+            <TextInput
+              style={[
+                styles.modalSearchInput,
+                {
+                  color: theme.colors.text.primary,
+                  borderColor: theme.colors.border,
+                  backgroundColor: theme.isDarkMode ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+                },
+              ]}
+              placeholder="Search by name..."
+              placeholderTextColor={theme.colors.text.tertiary}
+              value={candidateSearch}
+              onChangeText={setCandidateSearch}
+            />
+            <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
+              {filteredCandidates.map((candidate) => {
+                const selected = selectedCandidateId === candidate.id;
+                return (
+                  <TouchableOpacity
+                    key={candidate.id}
+                    style={[
+                      styles.modalListItem,
+                      {
+                        borderColor: theme.colors.border,
+                        backgroundColor: theme.isDarkMode ? 'rgba(255,255,255,0.02)' : '#ffffff',
+                      },
+                      selected && {
+                        borderColor: theme.colors.primary.main,
+                        backgroundColor: theme.isDarkMode ? 'rgba(45, 122, 135, 0.25)' : 'rgba(22, 163, 74, 0.12)',
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedCandidateId(candidate.id);
+                      setIsPickerVisible(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.modalListItemText,
+                        { color: theme.colors.text.primary },
+                        selected && { color: theme.colors.primary.main, fontWeight: '700' },
+                      ]}
+                    >
+                      {candidate.name}
+                    </Text>
+                    {selected ? (
+                      <Text style={[styles.modalSelectedTick, { color: theme.colors.primary.main }]}>✓</Text>
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+              {filteredCandidates.length === 0 ? (
+                <Text style={[styles.modalEmptyText, { color: theme.colors.text.secondary }]}>
+                  No matches found.
+                </Text>
+              ) : null}
+            </ScrollView>
+            <Button title="Close" onPress={() => setIsPickerVisible(false)} style={styles.modalCloseButton} />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -269,6 +412,18 @@ const styles = StyleSheet.create({
   typeIcon: { fontSize: 32, marginBottom: 8 },
   typeLabel: { fontSize: 13, fontWeight: '500', textAlign: 'center' },
   subjectCard: { padding: 16, marginBottom: 24 },
+  openPickerButton: {
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  openPickerText: { fontSize: 14, fontWeight: '600', flex: 1, marginRight: 8 },
+  openPickerChevron: { fontSize: 14, fontWeight: '700' },
   label: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   subjectName: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
   subjectDetail: { fontSize: 14, marginBottom: 4 },
@@ -279,6 +434,55 @@ const styles = StyleSheet.create({
   commentsCard: { padding: 16, marginBottom: 24 },
   input: { fontSize: 14, minHeight: 150, textAlignVertical: 'top' },
   submitButton: { marginTop: 8 },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 20,
+    maxHeight: '70%',
+  },
+  modalHandle: {
+    alignSelf: 'center',
+    width: 48,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: '#94a3b8',
+    marginBottom: 12,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12, textAlign: 'center' },
+  modalSearchInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+    fontSize: 14,
+  },
+  modalList: { maxHeight: 320 },
+  modalListItem: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalListItemText: { fontSize: 15, fontWeight: '500' },
+  modalSelectedTick: { fontSize: 16, fontWeight: '700' },
+  modalEmptyText: { textAlign: 'center', paddingVertical: 16, fontSize: 13 },
+  modalCloseButton: { marginTop: 4 },
   // Light mode arch strips with green colors
   lightModeArchStrip1: {
     backgroundColor: 'rgba(22, 163, 74, 0.3)',
