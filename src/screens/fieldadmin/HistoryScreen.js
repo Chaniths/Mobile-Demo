@@ -1,151 +1,125 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
+import fieldAdminApi from '../../api/fieldAdminApi';
 
 const HistoryScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('assessments'); // assessments, trucks, drivers
+  const [loading, setLoading] = useState(false);
+  const [assessments, setAssessments] = useState([]);
+  const [trucks, setTrucks] = useState([]);
+  const [drivers, setDrivers] = useState([]);
 
-  // Mock data for last 4+ days
-  const assessments = [
-    {
-      id: '1',
-      date: '2024-12-08',
-      type: 'Driver Assessment',
-      subject: 'Mike Johnson',
-      orderId: '#ORD-2024-038',
-      rating: 5,
-      comments: 'Excellent service, on-time delivery',
-    },
-    {
-      id: '2',
-      date: '2024-12-08',
-      type: 'Buyer Assessment',
-      subject: 'John Doe',
-      orderId: '#ORD-2024-037',
-      rating: 4,
-      comments: 'Good communication, satisfied with quality',
-    },
-    {
-      id: '3',
-      date: '2024-12-07',
-      type: 'Seller Assessment',
-      subject: 'Green Market',
-      orderId: '#ORD-2024-035',
-      rating: 5,
-      comments: 'High quality products, well packaged',
-    },
-    {
-      id: '4',
-      date: '2024-12-06',
-      type: 'Driver Assessment',
-      subject: 'Sarah Williams',
-      orderId: '#ORD-2024-032',
-      rating: 4,
-      comments: 'Professional delivery, careful handling',
-    },
-    {
-      id: '5',
-      date: '2024-12-05',
-      type: 'Buyer Assessment',
-      subject: 'Jane Smith',
-      orderId: '#ORD-2024-030',
-      rating: 5,
-      comments: 'Very satisfied with service',
-    },
-  ];
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        setLoading(true);
+        const [allHistory, truckHistory, driverHistory] = await Promise.all([
+          fieldAdminApi.getAllHistory(),
+          fieldAdminApi.getTruckHistory(),
+          fieldAdminApi.getDriverHistory(),
+        ]);
 
-  const trucks = [
-    {
-      id: '1',
-      licensePlate: 'WP ABC-1234',
-      date: '2024-12-08',
-      driver: 'Mike Johnson',
-      capacity: '75/100 kg',
-      orders: 8,
-      status: 'Completed',
-    },
-    {
-      id: '2',
-      licensePlate: 'WP XYZ-5678',
-      date: '2024-12-07',
-      driver: 'Sarah Williams',
-      capacity: '65/100 kg',
-      orders: 6,
-      status: 'Completed',
-    },
-    {
-      id: '3',
-      licensePlate: 'WP DEF-9012',
-      date: '2024-12-06',
-      driver: 'Tom Brown',
-      capacity: '90/100 kg',
-      orders: 10,
-      status: 'Completed',
-    },
-    {
-      id: '4',
-      licensePlate: 'WP ABC-1234',
-      date: '2024-12-05',
-      driver: 'Mike Johnson',
-      capacity: '80/100 kg',
-      orders: 7,
-      status: 'Completed',
-    },
-  ];
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const withinLastWeek = (value) => {
+          if (!value) return false;
+          const parsed = new Date(value);
+          return !Number.isNaN(parsed.getTime()) && parsed >= sevenDaysAgo;
+        };
 
-  const drivers = [
-    {
-      id: '1',
-      name: 'Mike Johnson',
-      date: '2024-12-08',
-      routes: 2,
-      orders: 15,
-      rating: 4.8,
-      truck: 'WP ABC-1234',
-    },
-    {
-      id: '2',
-      name: 'Sarah Williams',
-      date: '2024-12-07',
-      routes: 1,
-      orders: 6,
-      rating: 4.5,
-      truck: 'WP XYZ-5678',
-    },
-    {
-      id: '3',
-      name: 'Tom Brown',
-      date: '2024-12-06',
-      routes: 1,
-      orders: 10,
-      rating: 4.9,
-      truck: 'WP DEF-9012',
-    },
-    {
-      id: '4',
-      name: 'Mike Johnson',
-      date: '2024-12-05',
-      routes: 2,
-      orders: 14,
-      rating: 4.7,
-      truck: 'WP ABC-1234',
-    },
-  ];
+        const mappedAssessments = (allHistory?.assessments ?? [])
+          .filter((assessment) => withinLastWeek(assessment.createdAt))
+          .map((assessment) => ({
+            id: assessment.id,
+            date: new Date(assessment.createdAt).toLocaleDateString(),
+            type: `${assessment.target?.charAt(0)}${assessment.target?.slice(1).toLowerCase()} Assessment`,
+            subject: assessment.targetUserName || assessment.targetUserId,
+            rating: assessment.rating,
+            comments: assessment.comment || '',
+          }));
+
+        const mappedTrucks = (truckHistory ?? [])
+          .filter((truck) => withinLastWeek(truck.completedAt))
+          .map((truck) => ({
+            id: truck.routeId,
+            licensePlate: truck.truckNumber || 'Truck N/A',
+            date: truck.completedAt ? new Date(truck.completedAt).toLocaleDateString() : '-',
+            routeNumber: truck.routeNumber,
+            truckType: truck.truckType || 'N/A',
+            status: 'Completed',
+          }));
+
+        const mappedDrivers = (driverHistory ?? [])
+          .filter((driver) => withinLastWeek(driver.completedAt))
+          .map((driver) => ({
+            id: `${driver.routeId}-${driver.driverId ?? 'unknown'}`,
+            name: driver.driverName || 'Driver N/A',
+            date: driver.completedAt ? new Date(driver.completedAt).toLocaleDateString() : '-',
+            routeNumber: driver.routeNumber,
+          }));
+
+        setAssessments(mappedAssessments);
+        setTrucks(mappedTrucks);
+        setDrivers(mappedDrivers);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHistory();
+  }, []);
+
+  const currentList = useMemo(() => {
+    if (activeTab === 'assessments') return assessments;
+    if (activeTab === 'trucks') return trucks;
+    return drivers;
+  }, [activeTab, assessments, trucks, drivers]);
+
+  const summaryStats = useMemo(
+    () => [
+      { id: 'a', label: 'Assessments', value: assessments.length, color: theme.colors.warning, icon: '⭐' },
+      { id: 't', label: 'Truck Runs', value: trucks.length, color: theme.colors.success, icon: '🚚' },
+      {
+        id: 'd',
+        label: 'Drivers Worked',
+        value: new Set(drivers.map((driver) => driver.name)).size,
+        color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
+        icon: '👤',
+      },
+    ],
+    [assessments, trucks, drivers, theme]
+  );
 
   const renderStars = (rating) => {
     return '★'.repeat(Math.floor(rating)) + '☆'.repeat(5 - Math.floor(rating));
   };
 
   const renderContent = () => {
+    if (loading) {
+      return <ActivityIndicator color={theme.colors.primary.main} style={{ marginTop: 20 }} />;
+    }
+
+    if (currentList.length === 0) {
+      return (
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.itemCard}>
+          <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
+            No records found in the last 7 days.
+          </Text>
+        </Card>
+      );
+    }
+
     if (activeTab === 'assessments') {
       return assessments.map((assessment) => (
         <Card variant={theme.isDarkMode ? "glass" : "default"} key={assessment.id} style={styles.itemCard}>
@@ -158,7 +132,7 @@ const HistoryScreen = ({ navigation }) => {
                 {assessment.subject}
               </Text>
               <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
-                {assessment.orderId} • {assessment.date}
+                {assessment.date}
               </Text>
             </View>
             <View style={styles.ratingContainer}>
@@ -186,10 +160,10 @@ const HistoryScreen = ({ navigation }) => {
                 {truck.licensePlate}
               </Text>
               <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
-                Driver: {truck.driver} • {truck.date}
+                Route: {truck.routeNumber} • {truck.date}
               </Text>
               <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
-                Capacity: {truck.capacity} • {truck.orders} orders
+                Truck Type: {truck.truckType}
               </Text>
             </View>
             <View
@@ -214,18 +188,7 @@ const HistoryScreen = ({ navigation }) => {
                 {driver.name}
               </Text>
               <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
-                {driver.date} • Truck: {driver.truck}
-              </Text>
-              <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
-                {driver.routes} routes • {driver.orders} orders
-              </Text>
-            </View>
-            <View style={styles.ratingContainer}>
-              <Text style={[styles.ratingText, { color: theme.colors.warning }]}>
-                {renderStars(driver.rating)}
-              </Text>
-              <Text style={[styles.ratingValue, { color: theme.colors.text.primary }]}>
-                {driver.rating}
+                {driver.date} • Route: {driver.routeNumber}
               </Text>
             </View>
           </View>
@@ -258,8 +221,22 @@ const HistoryScreen = ({ navigation }) => {
           History
         </Text>
         <Text style={[styles.headerSubtitle, { color: theme.colors.text.secondary }]}>
-          Past 4+ days
+          Past 7 days
         </Text>
+      </View>
+
+      <View style={styles.summaryRow}>
+        {summaryStats.map((stat) => (
+          <Card variant={theme.isDarkMode ? "glass" : "default"} key={stat.id} style={styles.summaryCard}>
+            <View style={[styles.summaryIconWrap, { backgroundColor: `${stat.color}20` }]}>
+              <Text style={styles.summaryIcon}>{stat.icon}</Text>
+            </View>
+            <Text style={[styles.summaryValue, { color: theme.colors.text.primary }]}>{stat.value}</Text>
+            <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]} numberOfLines={1}>
+              {stat.label}
+            </Text>
+          </Card>
+        ))}
       </View>
 
       <View style={styles.tabs}>
@@ -410,6 +387,30 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 24, fontWeight: '700', marginBottom: 4 },
   headerSubtitle: { fontSize: 14 },
+  summaryRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 10,
+    marginBottom: 8,
+    zIndex: 1,
+  },
+  summaryCard: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+  },
+  summaryIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  summaryIcon: { fontSize: 14 },
+  summaryValue: { fontSize: 18, fontWeight: '700', marginBottom: 2 },
+  summaryLabel: { fontSize: 11, fontWeight: '500' },
   tabs: {
     flexDirection: 'row',
     paddingHorizontal: 20,

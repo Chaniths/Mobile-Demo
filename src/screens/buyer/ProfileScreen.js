@@ -8,7 +8,7 @@ import {
   Switch,
   Alert,
 } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '../../hooks/useTheme';
 import { logout } from '../../store/slices/authSlice';
 import Card from '../../components/common/Card';
@@ -17,8 +17,25 @@ import Avatar from '../../components/common/Avatar';
 const ProfileScreen = ({ navigation }) => {
   const { theme, isDarkMode, toggleTheme } = useTheme();
   const dispatch = useDispatch();
+  const authUser = useSelector((state) => state.auth.user);
 
-  const menuItems = [
+  const isFieldAdmin = authUser?.role === 'fieldadmin';
+  const displayName =
+    authUser?.name ||
+    authUser?.fullName ||
+    [authUser?.firstName, authUser?.lastName].filter(Boolean).join(' ') ||
+    'User';
+  const displayEmail = authUser?.email || 'No email';
+  const displayPhone = authUser?.phone || 'No phone';
+
+  const fieldAdminMenuItems = [
+    { id: '1', icon: '👤', title: 'Edit Profile' },
+    { id: '2', icon: '🔔', title: 'Notifications' },
+    { id: '3', icon: '❓', title: 'Help & Support' },
+    { id: '4', icon: '📄', title: 'Terms & Privacy' },
+  ];
+
+  const defaultMenuItems = [
     { id: '1', icon: '👤', title: 'Edit Profile', screen: 'EditProfile' },
     { id: '2', icon: '📍', title: 'Addresses', screen: 'Addresses' },
     { id: '3', icon: '💳', title: 'Payment Methods', screen: 'PaymentMethods' },
@@ -28,6 +45,8 @@ const ProfileScreen = ({ navigation }) => {
     { id: '7', icon: '❓', title: 'Help & Support', screen: 'Help' },
     { id: '8', icon: '📄', title: 'Terms & Privacy', screen: 'Terms' },
   ];
+
+  const menuItems = isFieldAdmin ? fieldAdminMenuItems : defaultMenuItems;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -63,15 +82,15 @@ const ProfileScreen = ({ navigation }) => {
 
         {/* User Info */}
         <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.userCard}>
-          <Avatar name="John Doe" size="large" />
+          <Avatar name={displayName} size="large" />
           <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
-            John Doe
+            {displayName}
           </Text>
           <Text style={[styles.userEmail, { color: theme.colors.text.secondary }]}>
-            john.doe@example.com
+            {displayEmail}
           </Text>
           <Text style={[styles.userPhone, { color: theme.colors.text.tertiary }]}>
-            +1 234 567 8900
+            {displayPhone}
           </Text>
         </Card>
 
@@ -106,7 +125,13 @@ const ProfileScreen = ({ navigation }) => {
           {menuItems.map((item) => (
             <TouchableOpacity
               key={item.id}
-              onPress={() => navigation.navigate(item.screen)}
+              onPress={() => {
+                if (item.screen) {
+                  navigation.navigate(item.screen);
+                  return;
+                }
+                Alert.alert('Coming Soon', `${item.title} UI is prepared and can be connected next.`);
+              }}
             >
               <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.menuItem}>
                 <View style={styles.menuItemContent}>

@@ -29,6 +29,21 @@ export const getRoutes = async () => {
   return response.data;
 };
 
+export const getAllHistory = async () => {
+  const response = await apiClient.get('/fieldadmin/history/all');
+  return response.data;
+};
+
+export const getTruckHistory = async () => {
+  const response = await apiClient.get('/fieldadmin/history/trucks');
+  return response.data;
+};
+
+export const getDriverHistory = async () => {
+  const response = await apiClient.get('/fieldadmin/history/drivers');
+  return response.data;
+};
+
 export const submitQualityReview = async ({ orderItemId, notes, approvedQuantity, rejected }) => {
   const path = rejected ? '/fieldadmin/reject/submit' : '/fieldadmin/quality/confirm';
   const response = await apiClient.post(path, {
@@ -111,6 +126,9 @@ export default {
   getOrdersByTab,
   getAssignedTasks,
   getRoutes,
+  getAllHistory,
+  getTruckHistory,
+  getDriverHistory,
   submitQualityReview,
   markDeliveryComplete,
   getAssessmentCandidates,
