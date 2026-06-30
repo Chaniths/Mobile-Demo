@@ -13,6 +13,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { logoutAsync } from "../../store/slices/authSlice";
 import Card from "../../components/common/Card";
 import Avatar from "../../components/common/Avatar";
+import BackgroundShapes from "../../components/common/BackgroundShapes";
 
 const ProfileScreen = ({ navigation }) => {
   const { theme, isDarkMode, toggleTheme } = useTheme();
@@ -34,6 +35,7 @@ const ProfileScreen = ({ navigation }) => {
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
+      <BackgroundShapes variant="profile" />
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>

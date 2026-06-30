@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
   ScrollView,
   Alert,
   RefreshControl,
@@ -15,8 +16,11 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
 import EmptyState from "../../components/common/EmptyState";
+import BackgroundShapes from "../../components/common/BackgroundShapes";
 import { useDriverData } from "../../hooks/useDriverData";
 import { useDriverTracking } from "../../hooks/useDriverTracking";
+import { driverApi } from "../../api/driverApi";
+import { promptNavigation } from "../../utils/navigationUtils";
 
 const HUB_COORDS = { latitude: 13.0707, longitude: 80.2507 };
 
@@ -38,6 +42,8 @@ const RouteScreen = ({ route, navigation }) => {
   }, [data.orders, deliveryId, routeData]);
 
   const [activeStopId, setActiveStopId] = useState(allStops[0]?.id || null);
+  const [failedPanelOpen, setFailedPanelOpen] = useState(false);
+  const [failedNotes, setFailedNotes] = useState("");
 
   useEffect(() => {
     if (!allStops.length) {
@@ -157,11 +163,24 @@ const RouteScreen = ({ route, navigation }) => {
   const handleStartNavigation = () => {
     if (!activeStop) return;
 
-    Alert.alert(
-      "Start Navigation",
-      `Open turn-by-turn navigation for:\n\n${activeStop.address}`,
-      [{ text: "OK" }],
-    );
+    // Build remaining stops: active stop first, then the rest in sequence order
+    const activeIndex = allStops.findIndex((s) => s.id === activeStop.id);
+    const remainingStops = allStops
+      .slice(activeIndex)
+      .filter((s) => s.status !== "COMPLETED" && s.status !== "FAILED" && s.status !== "SKIPPED")
+      .map((s) => ({
+        latitude: s.coordinates?.latitude,
+        longitude: s.coordinates?.longitude,
+        address: s.address,
+        customer: s.customer,
+      }));
+
+    // Use live driver position as origin if available, otherwise null (Google Maps uses device location)
+    const origin = renderPosition
+      ? { latitude: renderPosition.latitude, longitude: renderPosition.longitude }
+      : null;
+
+    promptNavigation(origin, remainingStops, remainingStops[0]);
   };
 
   if (loading) {
@@ -188,6 +207,7 @@ const RouteScreen = ({ route, navigation }) => {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
+      <BackgroundShapes variant="detail" />
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={[styles.title, { color: theme.colors.text.primary }]}>
@@ -471,6 +491,106 @@ const RouteScreen = ({ route, navigation }) => {
             onPress={handleStartNavigation}
             style={styles.navButton}
           />
+
+          {failedPanelOpen && (
+            <View style={[styles.failedPanel, { backgroundColor: `${theme.colors.error || "#ef4444"}08`, borderColor: `${theme.colors.error || "#ef4444"}30` }]}>
+              <Text style={[styles.failedPanelTitle, { color: theme.colors.text.primary }]}>
+                Why couldn't you deliver?
+              </Text>
+              <TextInput
+                style={[styles.failedNotesInput, { color: theme.colors.text.primary, borderColor: theme.colors.text.tertiary || "#cbd5e1" }]}
+                placeholder="Customer unavailable, wrong address, gate locked..."
+                placeholderTextColor={theme.colors.text.tertiary || "#94a3b8"}
+                value={failedNotes}
+                onChangeText={setFailedNotes}
+                multiline
+                numberOfLines={2}
+              />
+              <View style={styles.failedPanelActions}>
+                <TouchableOpacity
+                  style={[styles.confirmFailedBtn, { backgroundColor: theme.colors.error || "#ef4444" }]}
+                  activeOpacity={0.8}
+                  onPress={async () => {
+                    try {
+                      const stopId = activeStop.currentStopId || activeStop.id;
+                      await driverApi.completeStop(stopId, {
+                        status: "FAILED",
+                        notes: failedNotes.trim() || "No reason provided",
+                      });
+                      setFailedPanelOpen(false);
+                      setFailedNotes("");
+                      refresh();
+                    } catch (e) {
+                      Alert.alert("Error", e?.message || "Could not update stop.");
+                    }
+                  }}
+                >
+                  <Text style={styles.confirmFailedBtnText}>Confirm Failed</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cancelFailedBtn}
+                  activeOpacity={0.7}
+                  onPress={() => { setFailedPanelOpen(false); setFailedNotes(""); }}
+                >
+                  <Text style={[styles.cancelFailedBtnText, { color: theme.colors.text.secondary }]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.stopActionRow}>
+            <TouchableOpacity
+              style={styles.deliveredBtn}
+              onPress={() => {
+                Alert.alert("Mark Delivered", `Mark stop for ${activeStop.customer} as delivered?`, [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delivered",
+                    onPress: async () => {
+                      try {
+                        const stopId = activeStop.currentStopId || activeStop.id;
+                        await driverApi.completeStop(stopId, { status: "COMPLETED" });
+                        Alert.alert("Done", "Stop marked as delivered.");
+                        refresh();
+                      } catch (e) {
+                        Alert.alert("Error", e?.message || "Could not update stop.");
+                      }
+                    },
+                  },
+                ]);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.deliveredBtnText}>{"✓  Delivered"}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.failedBtn, failedPanelOpen && styles.failedBtnActive]}
+              onPress={() => {
+                setFailedPanelOpen((prev) => !prev);
+                setFailedNotes("");
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.failedBtnText}>Failed</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.skipBtn}
+              onPress={async () => {
+                try {
+                  const stopId = activeStop.currentStopId || activeStop.id;
+                  await driverApi.completeStop(stopId, { status: "SKIPPED", notes: "Driver skipped" });
+                  refresh();
+                } catch (e) {
+                  Alert.alert("Error", e?.message || "Could not skip stop.");
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.skipBtnText}>Skip</Text>
+            </TouchableOpacity>
+          </View>
         </Card>
 
         <View style={styles.stopsListWrapper}>
@@ -578,7 +698,7 @@ const styles = StyleSheet.create({
   mapWrapper: {
     height: 260,
     marginHorizontal: 20,
-    borderRadius: 16,
+    borderRadius: 24,
     overflow: "hidden",
   },
   map: { flex: 1 },
@@ -694,6 +814,84 @@ const styles = StyleSheet.create({
   stopCustomer: { fontSize: 14, fontWeight: "600" },
   stopMeta: { fontSize: 12, marginTop: 6 },
   emptyIcon: { fontSize: 64 },
+
+  stopActionRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 14,
+  },
+  deliveredBtn: {
+    flex: 2,
+    backgroundColor: "#22c55e",
+    borderRadius: 20,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  deliveredBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  failedBtn: {
+    flex: 1,
+    backgroundColor: "#fee2e2",
+    borderRadius: 20,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  failedBtnText: { color: "#ef4444", fontSize: 13, fontWeight: "700" },
+  skipBtn: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 20,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  skipBtnText: { color: "#64748b", fontSize: 13, fontWeight: "700" },
+
+  failedBtnActive: { backgroundColor: "#fecaca" },
+  failedPanel: {
+    marginTop: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+  },
+  failedPanelTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  failedNotesInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    minHeight: 60,
+    textAlignVertical: "top",
+    marginBottom: 12,
+  },
+  failedPanelActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  confirmFailedBtn: {
+    flex: 2,
+    borderRadius: 20,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  confirmFailedBtnText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  cancelFailedBtn: {
+    flex: 1,
+    borderRadius: 20,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  cancelFailedBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
 });
 
 export default RouteScreen;

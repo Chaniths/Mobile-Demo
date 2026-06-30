@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { useTheme } from "../../hooks/useTheme";
 import Card from "../../components/common/Card";
@@ -13,11 +14,14 @@ import Button from "../../components/common/Button";
 import Avatar from "../../components/common/Avatar";
 import Loader from "../../components/common/Loader";
 import EmptyState from "../../components/common/EmptyState";
+import BackgroundShapes from "../../components/common/BackgroundShapes";
 import { useDriverData } from "../../hooks/useDriverData";
+import { driverApi } from "../../api/driverApi";
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
-  const { data, loading, refreshing, error, refresh, reload } = useDriverData();
+  const { data, loading, refreshing, error, refresh, reload, routeModifiedAt } = useDriverData();
+  const [isAvailable, setIsAvailable] = useState(true);
 
   const routeData = data.activeRoute || data.route;
   const upcomingDeliveries = useMemo(() => {
@@ -67,6 +71,7 @@ const HomeScreen = ({ navigation }) => {
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
+      <BackgroundShapes />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -172,11 +177,18 @@ const HomeScreen = ({ navigation }) => {
         </Card>
 
         <View style={styles.statsSection}>
-          <Text
-            style={[styles.sectionTitle, { color: theme.colors.text.primary }]}
-          >
-            Today's Performance
-          </Text>
+          <View style={styles.sectionHeader}>
+            <Text
+              style={[styles.sectionTitle, { color: theme.colors.text.primary }]}
+            >
+              Today's Performance
+            </Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Earnings")}>
+              <Text style={[styles.seeAll, { color: theme.colors.primary.main }]}>
+                View Earnings
+              </Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.statsGrid}>
             {todayStats.map((stat) => (
               <Card key={stat.id} style={styles.statCard}>
@@ -328,7 +340,44 @@ const HomeScreen = ({ navigation }) => {
               </Card>
             ))
           )}
+
+          {/* Action Buttons */}
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.reportBtn]}
+              onPress={() => navigation.navigate("ReportIssue", {})}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.actionBtnText}>Report Issue</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.breakBtn]}
+              onPress={async () => {
+                const newAvail = !isAvailable;
+                try {
+                  await driverApi.toggleAvailability(newAvail);
+                  setIsAvailable(newAvail);
+                  Alert.alert(newAvail ? "Back Online" : "On Break", newAvail ? "You are now available for deliveries." : "You are on break. No new routes will be assigned.");
+                } catch (err) {
+                  Alert.alert("Error", "Could not update availability.");
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.actionBtnText}>{isAvailable ? "Take Break" : "Go Online"}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Re-route Banner */}
+        {routeModifiedAt && (
+          <View style={styles.rerouteBanner}>
+            <Text style={styles.rerouteText}>Route updated by optimizer</Text>
+            <TouchableOpacity onPress={refresh}>
+              <Text style={styles.rerouteRefresh}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -360,9 +409,9 @@ const styles = StyleSheet.create({
   activeBadge: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 20,
   },
   activeDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
   activeText: { fontSize: 12, fontWeight: "600" },
@@ -377,9 +426,9 @@ const styles = StyleSheet.create({
   },
   statCard: { width: "48%", marginBottom: 8, padding: 12 },
   statIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
@@ -402,8 +451,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 4,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   deliveryHeader: {
     flexDirection: "row",
@@ -428,6 +477,55 @@ const styles = StyleSheet.create({
   distance: { fontSize: 12 },
   startButton: { fontSize: 13, fontWeight: "700" },
   emptyIcon: { fontSize: 48 },
+
+  actionRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  actionBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 20,
+    alignItems: "center",
+    borderWidth: 2,
+  },
+  reportBtn: {
+    borderColor: "#14b8a6",
+    backgroundColor: "#ffffff",
+  },
+  breakBtn: {
+    borderColor: "#14b8a6",
+    backgroundColor: "#ffffff",
+  },
+  actionBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#14b8a6",
+  },
+
+  rerouteBanner: {
+    marginHorizontal: 20,
+    backgroundColor: "#dcfce7",
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  rerouteText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#22c55e",
+  },
+  rerouteRefresh: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#14b8a6",
+  },
 });
 
 export default HomeScreen;

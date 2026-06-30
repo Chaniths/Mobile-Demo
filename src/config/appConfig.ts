@@ -38,6 +38,10 @@ export const appConfig = {
     driverActiveRoute: '/driver/me/active-route',
     driverRoute: '/driver/me/route',
     driverOrders: '/driver/me/orders',
+    driverCompleteStop: '/driver/me/stops',
+    driverAvailability: '/driver/me/availability',
+    driverIssues: '/driver/me/issues',
+    driverEarnings: '/driver/me/earnings',
   },
 } as const;
 

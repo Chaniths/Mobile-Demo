@@ -9,8 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
+import BackgroundShapes from '../../components/common/BackgroundShapes';
 
 const DamageReportScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -23,10 +22,6 @@ const DamageReportScreen = ({ navigation, route }) => {
     id: '1',
     orderId: '#ORD-2024-042',
     customer: 'John Doe',
-    items: [
-      { name: 'Heirloom Tomatoes', quantity: '5kg' },
-      { name: 'Organic Spinach', quantity: '10 bunches' },
-    ],
   };
 
   const damageTypes = ['Product Damage', 'Packaging Damage', 'Transport Damage', 'Other'];
@@ -37,124 +32,91 @@ const DamageReportScreen = ({ navigation, route }) => {
       alert('Please fill all required fields');
       return;
     }
-    // In real app, this would make an API call
-    console.log('Damage reported:', {
-      orderId: order.orderId,
-      damageType,
-      severity,
-      description,
-      affectedItems,
-    });
+    console.log('Damage reported:', { orderId: order.orderId, damageType, severity, description, affectedItems });
     navigation.goBack();
   };
 
+  const teal = theme.colors.primary?.main || '#14b8a6';
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      <BackgroundShapes variant="detail" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
+            <Text style={[styles.backText, { color: teal }]}>{'<- Back'}</Text>
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
-            Report Damage
-          </Text>
-          <View style={{ width: 60 }} />
+          <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Report Damage</Text>
+          <View style={{ width: 70 }} />
         </View>
 
-        <Card style={styles.orderCard}>
-          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Order ID</Text>
+        {/* Order Card */}
+        <View style={styles.card}>
+          <Text style={styles.fieldLabel}>ORDER ID</Text>
           <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>{order.orderId}</Text>
-          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Customer</Text>
-          <Text style={[styles.detail, { color: theme.colors.text.primary }]}>{order.customer}</Text>
-        </Card>
-
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-          Damage Type
-        </Text>
-        <View style={styles.optionsContainer}>
-          {damageTypes.map((type) => (
-            <TouchableOpacity
-              key={type}
-              style={[
-                styles.optionCard,
-                {
-                  borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
-                  backgroundColor: theme.colors.card || '#f9fafb',
-                },
-                damageType === type && {
-                  borderColor: theme.colors.error,
-                  backgroundColor: `${theme.colors.error}20`,
-                },
-              ]}
-              onPress={() => setDamageType(type)}
-            >
-              <Text
-                style={[
-                  styles.optionText,
-                  { color: theme.colors.text.primary },
-                  damageType === type && { color: theme.colors.error, fontWeight: '700' },
-                ]}
-              >
-                {type}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <Text style={styles.fieldLabel}>CUSTOMER</Text>
+          <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>{order.customer}</Text>
         </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-          Severity Level
-        </Text>
-        <View style={styles.optionsContainer}>
-          {severityLevels.map((level) => (
-            <TouchableOpacity
-              key={level}
-              style={[
-                styles.optionCard,
-                {
-                  borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
-                  backgroundColor: theme.colors.card || '#f9fafb',
-                },
-                severity === level && {
-                  borderColor: theme.colors.warning,
-                  backgroundColor: `${theme.colors.warning}20`,
-                },
-              ]}
-              onPress={() => setSeverity(level)}
-            >
-              <Text
-                style={[
-                  styles.optionText,
-                  { color: theme.colors.text.primary },
-                  severity === level && { color: theme.colors.warning, fontWeight: '700' },
-                ]}
+        {/* Damage Type */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Damage Type</Text>
+        <View style={styles.pillList}>
+          {damageTypes.map((type) => {
+            const isSelected = damageType === type;
+            return (
+              <TouchableOpacity
+                key={type}
+                style={[styles.pill, isSelected && { backgroundColor: '#fee2e2', borderColor: '#ef4444' }]}
+                onPress={() => setDamageType(type)}
+                activeOpacity={0.7}
               >
-                {level}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text style={[styles.pillText, { color: theme.colors.text.primary }, isSelected && { color: '#ef4444', fontWeight: '700' }]}>
+                  {type}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-          Affected Items
-        </Text>
-        <Card style={styles.inputCard}>
+        {/* Severity */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Severity Level</Text>
+        <View style={styles.pillList}>
+          {severityLevels.map((level) => {
+            const isSelected = severity === level;
+            return (
+              <TouchableOpacity
+                key={level}
+                style={[styles.pill, isSelected && { backgroundColor: '#fef3c7', borderColor: '#f59e0b' }]}
+                onPress={() => setSeverity(level)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.pillText, { color: theme.colors.text.primary }, isSelected && { color: '#f59e0b', fontWeight: '700' }]}>
+                  {level}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Affected Items */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Affected Items</Text>
+        <View style={styles.inputCard}>
           <TextInput
-            style={[styles.input, { color: theme.colors.text.primary }]}
-            placeholder="List damaged items (e.g., Tomatoes - 2kg, Spinach - 5 bunches)..."
+            style={[styles.textInput, { color: theme.colors.text.primary, minHeight: 80 }]}
+            placeholder="List damaged items..."
             placeholderTextColor={theme.colors.text.tertiary}
             multiline
             numberOfLines={3}
             value={affectedItems}
             onChangeText={setAffectedItems}
           />
-        </Card>
+        </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-          Description (Required)
-        </Text>
-        <Card style={styles.inputCard}>
+        {/* Description */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Description (Required)</Text>
+        <View style={styles.inputCard}>
           <TextInput
-            style={[styles.input, { color: theme.colors.text.primary }]}
+            style={[styles.textInput, { color: theme.colors.text.primary, minHeight: 120 }]}
             placeholder="Describe the damage in detail..."
             placeholderTextColor={theme.colors.text.tertiary}
             multiline
@@ -162,13 +124,11 @@ const DamageReportScreen = ({ navigation, route }) => {
             value={description}
             onChangeText={setDescription}
           />
-        </Card>
+        </View>
 
-        <Button
-          title="Submit Damage Report"
-          onPress={handleSubmitReport}
-          style={[styles.submitButton, { backgroundColor: theme.colors.primary.main }]}
-        />
+        <TouchableOpacity style={[styles.submitBtn, { backgroundColor: teal }]} onPress={handleSubmitReport} activeOpacity={0.8}>
+          <Text style={styles.submitText}>Submit Damage Report</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -176,32 +136,40 @@ const DamageReportScreen = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 32 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    paddingBottom: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingTop: 16, paddingBottom: 20,
   },
-  backButton: { fontSize: 16, color: '#16a34a', fontWeight: '600' },
+  backText: { fontSize: 16, fontWeight: '600' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
-  orderCard: { padding: 16, marginBottom: 24 },
-  label: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  orderId: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
-  detail: { fontSize: 14 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12, marginTop: 8 },
-  optionsContainer: { gap: 10, marginBottom: 24 },
-  optionCard: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1.5,
+
+  card: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 24,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  optionText: { fontSize: 15, fontWeight: '500' },
-  inputCard: { padding: 16, marginBottom: 24 },
-  input: { fontSize: 14, minHeight: 100, textAlignVertical: 'top' },
-  submitButton: { marginTop: 8 },
+  fieldLabel: { fontSize: 11, fontWeight: '600', color: '#94a3b8', letterSpacing: 0.8, marginBottom: 4, marginTop: 8 },
+  orderId: { fontSize: 18, fontWeight: '800' },
+  fieldValue: { fontSize: 15, fontWeight: '500' },
+
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
+
+  pillList: { gap: 10, marginBottom: 24 },
+  pill: {
+    backgroundColor: '#fff', borderRadius: 20, paddingVertical: 16, paddingHorizontal: 20,
+    borderWidth: 1.5, borderColor: '#e0dcd9',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+  },
+  pillText: { fontSize: 15, fontWeight: '500' },
+
+  inputCard: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 24,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
+  },
+  textInput: { fontSize: 14, textAlignVertical: 'top', lineHeight: 22 },
+
+  submitBtn: { borderRadius: 20, paddingVertical: 18, alignItems: 'center', marginTop: 4 },
+  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
 
 export default DamageReportScreen;
-

@@ -12,6 +12,7 @@ import { useTheme } from "../../hooks/useTheme";
 import Card from "../../components/common/Card";
 import EmptyState from "../../components/common/EmptyState";
 import Loader from "../../components/common/Loader";
+import BackgroundShapes from "../../components/common/BackgroundShapes";
 import { useDriverData } from "../../hooks/useDriverData";
 
 const statusColors = {
@@ -48,6 +49,7 @@ const OrdersScreen = ({ navigation }) => {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
+      <BackgroundShapes />
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>
           My Deliveries
@@ -253,9 +255,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   statusBadge: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 20,
   },
   statusText: {
     fontSize: 12,

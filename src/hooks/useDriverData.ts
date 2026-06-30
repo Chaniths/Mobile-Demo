@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { driverApi } from '../api/driverApi';
 import { toUserMessage } from '../api/errors';
+import { driverSocketService } from '../services/socket/driverSocketService';
 import type { DriverDashboardData } from '../types/driver';
 
 const initialState: DriverDashboardData = {
@@ -16,6 +17,7 @@ export const useDriverData = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [routeModifiedAt, setRouteModifiedAt] = useState<string | null>(null);
 
   const fetchAll = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -48,11 +50,28 @@ export const useDriverData = () => {
     void fetchAll(false);
   }, [fetchAll]);
 
+  useEffect(() => {
+    const socket = driverSocketService.getSocket();
+    if (!socket) return;
+
+    const handleRouteModified = (payload: any) => {
+      setRouteModifiedAt(payload?.reroutedAt || new Date().toISOString());
+      void fetchAll(true);
+    };
+
+    socket.on('route:modified', handleRouteModified);
+
+    return () => {
+      socket.off('route:modified', handleRouteModified);
+    };
+  }, [fetchAll]);
+
   return {
     data,
     loading,
     refreshing,
     error,
+    routeModifiedAt,
     refresh: () => fetchAll(true),
     reload: () => fetchAll(false),
   };

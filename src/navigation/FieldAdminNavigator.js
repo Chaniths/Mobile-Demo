@@ -4,7 +4,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useTheme } from '../hooks/useTheme';
 
-// Field Admin Screens
 import HomeScreen from '../screens/fieldadmin/HomeScreen';
 import QualityConfirmScreen from '../screens/fieldadmin/QualityConfirmScreen';
 import SellerRejectScreen from '../screens/fieldadmin/SellerRejectScreen';
@@ -17,12 +16,11 @@ import TruckCapacityScreen from '../screens/fieldadmin/TruckCapacityScreen';
 import RouteOrdersScreen from '../screens/fieldadmin/RouteOrdersScreen';
 import RouteMapScreen from '../screens/fieldadmin/RouteMapScreen';
 import HistoryScreen from '../screens/fieldadmin/HistoryScreen';
-import ProfileScreen from '../screens/buyer/ProfileScreen'; // Reuse profile
+import ProfileScreen from '../screens/buyer/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// Main Field Admin Stack with all screens
 const FieldAdminStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -51,27 +49,26 @@ const FieldAdminNavigator = () => {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary.main,
-        tabBarInactiveTintColor: theme.colors.text.tertiary,
+        tabBarInactiveTintColor: '#94a3b8',
         tabBarStyle: {
-          backgroundColor: theme.colors.card,
-          borderTopColor: theme.colors.border,
+          backgroundColor: '#ffffff',
           borderTopWidth: 0,
-          height: 60,
+          height: 64,
           paddingBottom: 8,
           paddingTop: 8,
           position: 'absolute',
           left: 16,
           right: 16,
           bottom: 16,
-          borderRadius: 24,
+          borderRadius: 28,
           elevation: 8,
           shadowColor: '#000',
-          shadowOpacity: 0.08,
+          shadowOpacity: 0.1,
           shadowOffset: { width: 0, height: 4 },
-          shadowRadius: 12,
+          shadowRadius: 16,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
         },
       }}
@@ -81,20 +78,19 @@ const FieldAdminNavigator = () => {
         component={FieldAdminStack}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🏠</Text>,
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>🏠</Text>
+          ),
         }}
       />
       <Tab.Screen
         name="Routes"
         component={RouteOrdersScreen}
-        listeners={{
-          tabPress: (e) => {
-            // Prevent default tab press, navigate within stack
-          },
-        }}
         options={{
           tabBarLabel: 'Routes',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🗺️</Text>,
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>🗺️</Text>
+          ),
         }}
       />
       <Tab.Screen
@@ -102,7 +98,9 @@ const FieldAdminNavigator = () => {
         component={AssessmentScreen}
         options={{
           tabBarLabel: 'Assess',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📋</Text>,
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>📋</Text>
+          ),
         }}
       />
       <Tab.Screen
@@ -110,7 +108,9 @@ const FieldAdminNavigator = () => {
         component={HistoryScreen}
         options={{
           tabBarLabel: 'History',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📊</Text>,
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>📊</Text>
+          ),
         }}
       />
       <Tab.Screen
@@ -118,7 +118,9 @@ const FieldAdminNavigator = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>,
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>👤</Text>
+          ),
         }}
       />
     </Tab.Navigator>
@@ -126,4 +128,3 @@ const FieldAdminNavigator = () => {
 };
 
 export default FieldAdminNavigator;
-

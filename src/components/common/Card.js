@@ -79,7 +79,7 @@ const Card = ({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
+    borderRadius: 20,
     padding: 16,
   },
 });

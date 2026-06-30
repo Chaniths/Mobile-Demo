@@ -29,11 +29,11 @@ export const colors = {
 
   // Light theme (default for mobile)
   light: {
-    background: "#ffffff",
-    surface: "#FAF7F2",
+    background: "#EBE7E7",
+    surface: "#f5f2f0",
     card: "#ffffff",
-    muted: "#e5e7eb",
-    cardSecondary: "#f9fafb",
+    muted: "#e0dcd9",
+    cardSecondary: "#f9f7f5",
   },
 
   // Semantic colors

@@ -185,4 +185,39 @@ export const driverApi = {
     const rows = Array.isArray(data) ? data : data?.orders || [];
     return rows.map((row: any, index: number) => normalizeOrder(row, index));
   },
+
+  async completeStop(stopId: string, payload: { status: string; notes?: string; signature?: string }): Promise<any> {
+    const response = await httpClient.patch(
+      `${appConfig.endpoints.driverCompleteStop}/${stopId}/complete`,
+      payload,
+    );
+    return dataOrSelf<any>(response.data);
+  },
+
+  async toggleAvailability(isAvailable: boolean): Promise<any> {
+    const response = await httpClient.patch(appConfig.endpoints.driverAvailability, { isAvailable });
+    return dataOrSelf<any>(response.data);
+  },
+
+  async getStopItems(stopId: string): Promise<any> {
+    const response = await httpClient.get(
+      `${appConfig.endpoints.driverCompleteStop}/${stopId}/items`,
+    );
+    return dataOrSelf<any>(response.data);
+  },
+
+  async reportIssue(payload: {
+    issueType: string;
+    description: string;
+    deliveryId?: string;
+    stopId?: string;
+  }): Promise<any> {
+    const response = await httpClient.post(appConfig.endpoints.driverIssues, payload);
+    return dataOrSelf<any>(response.data);
+  },
+
+  async getEarnings(): Promise<any> {
+    const response = await httpClient.get(appConfig.endpoints.driverEarnings);
+    return dataOrSelf<any>(response.data);
+  },
 };

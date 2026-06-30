@@ -9,18 +9,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
+import BackgroundShapes from '../../components/common/BackgroundShapes';
 
 const SellerRejectScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
-  const [reason, setReason] = useState('');
   const [selectedReason, setSelectedReason] = useState('');
+  const [customReason, setCustomReason] = useState('');
 
   const item = route?.params?.item || {
     id: '1',
-    name: 'Heirloom Tomatoes',
-    quantity: '5kg',
+    name: 'Baby Carrots',
+    quantity: '3kg',
   };
 
   const order = route?.params?.order || {
@@ -31,7 +30,7 @@ const SellerRejectScreen = ({ navigation, route }) => {
   const rejectionReasons = [
     'Poor Quality',
     'Damaged Items',
-    'Expired/Stale',
+    'Expired/ Stale',
     'Wrong Quantity',
     'Not Fresh',
     'Packaging Issues',
@@ -39,230 +38,136 @@ const SellerRejectScreen = ({ navigation, route }) => {
   ];
 
   const handleReject = () => {
-    if (!selectedReason && !reason.trim()) {
+    if (!selectedReason && !customReason.trim()) {
       alert('Please provide a rejection reason');
       return;
     }
-    // In real app, this would make an API call
-    console.log('Product rejected:', {
-      item,
-      order: order.orderId,
-      reason: selectedReason || reason,
-    });
+    console.log('Product rejected:', { item, order: order.orderId, reason: selectedReason || customReason });
     navigation.goBack();
   };
 
+  const teal = theme.colors.primary?.main || '#14b8a6';
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      <BackgroundShapes variant="form" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
+            <Text style={[styles.backText, { color: teal }]}>{'<- Back'}</Text>
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
-            Reject Product
-          </Text>
-          <View style={{ width: 60 }} />
+          <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Reject Products</Text>
+          <View style={{ width: 70 }} />
         </View>
 
-        {/* Product Info */}
-        <Card style={styles.productCard}>
-          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>
-            Product
-          </Text>
-          <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
-            {item.name}
-          </Text>
-          <Text style={[styles.productQuantity, { color: theme.colors.text.secondary }]}>
-            {item.quantity}
-          </Text>
-          <View style={[styles.divider, { backgroundColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb' }]} />
-          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>
-            Order ID
-          </Text>
-          <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>
-            {order.orderId}
-          </Text>
-          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>
-            Seller
-          </Text>
-          <Text style={[styles.seller, { color: theme.colors.text.primary }]}>
-            {order.seller}
-          </Text>
-        </Card>
+        {/* Product Card */}
+        <View style={styles.card}>
+          <Text style={styles.fieldLabel}>PRODUCT</Text>
+          <Text style={[styles.productName, { color: theme.colors.text.primary }]}>{item.name}</Text>
+          <Text style={styles.productQty}>{item.quantity}</Text>
+          <View style={styles.divider} />
+          <Text style={styles.fieldLabel}>ORDER ID</Text>
+          <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>{order.orderId}</Text>
+          <Text style={styles.fieldLabel}>SELLER</Text>
+          <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>{order.seller}</Text>
+        </View>
 
         {/* Rejection Reasons */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-          Select Rejection Reason
-        </Text>
-        <View style={styles.reasonsContainer}>
-          {rejectionReasons.map((reasonOption) => (
-            <TouchableOpacity
-              key={reasonOption}
-              style={[
-                styles.reasonCard,
-                {
-                  borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
-                  backgroundColor: theme.colors.card || '#f9fafb',
-                },
-                selectedReason === reasonOption && {
-                  backgroundColor: `${theme.colors.error}20`,
-                  borderColor: theme.colors.error,
-                },
-              ]}
-              onPress={() => {
-                setSelectedReason(reasonOption);
-                if (reasonOption !== 'Other') {
-                  setReason('');
-                }
-              }}
-            >
-              <Text
-                style={[
-                  styles.reasonText,
-                  { color: theme.colors.text.primary },
-                  selectedReason === reasonOption && { color: theme.colors.error, fontWeight: '700' },
-                ]}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Select Rejection Reason</Text>
+        <View style={styles.reasonsList}>
+          {rejectionReasons.map((reason) => {
+            const isSelected = selectedReason === reason;
+            return (
+              <TouchableOpacity
+                key={reason}
+                style={[styles.reasonPill, isSelected && styles.reasonPillActive]}
+                onPress={() => {
+                  setSelectedReason(reason);
+                  if (reason !== 'Other') setCustomReason('');
+                }}
+                activeOpacity={0.7}
               >
-                {reasonOption}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text style={[styles.reasonText, { color: theme.colors.text.primary }, isSelected && styles.reasonTextActive]}>
+                  {reason}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Additional Details */}
         {(selectedReason === 'Other' || !selectedReason) && (
           <>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-              Additional Details (Required)
-            </Text>
-            <Card style={styles.detailsCard}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Additional Details</Text>
+            <View style={styles.inputCard}>
               <TextInput
-                style={[styles.detailsInput, { color: theme.colors.text.primary }]}
+                style={[styles.textInput, { color: theme.colors.text.primary }]}
                 placeholder="Describe the issue in detail..."
                 placeholderTextColor={theme.colors.text.tertiary}
                 multiline
                 numberOfLines={5}
-                value={reason}
-                onChangeText={setReason}
+                value={customReason}
+                onChangeText={setCustomReason}
               />
-            </Card>
+            </View>
           </>
         )}
 
         {/* Actions */}
-        <View style={styles.actionsContainer}>
-          <Button
-            title="Submit Rejection"
-            onPress={handleReject}
-            style={[styles.rejectButton, { backgroundColor: theme.colors.info }]}
-          />
-          <Button
-            title="Cancel"
-            onPress={() => navigation.goBack()}
-            variant="outline"
-            style={styles.cancelButton}
-          />
-        </View>
+        <TouchableOpacity style={[styles.submitBtn, { backgroundColor: teal }]} onPress={handleReject} activeOpacity={0.8}>
+          <Text style={styles.submitText}>Submit Rejection</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+          <Text style={[styles.cancelText, { color: theme.colors.text.secondary }]}>Cancel</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 32,
-  },
+  container: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    paddingBottom: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingTop: 16, paddingBottom: 20,
   },
-  backButton: {
-    fontSize: 16,
-    color: '#16a34a',
-    fontWeight: '600',
+  backText: { fontSize: 16, fontWeight: '600' },
+  headerTitle: { fontSize: 20, fontWeight: '700' },
+
+  card: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 24,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+  fieldLabel: { fontSize: 11, fontWeight: '600', color: '#94a3b8', letterSpacing: 0.8, marginBottom: 4, marginTop: 8 },
+  productName: { fontSize: 18, fontWeight: '800' },
+  productQty: { fontSize: 14, color: '#94a3b8', marginTop: 2 },
+  divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 14 },
+  fieldValue: { fontSize: 15, fontWeight: '500', marginBottom: 4 },
+
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
+
+  reasonsList: { gap: 10, marginBottom: 24 },
+  reasonPill: {
+    backgroundColor: '#fff', borderRadius: 20, paddingVertical: 16, paddingHorizontal: 20,
+    borderWidth: 1.5, borderColor: '#e0dcd9',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
   },
-  productCard: {
-    padding: 16,
-    marginBottom: 24,
+  reasonPillActive: {
+    backgroundColor: '#fee2e2', borderColor: '#ef4444',
   },
-  label: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
+  reasonText: { fontSize: 15, fontWeight: '500' },
+  reasonTextActive: { color: '#ef4444', fontWeight: '700' },
+
+  inputCard: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 24,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
   },
-  productName: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  productQuantity: {
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  divider: {
-    height: 1,
-    marginVertical: 12,
-  },
-  orderId: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  seller: {
-    fontSize: 14,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  reasonsContainer: {
-    gap: 10,
-    marginBottom: 24,
-  },
-  reasonCard: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1.5,
-  },
-  reasonText: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  detailsCard: {
-    padding: 16,
-    marginBottom: 24,
-  },
-  detailsInput: {
-    fontSize: 14,
-    minHeight: 120,
-    textAlignVertical: 'top',
-  },
-  actionsContainer: {
-    gap: 12,
-    marginTop: 8,
-  },
-  rejectButton: {
-    marginBottom: 0,
-  },
-  cancelButton: {
-    marginBottom: 0,
-  },
+  textInput: { fontSize: 14, minHeight: 120, textAlignVertical: 'top', lineHeight: 22 },
+
+  submitBtn: { borderRadius: 20, paddingVertical: 18, alignItems: 'center', marginTop: 4 },
+  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  cancelBtn: { borderRadius: 20, paddingVertical: 16, alignItems: 'center', marginTop: 10 },
+  cancelText: { fontSize: 16, fontWeight: '600' },
 });
 
 export default SellerRejectScreen;
-

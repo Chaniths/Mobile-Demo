@@ -5,7 +5,7 @@ import { spacing } from "./spacing";
 // Main theme configuration
 // Set isDarkMode to false for light theme (default), true for dark theme
 export const theme = {
-  isDarkMode: true, // Dark mode to match Figma design
+  isDarkMode: false, // Light mode to match Figma design
 
   colors: {
     ...colors,

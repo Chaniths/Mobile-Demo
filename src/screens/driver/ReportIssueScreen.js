@@ -1,11 +1,30 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../hooks/useTheme";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
+import BackgroundShapes from "../../components/common/BackgroundShapes";
 import { useDriverData } from "../../hooks/useDriverData";
+import { driverApi } from "../../api/driverApi";
+
+const ISSUE_TYPES = [
+  { key: "CUSTOMER_UNAVAILABLE", label: "Customer Unavailable" },
+  { key: "ADDRESS_NOT_FOUND", label: "Address Not Found" },
+  { key: "VEHICLE_ISSUE", label: "Vehicle Issue" },
+  { key: "TRAFFIC_DELAY", label: "Traffic Delay" },
+  { key: "PRODUCT_DAMAGED", label: "Product Damaged" },
+  { key: "OTHER", label: "Other" },
+];
 
 const ReportIssueScreen = ({ route, navigation }) => {
   const { theme } = useTheme();
@@ -18,9 +37,32 @@ const ReportIssueScreen = ({ route, navigation }) => {
 
   const [issueType, setIssueType] = useState("");
   const [details, setDetails] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    navigation.goBack();
+  const canSubmit = issueType.length > 0 && details.trim().length > 0;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) {
+      Alert.alert("Required", "Please select an issue type and describe what happened.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await driverApi.reportIssue({
+        issueType,
+        description: details.trim(),
+        deliveryId: delivery?.id,
+        stopId: delivery?.currentStopId,
+      });
+      Alert.alert("Sent", "Your issue has been sent to dispatch.", [
+        { text: "OK", onPress: () => navigation.goBack() },
+      ]);
+    } catch (err) {
+      Alert.alert("Error", err?.message || "Could not send issue report. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -28,46 +70,65 @@ const ReportIssueScreen = ({ route, navigation }) => {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       edges={["top"]}
     >
+      <BackgroundShapes variant="form" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>
           Report an issue
         </Text>
         <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
-          Let dispatch know if something is blocking this delivery so they can
-          help quickly.
+          Let dispatch know what's blocking this delivery so they can help quickly.
         </Text>
 
         {delivery && (
           <Card style={styles.deliveryCard}>
-            <Text
-              style={[
-                styles.deliveryTitle,
-                { color: theme.colors.text.primary },
-              ]}
-            >
+            <Text style={[styles.deliveryTitle, { color: theme.colors.text.primary }]}>
               {delivery.orderId} · {delivery.customer}
             </Text>
-            <Text
-              style={[
-                styles.deliveryMeta,
-                { color: theme.colors.text.secondary },
-              ]}
-            >
+            <Text style={[styles.deliveryMeta, { color: theme.colors.text.secondary }]}>
               {delivery.address}
             </Text>
           </Card>
         )}
 
         <Card style={styles.formCard}>
-          <Input
-            label="Issue type"
-            placeholder="Eg. Customer not available, Address mismatch, Vehicle breakdown"
-            value={issueType}
-            onChangeText={setIssueType}
-          />
+          <Text style={[styles.fieldLabel, { color: theme.colors.text.primary }]}>
+            Issue type
+          </Text>
+          <View style={styles.pillRow}>
+            {ISSUE_TYPES.map((item) => {
+              const selected = issueType === item.key;
+              return (
+                <TouchableOpacity
+                  key={item.key}
+                  onPress={() => setIssueType(item.key)}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor: selected
+                        ? theme.colors.primary.main
+                        : `${theme.colors.primary.main}14`,
+                      borderColor: theme.colors.primary.main,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.pillText,
+                      { color: selected ? "#fff" : theme.colors.primary.main },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <Input
             label="What happened?"
             placeholder="Describe the issue so the ops team can help you fast"
@@ -78,25 +139,20 @@ const ReportIssueScreen = ({ route, navigation }) => {
             style={styles.textArea}
           />
 
-          <View style={styles.hintBox}>
-            <Text
-              style={[styles.hintText, { color: theme.colors.text.secondary }]}
-            >
-              Report issue API is not provided yet. This screen now uses real
-              delivery data and is ready for backend issue endpoint wiring.
-            </Text>
-          </View>
-
           <Button
-            title="Send to dispatch"
+            title={submitting ? "" : "Send to dispatch"}
             onPress={handleSubmit}
-            style={styles.submitButton}
-          />
+            disabled={submitting || !canSubmit}
+            style={[styles.submitButton, (!canSubmit && !submitting) && styles.submitDisabled]}
+          >
+            {submitting && <ActivityIndicator color="#fff" size="small" />}
+          </Button>
           <Button
             title="Cancel"
             variant="outline"
             onPress={() => navigation.goBack()}
             style={styles.cancelButton}
+            disabled={submitting}
           />
         </Card>
       </ScrollView>
@@ -113,10 +169,23 @@ const styles = StyleSheet.create({
   deliveryTitle: { fontSize: 16, fontWeight: "700" },
   deliveryMeta: { fontSize: 13, marginTop: 4 },
   formCard: { padding: 14 },
+  fieldLabel: { fontSize: 14, fontWeight: "600", marginBottom: 10 },
+  pillRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 20,
+  },
+  pill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+  },
+  pillText: { fontSize: 13, fontWeight: "600" },
   textArea: { minHeight: 100, textAlignVertical: "top" },
-  hintBox: { marginTop: 8, marginBottom: 12 },
-  hintText: { fontSize: 12 },
-  submitButton: { marginTop: 4, marginBottom: 8 },
+  submitButton: { marginTop: 8, marginBottom: 8 },
+  submitDisabled: { opacity: 0.5 },
   cancelButton: {},
 });
 

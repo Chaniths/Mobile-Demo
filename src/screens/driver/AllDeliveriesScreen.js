@@ -13,6 +13,7 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
 import EmptyState from "../../components/common/EmptyState";
+import BackgroundShapes from "../../components/common/BackgroundShapes";
 import { useDriverData } from "../../hooks/useDriverData";
 
 const AllDeliveriesScreen = ({ navigation }) => {
@@ -28,6 +29,7 @@ const AllDeliveriesScreen = ({ navigation }) => {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       edges={["top"]}
     >
+      <BackgroundShapes />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}

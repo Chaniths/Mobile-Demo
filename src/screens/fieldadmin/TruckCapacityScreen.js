@@ -9,8 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
+import BackgroundShapes from '../../components/common/BackgroundShapes';
 
 const TruckCapacityScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -37,97 +36,69 @@ const TruckCapacityScreen = ({ navigation, route }) => {
       alert('Please enter a valid capacity (0-100)');
       return;
     }
-    // In real app, this would make an API call
-    console.log('Capacity updated:', {
-      truckId: truck.id,
-      capacity: parseFloat(capacity),
-      notes,
-    });
+    console.log('Capacity updated:', { truckId: truck.id, capacity: parseFloat(capacity), notes });
     navigation.goBack();
   };
 
+  const teal = theme.colors.primary?.main || '#14b8a6';
   const capacityPercent = (parseFloat(truck.currentCapacity) / parseFloat(truck.maxCapacity)) * 100;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      <BackgroundShapes variant="detail" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
+            <Text style={[styles.backText, { color: teal }]}>{'<- Back'}</Text>
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
-            Truck Capacity
-          </Text>
-          <View style={{ width: 60 }} />
+          <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Truck Capacity</Text>
+          <View style={{ width: 70 }} />
         </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-          Select Truck
-        </Text>
-        {trucks.map((t) => (
-          <TouchableOpacity key={t.id} onPress={() => setTruck(t)}>
-            <Card
-              style={[
-                styles.truckCard,
-                truck.id === t.id && {
-                  borderWidth: 2,
-                  borderColor: theme.colors.primary.main,
-                },
-              ]}
-            >
-              <Text style={[styles.truckPlate, { color: theme.colors.text.primary }]}>
-                {t.licensePlate}
-              </Text>
-              <Text style={[styles.truckDriver, { color: theme.colors.text.secondary }]}>
-                Driver: {t.driver}
-              </Text>
-              <Text style={[styles.truckCapacity, { color: theme.colors.text.secondary }]}>
-                Capacity: {t.capacity}
-              </Text>
-            </Card>
-          </TouchableOpacity>
-        ))}
+        {/* Select Truck */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Select Truck</Text>
+        {trucks.map((t) => {
+          const isSelected = truck.id === t.id;
+          return (
+            <TouchableOpacity key={t.id} onPress={() => setTruck(t)} activeOpacity={0.7}>
+              <View style={[styles.truckCard, isSelected && { borderColor: teal, borderWidth: 2 }]}>
+                <Text style={[styles.truckPlate, { color: theme.colors.text.primary }]}>{t.licensePlate}</Text>
+                <Text style={styles.truckMeta}>Driver: {t.driver}</Text>
+                <Text style={styles.truckMeta}>Capacity: {t.capacity}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
 
-        <Card style={styles.capacityCard}>
-          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Truck Details</Text>
-          <Text style={[styles.detail, { color: theme.colors.text.primary }]}>
-            License: {truck.licensePlate}
-          </Text>
-          <Text style={[styles.detail, { color: theme.colors.text.primary }]}>
-            Driver: {truck.driver}
-          </Text>
+        {/* Capacity Details */}
+        <View style={styles.card}>
+          <Text style={styles.fieldLabel}>TRUCK DETAILS</Text>
+          <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>License: {truck.licensePlate}</Text>
+          <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>Driver: {truck.driver}</Text>
           <View style={styles.divider} />
-          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>
-            Current Capacity
-          </Text>
-          <View style={styles.capacityBarContainer}>
-            <View style={styles.capacityBar}>
+          <Text style={styles.fieldLabel}>CURRENT CAPACITY</Text>
+          <View style={styles.barWrap}>
+            <View style={styles.bar}>
               <View
                 style={[
-                  styles.capacityBarFill,
+                  styles.barFill,
                   {
                     width: `${capacityPercent}%`,
-                    backgroundColor:
-                      capacityPercent > 80
-                        ? theme.colors.error
-                        : capacityPercent > 60
-                        ? theme.colors.warning
-                        : theme.colors.success,
+                    backgroundColor: capacityPercent > 80 ? '#ef4444' : capacityPercent > 60 ? '#f59e0b' : '#22c55e',
                   },
                 ]}
               />
             </View>
-            <Text style={[styles.capacityText, { color: theme.colors.text.primary }]}>
+            <Text style={[styles.barText, { color: theme.colors.text.primary }]}>
               {truck.currentCapacity} / {truck.maxCapacity} {truck.unit} ({Math.round(capacityPercent)}%)
             </Text>
           </View>
-        </Card>
+        </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-          Update Capacity
-        </Text>
-        <Card style={styles.updateCard}>
-          <View style={styles.capacityInputRow}>
+        {/* Update */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Update Capacity</Text>
+        <View style={styles.card}>
+          <View style={styles.capacityRow}>
             <TextInput
               style={[styles.capacityInput, { color: theme.colors.text.primary }]}
               placeholder="Enter new capacity"
@@ -136,19 +107,16 @@ const TruckCapacityScreen = ({ navigation, route }) => {
               value={capacity}
               onChangeText={setCapacity}
             />
-            <Text style={[styles.unitText, { color: theme.colors.text.secondary }]}>kg</Text>
+            <Text style={styles.unitText}>kg</Text>
           </View>
-          <Text style={[styles.hint, { color: theme.colors.text.tertiary }]}>
-            Max capacity: {truck.maxCapacity} kg
-          </Text>
-        </Card>
+          <Text style={styles.hintText}>Max capacity: {truck.maxCapacity} kg</Text>
+        </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-          Notes
-        </Text>
-        <Card style={styles.notesCard}>
+        {/* Notes */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Notes</Text>
+        <View style={styles.inputCard}>
           <TextInput
-            style={[styles.input, { color: theme.colors.text.primary }]}
+            style={[styles.textInput, { color: theme.colors.text.primary }]}
             placeholder="Add notes about capacity update..."
             placeholderTextColor={theme.colors.text.tertiary}
             multiline
@@ -156,13 +124,11 @@ const TruckCapacityScreen = ({ navigation, route }) => {
             value={notes}
             onChangeText={setNotes}
           />
-        </Card>
+        </View>
 
-        <Button
-          title="Update Capacity"
-          onPress={handleUpdateCapacity}
-          style={styles.submitButton}
-        />
+        <TouchableOpacity style={[styles.submitBtn, { backgroundColor: teal }]} onPress={handleUpdateCapacity} activeOpacity={0.8}>
+          <Text style={styles.submitText}>Update Capacity</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -170,55 +136,52 @@ const TruckCapacityScreen = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 32 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    paddingBottom: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingTop: 16, paddingBottom: 20,
   },
-  backButton: { fontSize: 16, color: '#16a34a', fontWeight: '600' },
+  backText: { fontSize: 16, fontWeight: '600' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
-  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12, marginTop: 8 },
-  truckCard: { padding: 16, marginBottom: 12 },
-  truckPlate: { fontSize: 18, fontWeight: '700', marginBottom: 4 },
-  truckDriver: { fontSize: 14, marginBottom: 4 },
-  truckCapacity: { fontSize: 14 },
-  capacityCard: { padding: 16, marginBottom: 24 },
-  label: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  detail: { fontSize: 14, marginBottom: 8 },
-  divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 12 },
-  capacityBarContainer: { marginTop: 8 },
-  capacityBar: {
-    height: 24,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 8,
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
+
+  truckCard: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 18, marginBottom: 12,
+    borderWidth: 1, borderColor: '#e0dcd9',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1,
   },
-  capacityBarFill: {
-    height: '100%',
-    borderRadius: 12,
+  truckPlate: { fontSize: 17, fontWeight: '700', marginBottom: 4 },
+  truckMeta: { fontSize: 14, color: '#94a3b8', marginBottom: 2 },
+
+  card: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 24,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  capacityText: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
-  updateCard: { padding: 16, marginBottom: 24 },
-  capacityInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 8,
+  fieldLabel: { fontSize: 11, fontWeight: '600', color: '#94a3b8', letterSpacing: 0.8, marginBottom: 6, marginTop: 4 },
+  fieldValue: { fontSize: 14, fontWeight: '500', marginBottom: 6 },
+  divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 14 },
+
+  barWrap: { marginTop: 8 },
+  bar: { height: 24, backgroundColor: '#e5e7eb', borderRadius: 12, overflow: 'hidden', marginBottom: 8 },
+  barFill: { height: '100%', borderRadius: 12 },
+  barText: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
+
+  capacityRow: {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1.5, borderColor: '#e0dcd9', borderRadius: 16, paddingHorizontal: 14, marginBottom: 8,
   },
-  capacityInput: { flex: 1, fontSize: 18, fontWeight: '600', paddingVertical: 12 },
-  unitText: { fontSize: 16, fontWeight: '600', marginLeft: 8 },
-  hint: { fontSize: 12 },
-  notesCard: { padding: 16, marginBottom: 24 },
-  input: { fontSize: 14, minHeight: 100, textAlignVertical: 'top' },
-  submitButton: { marginTop: 8 },
+  capacityInput: { flex: 1, fontSize: 18, fontWeight: '600', paddingVertical: 14 },
+  unitText: { fontSize: 16, fontWeight: '600', color: '#94a3b8', marginLeft: 8 },
+  hintText: { fontSize: 12, color: '#94a3b8' },
+
+  inputCard: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 24,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
+  },
+  textInput: { fontSize: 14, minHeight: 100, textAlignVertical: 'top', lineHeight: 22 },
+
+  submitBtn: { borderRadius: 20, paddingVertical: 18, alignItems: 'center', marginTop: 4 },
+  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
 
 export default TruckCapacityScreen;
-

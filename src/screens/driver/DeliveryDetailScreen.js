@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,10 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
 import EmptyState from "../../components/common/EmptyState";
+import BackgroundShapes from "../../components/common/BackgroundShapes";
 import { useDriverData } from "../../hooks/useDriverData";
+import { driverApi } from "../../api/driverApi";
+import { promptNavigation } from "../../utils/navigationUtils";
 
 const HUB_COORDS = { latitude: 13.0707, longitude: 80.2507 };
 
@@ -25,6 +28,16 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
   const delivery = useMemo(() => {
     return data.orders.find((order) => order.id === deliveryId) || null;
   }, [data.orders, deliveryId]);
+
+  const [orderItems, setOrderItems] = useState([]);
+
+  useEffect(() => {
+    if (!deliveryId) return;
+    const stopId = delivery?.currentStopId || deliveryId;
+    driverApi.getStopItems(stopId).then((res) => {
+      if (res?.items) setOrderItems(res.items);
+    }).catch(() => {});
+  }, [deliveryId, delivery?.currentStopId]);
 
   if (loading) {
     return <Loader fullScreen text="Loading delivery details..." />;
@@ -59,6 +72,7 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       edges={["top"]}
     >
+      <BackgroundShapes variant="detail" />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -190,12 +204,41 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
           </View>
         </Card>
 
+        {orderItems.length > 0 && (
+          <Card style={styles.itemsCard}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+              Order Items
+            </Text>
+            {orderItems.map((item, idx) => (
+              <View key={item.id || idx} style={styles.itemRow}>
+                <View style={styles.itemInfo}>
+                  <Text style={[styles.itemName, { color: theme.colors.text.primary }]}>
+                    {item.name}
+                  </Text>
+                  <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
+                    {item.quantity} {item.unit} @ ${item.unitPrice}
+                  </Text>
+                </View>
+                <Text style={[styles.itemTotal, { color: theme.colors.text.primary }]}>
+                  ${item.totalPrice?.toFixed(2)}
+                </Text>
+              </View>
+            ))}
+          </Card>
+        )}
+
         <View style={styles.actions}>
           <Button
             title="Start navigation"
-            onPress={() =>
-              navigation.navigate("Route", { deliveryId: delivery.id })
-            }
+            onPress={() => {
+              const stop = {
+                latitude: delivery.coordinates?.latitude,
+                longitude: delivery.coordinates?.longitude,
+                address: delivery.address,
+                customer: delivery.customer,
+              };
+              promptNavigation(null, [stop], stop);
+            }}
             style={styles.actionButton}
           />
           <Button
@@ -226,7 +269,7 @@ const styles = StyleSheet.create({
   orderId: { fontSize: 18, fontWeight: "700" },
   customerName: { fontSize: 14, marginTop: 2 },
   mapCard: { padding: 12, marginBottom: 16 },
-  mapContainer: { height: 220, borderRadius: 16, overflow: "hidden" },
+  mapContainer: { height: 220, borderRadius: 20, overflow: "hidden" },
   mapHint: { fontSize: 12, marginTop: 8 },
   metaRow: { flexDirection: "row", marginBottom: 16, gap: 10 },
   metaCard: { flex: 1, paddingVertical: 10, paddingHorizontal: 12 },
@@ -237,6 +280,19 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
   infoIcon: { fontSize: 16, marginRight: 8 },
   infoText: { flex: 1, fontSize: 14 },
+  itemsCard: { padding: 14, marginBottom: 16 },
+  itemRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f1f5f9",
+  },
+  itemInfo: { flex: 1 },
+  itemName: { fontSize: 14, fontWeight: "600" },
+  itemMeta: { fontSize: 12, marginTop: 2 },
+  itemTotal: { fontSize: 14, fontWeight: "700" },
   actions: { flexDirection: "row", gap: 12, marginTop: 4 },
   actionButton: { flex: 1 },
   emptyIcon: { fontSize: 64 },

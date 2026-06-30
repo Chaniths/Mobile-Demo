@@ -13,6 +13,7 @@ import ProfileScreen from "../screens/buyer/ProfileScreen"; // Reuse
 import DeliveryDetailScreen from "../screens/driver/DeliveryDetailScreen";
 import AllDeliveriesScreen from "../screens/driver/AllDeliveriesScreen";
 import ReportIssueScreen from "../screens/driver/ReportIssueScreen";
+import EarningsScreen from "../screens/driver/EarningsScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -23,6 +24,7 @@ const HomeStack = () => (
     <Stack.Screen name="DeliveryDetail" component={DeliveryDetailScreen} />
     <Stack.Screen name="AllDeliveries" component={AllDeliveriesScreen} />
     <Stack.Screen name="ReportIssue" component={ReportIssueScreen} />
+    <Stack.Screen name="Earnings" component={EarningsScreen} />
   </Stack.Navigator>
 );
 
@@ -44,24 +46,23 @@ const DriverNavigator = () => {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary.main,
-        tabBarInactiveTintColor: theme.colors.text.tertiary,
+        tabBarInactiveTintColor: "#94a3b8",
         tabBarStyle: {
-          backgroundColor: theme.colors.card,
-          borderTopColor: theme.colors.border,
+          backgroundColor: "#ffffff",
           borderTopWidth: 0,
-          height: 55 + insets.bottom,
-          paddingBottom: 0 + insets.bottom,
+          height: 64 + insets.bottom,
+          paddingBottom: insets.bottom,
           paddingTop: 8,
           position: "absolute",
           left: 16,
           right: 16,
-          bottom: 0,
-          borderRadius: 24,
+          bottom: 16,
+          borderRadius: 28,
           elevation: 8,
           shadowColor: "#000",
-          shadowOpacity: 0.08,
+          shadowOpacity: 0.1,
           shadowOffset: { width: 0, height: 4 },
-          shadowRadius: 12,
+          shadowRadius: 16,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -74,7 +75,7 @@ const DriverNavigator = () => {
         component={HomeStack}
         options={{
           tabBarLabel: "Home",
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🏠</Text>,
+          tabBarIcon: ({ focused }) => <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>🏠</Text>,
         }}
       />
       <Tab.Screen
@@ -82,7 +83,7 @@ const DriverNavigator = () => {
         component={RouteScreen}
         options={{
           tabBarLabel: "Route",
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🗺️</Text>,
+          tabBarIcon: ({ focused }) => <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>🗺️</Text>,
         }}
       />
       <Tab.Screen
@@ -90,7 +91,7 @@ const DriverNavigator = () => {
         component={DeliveriesStack}
         options={{
           tabBarLabel: "Deliveries",
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>,
+          tabBarIcon: ({ focused }) => <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>📦</Text>,
         }}
       />
       <Tab.Screen
@@ -98,7 +99,7 @@ const DriverNavigator = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: "Profile",
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>,
+          tabBarIcon: ({ focused }) => <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>👤</Text>,
         }}
       />
     </Tab.Navigator>
