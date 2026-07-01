@@ -116,7 +116,7 @@ const HomeScreen = ({ navigation }) => {
       title: 'Refund Initiation',
       subtitle: 'Start approved refunds',
       icon: '💰',
-      color: '#06b6d4',
+      color: '#f59e0b',
       screen: 'RefundInitiation',
     },
     // Temporarily hidden based on current product priority:

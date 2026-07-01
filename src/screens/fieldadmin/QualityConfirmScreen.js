@@ -77,71 +77,110 @@ const QualityConfirmScreen = ({ navigation, route }) => {
     setNotes('');
   }, [selectedOrderId]);
 
+  const warningColor = theme.colors.warning || theme.colors.accent?.yellow || '#f59e0b';
+
   const handleQualityCheck = (itemId, quality, item) => {
+    const totalQuantity = item.quantityValue || 0;
     setSelectedProducts((prev) => {
       const filtered = prev.filter((p) => p.itemId !== itemId);
-      const newQuality = { itemId, quality };
-      
-      // If approved, set default approved quantity to total quantity
+      let approvedQuantity = 0;
       if (quality === 'approved') {
-        newQuality.approvedQuantity = item.quantityValue;
-        newQuality.approvedUnit = item.quantityUnit;
-        // Clear partial quantity if fully approved
-        setPartialQuantities((prevQty) => {
-          const newQty = { ...prevQty };
-          delete newQty[itemId];
-          return newQty;
-        });
+        approvedQuantity = totalQuantity;
       } else if (quality === 'rejected') {
-        newQuality.approvedQuantity = 0;
-        newQuality.approvedUnit = item.quantityUnit;
-        // Clear partial quantity if rejected
+        approvedQuantity = 0;
+      }
+
+      if (quality !== 'partial') {
         setPartialQuantities((prevQty) => {
           const newQty = { ...prevQty };
           delete newQty[itemId];
           return newQty;
         });
-      } else if (quality === 'partial') {
-        // Initialize with 0 for partial approval
-        newQuality.approvedQuantity = partialQuantities[itemId] || 0;
-        newQuality.approvedUnit = item.quantityUnit;
       }
-      
-      return [...filtered, newQuality];
+
+      return [
+        ...filtered,
+        {
+          itemId,
+          quality,
+          approvedQuantity,
+          approvedUnit: item.quantityUnit,
+        },
+      ];
+    });
+  };
+
+  const handleEnterPartialMode = (itemId, item) => {
+    setPartialQuantities((prev) => ({ ...prev, [itemId]: '' }));
+    setSelectedProducts((prev) => {
+      const filtered = prev.filter((p) => p.itemId !== itemId);
+      return [
+        ...filtered,
+        {
+          itemId,
+          quality: 'partial',
+          approvedQuantity: null,
+          approvedUnit: item.quantityUnit,
+        },
+      ];
     });
   };
 
   const handlePartialQuantityChange = (itemId, value, item) => {
-    const numValue = parseFloat(value) || 0;
     const maxValue = item.quantityValue || 0;
-    
-    // Clamp value between 0 and max
+
+    if (value === '' || value === '.') {
+      setPartialQuantities((prev) => ({ ...prev, [itemId]: '' }));
+      setSelectedProducts((prev) => {
+        const filtered = prev.filter((p) => p.itemId !== itemId);
+        return [
+          ...filtered,
+          {
+            itemId,
+            quality: 'partial',
+            approvedQuantity: null,
+            approvedUnit: item.quantityUnit,
+          },
+        ];
+      });
+      return;
+    }
+
+    const numValue = parseFloat(value);
+    if (Number.isNaN(numValue)) return;
+
     const clampedValue = Math.max(0, Math.min(numValue, maxValue));
-    
     setPartialQuantities((prev) => ({
       ...prev,
       [itemId]: clampedValue,
     }));
 
-    // Update the quality to partial if there's a valid quantity
     if (clampedValue > 0 && clampedValue < maxValue) {
-      handleQualityCheck(itemId, 'partial', item);
       setSelectedProducts((prev) => {
         const filtered = prev.filter((p) => p.itemId !== itemId);
-        return [...filtered, {
-          itemId,
-          quality: 'partial',
-          approvedQuantity: clampedValue,
-          approvedUnit: item.quantityUnit,
-        }];
+        return [
+          ...filtered,
+          {
+            itemId,
+            quality: 'partial',
+            approvedQuantity: clampedValue,
+            approvedUnit: item.quantityUnit,
+          },
+        ];
       });
-    } else if (clampedValue === maxValue) {
-      // If equals max, treat as fully approved
+    } else if (clampedValue >= maxValue) {
       handleQualityCheck(itemId, 'approved', item);
     } else if (clampedValue === 0) {
-      // If 0, treat as rejected
       handleQualityCheck(itemId, 'rejected', item);
     }
+  };
+
+  const isPartialComplete = (item, qualityData) => {
+    if (qualityData?.quality !== 'partial') return false;
+    const approvedQty = qualityData.approvedQuantity ?? partialQuantities[item.id];
+    const totalQty = item.quantityValue || 0;
+    const numericApproved = typeof approvedQty === 'number' ? approvedQty : parseFloat(approvedQty);
+    return numericApproved > 0 && numericApproved < totalQty;
   };
 
   const handleConfirm = () => {
@@ -178,10 +217,13 @@ const QualityConfirmScreen = ({ navigation, route }) => {
     submit();
   };
 
-  // Enable submit when all items have been quality-checked (approved, rejected, or partial)
-  const allChecked = order?.items?.every((item) =>
-    selectedProducts.some((p) => p.itemId === item.id && (p.quality === 'approved' || p.quality === 'rejected' || p.quality === 'partial'))
-  ) ?? false;
+  // Enable submit when all items have been quality-checked (approved, rejected, or valid partial)
+  const allChecked = order?.items?.every((item) => {
+    const qualityData = selectedProducts.find((p) => p.itemId === item.id);
+    if (!qualityData) return false;
+    if (qualityData.quality === 'partial') return isPartialComplete(item, qualityData);
+    return qualityData.quality === 'approved' || qualityData.quality === 'rejected';
+  }) ?? false;
 
   const getItemQuality = (item) => {
     return selectedProducts.find((p) => p.itemId === item.id);
@@ -191,10 +233,14 @@ const QualityConfirmScreen = ({ navigation, route }) => {
     if (!qualityData) return null;
     
     if (qualityData.quality === 'partial') {
-      const approvedQty = qualityData.approvedQuantity || partialQuantities[item.id] || 0;
+      const approvedQty = qualityData.approvedQuantity ?? partialQuantities[item.id];
+      if (approvedQty === null || approvedQty === '' || approvedQty === undefined) {
+        return 'Enter approved quantity below';
+      }
+      const numericApproved = typeof approvedQty === 'number' ? approvedQty : parseFloat(approvedQty);
       const totalQty = item.quantityValue || 0;
-      const percentage = totalQty > 0 ? Math.round((approvedQty / totalQty) * 100) : 0;
-      return `Partially Approved (${approvedQty}${item.quantityUnit} / ${totalQty}${item.quantityUnit} - ${percentage}%)`;
+      const percentage = totalQty > 0 ? Math.round((numericApproved / totalQty) * 100) : 0;
+      return `Partially Approved (${numericApproved}${item.quantityUnit} / ${totalQty}${item.quantityUnit} - ${percentage}%)`;
     } else if (qualityData.quality === 'approved') {
       return 'Fully Approved';
     } else if (qualityData.quality === 'rejected') {
@@ -307,9 +353,14 @@ const QualityConfirmScreen = ({ navigation, route }) => {
         {order.items.map((item) => {
           const qualityData = getItemQuality(item);
           const quality = qualityData?.quality;
-          const approvedQty = qualityData?.approvedQuantity || partialQuantities[item.id] || 0;
+          const approvedQty = qualityData?.approvedQuantity ?? partialQuantities[item.id];
+          const numericApproved = typeof approvedQty === 'number' ? approvedQty : parseFloat(approvedQty) || 0;
           const totalQty = item.quantityValue || 0;
           const statusText = getApprovalStatus(item, qualityData);
+          const partialInputValue =
+            partialQuantities[item.id] === '' || partialQuantities[item.id] === undefined
+              ? ''
+              : String(partialQuantities[item.id]);
 
           return (
             <Card variant={theme.isDarkMode ? "glass" : "default"} key={item.id} style={styles.productCard}>
@@ -330,7 +381,7 @@ const QualityConfirmScreen = ({ navigation, route }) => {
                             quality === 'approved'
                               ? `${theme.colors.success}20`
                               : quality === 'partial'
-                              ? `${theme.colors.warning}20`
+                              ? `${warningColor}20`
                               : `${theme.colors.error}20`,
                           marginTop: 8,
                           alignSelf: 'flex-start',
@@ -345,7 +396,7 @@ const QualityConfirmScreen = ({ navigation, route }) => {
                               quality === 'approved'
                                 ? theme.colors.success
                                 : quality === 'partial'
-                                ? theme.colors.warning
+                                ? warningColor
                                 : theme.colors.error,
                           },
                         ]}
@@ -357,10 +408,9 @@ const QualityConfirmScreen = ({ navigation, route }) => {
                 </View>
               </View>
 
-              {/* Partial Approval Input */}
               {quality === 'partial' && (
-                <View style={styles.partialApprovalContainer}>
-                  <Text style={[styles.partialLabel, { color: theme.colors.text.secondary }]}>
+                <View style={[styles.partialApprovalContainer, { backgroundColor: `${warningColor}18` }]}>
+                  <Text style={[styles.partialLabel, { color: warningColor }]}>
                     Approved Quantity
                   </Text>
                   <View style={styles.quantityInputRow}>
@@ -369,28 +419,28 @@ const QualityConfirmScreen = ({ navigation, route }) => {
                         styles.quantityInput,
                         {
                           color: theme.colors.text.primary,
-                          borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
+                          borderColor: warningColor,
                           backgroundColor: theme.colors.background,
                         },
                       ]}
                       placeholder="0"
                       placeholderTextColor={theme.colors.text.tertiary}
                       keyboardType="numeric"
-                      value={approvedQty > 0 ? approvedQty.toString() : ''}
+                      value={partialInputValue}
                       onChangeText={(value) => handlePartialQuantityChange(item.id, value, item)}
                     />
                     <Text style={[styles.quantityUnit, { color: theme.colors.text.secondary }]}>
                       {item.quantityUnit} / {totalQty} {item.quantityUnit}
                     </Text>
                   </View>
-                  {approvedQty > 0 && totalQty > 0 && (
+                  {numericApproved > 0 && totalQty > 0 && (
                     <View style={styles.progressBar}>
                       <View
                         style={[
                           styles.progressFill,
                           {
-                            width: `${(approvedQty / totalQty) * 100}%`,
-                            backgroundColor: theme.colors.success,
+                            width: `${(numericApproved / totalQty) * 100}%`,
+                            backgroundColor: warningColor,
                           },
                         ]}
                       />
@@ -399,74 +449,131 @@ const QualityConfirmScreen = ({ navigation, route }) => {
                 </View>
               )}
 
-              <View style={styles.qualityButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.qualityButton,
-                    {
-                      borderColor:
-                        quality === 'approved'
-                          ? theme.colors.success
-                          : theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
-                      backgroundColor:
-                        quality === 'approved' ? theme.colors.success : theme.colors.card || 'transparent',
-                    },
-                  ]}
-                  onPress={() => handleQualityCheck(item.id, 'approved', item)}
-                >
-                  <Text
+              {quality !== 'partial' ? (
+                <View style={styles.qualityButtons}>
+                  <TouchableOpacity
                     style={[
-                      styles.qualityButtonText,
+                      styles.qualityButton,
                       {
-                        color: quality === 'approved' ? '#fff' : theme.colors.text.primary,
+                        borderColor:
+                          quality === 'approved'
+                            ? theme.colors.success
+                            : theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
+                        backgroundColor:
+                          quality === 'approved' ? theme.colors.success : theme.colors.card || 'transparent',
                       },
                     ]}
+                    onPress={() => handleQualityCheck(item.id, 'approved', item)}
+                    activeOpacity={0.7}
                   >
-                    ✓ Approve All
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.qualityButton,
-                    {
-                      borderColor:
-                        quality === 'rejected'
-                          ? theme.colors.error
-                          : theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
-                      backgroundColor:
-                        quality === 'rejected'
-                          ? theme.colors.error
-                          : theme.colors.card || 'transparent',
-                    },
-                  ]}
-                  onPress={() => {
-                    handleQualityCheck(item.id, 'rejected', item);
-                    navigation.navigate('SellerReject', { item, order });
-                  }}
-                >
-                  <Text
+                    <Text
+                      style={[
+                        styles.qualityButtonText,
+                        {
+                          color: quality === 'approved' ? '#fff' : theme.colors.text.primary,
+                        },
+                      ]}
+                    >
+                      ✓ Approve
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
                     style={[
-                      styles.qualityButtonText,
+                      styles.qualityButton,
                       {
-                        color: quality === 'rejected' ? '#fff' : theme.colors.text.primary,
+                        borderColor: warningColor,
+                        backgroundColor: theme.colors.card || 'transparent',
                       },
                     ]}
+                    onPress={() => handleEnterPartialMode(item.id, item)}
+                    activeOpacity={0.7}
                   >
-                    ✗ Reject All
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Partial Approval Toggle */}
-              {quality !== 'partial' && (
-                <TouchableOpacity
-                  style={styles.partialToggle}
-                  onPress={() => handleQualityCheck(item.id, 'partial', item)}
-                >
-                  <Text style={[styles.partialToggleText, { color: theme.isDarkMode ? theme.colors.teal.main : (theme.colors.info || theme.colors.primary.main) }]}>
-                    ⚡ Approve Partial Quantity
-                  </Text>
-                </TouchableOpacity>
+                    <Text style={[styles.qualityButtonText, { color: warningColor }]}>
+                      ⚡ Partial
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.qualityButton,
+                      {
+                        borderColor:
+                          quality === 'rejected'
+                            ? theme.colors.error
+                            : theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
+                        backgroundColor:
+                          quality === 'rejected'
+                            ? theme.colors.error
+                            : theme.colors.card || 'transparent',
+                      },
+                    ]}
+                    onPress={() => {
+                      handleQualityCheck(item.id, 'rejected', item);
+                      navigation.navigate('SellerReject', { item, order });
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.qualityButtonText,
+                        {
+                          color: quality === 'rejected' ? '#fff' : theme.colors.text.primary,
+                        },
+                      ]}
+                    >
+                      ✗ Reject
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.qualityButtons}>
+                  <TouchableOpacity
+                    style={[
+                      styles.qualityButton,
+                      styles.qualityButtonDisabled,
+                      {
+                        borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
+                        backgroundColor: theme.colors.card || 'transparent',
+                      },
+                    ]}
+                    disabled
+                    activeOpacity={1}
+                  >
+                    <Text style={[styles.qualityButtonText, { color: theme.colors.text.disabled || '#94a3b8' }]}>
+                      ✓ Approve All
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.qualityButton,
+                      styles.partialActiveButton,
+                      {
+                        borderColor: warningColor,
+                        backgroundColor: warningColor,
+                      },
+                    ]}
+                    activeOpacity={1}
+                  >
+                    <Text style={[styles.qualityButtonText, { color: '#fff' }]}>
+                      ⚡ Partial
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.qualityButton,
+                      styles.qualityButtonDisabled,
+                      {
+                        borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
+                        backgroundColor: theme.colors.card || 'transparent',
+                      },
+                    ]}
+                    disabled
+                    activeOpacity={1}
+                  >
+                    <Text style={[styles.qualityButtonText, { color: theme.colors.text.disabled || '#94a3b8' }]}>
+                      ✗ Reject All
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </Card>
           );
@@ -727,26 +834,39 @@ const styles = StyleSheet.create({
   },
   qualityButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
+    marginTop: 4,
   },
   qualityButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     borderRadius: 8,
     borderWidth: 1.5,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  partialActiveButton: {
+    shadowColor: '#f59e0b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  qualityButtonDisabled: {
+    opacity: 0.45,
   },
   qualityButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   partialApprovalContainer: {
     marginTop: 12,
     marginBottom: 12,
     padding: 12,
     borderRadius: 8,
-    backgroundColor: 'rgba(251, 191, 36, 0.1)',
   },
   partialLabel: {
     fontSize: 12,
@@ -782,15 +902,6 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: 3,
-  },
-  partialToggle: {
-    marginTop: 8,
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-  partialToggleText: {
-    fontSize: 13,
-    fontWeight: '600',
   },
   notesCard: {
     padding: 16,

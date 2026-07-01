@@ -16,12 +16,35 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
 
+const buildRefundDefaults = (selectedOrder) => {
+  if (!selectedOrder) {
+    return { amount: '', reason: '' };
+  }
+
+  const refundableItems = (selectedOrder.items ?? []).filter((item) => item.refundableQuantity > 0);
+  const refundableAmount = Number(selectedOrder.refundableAmount ?? 0);
+  const orderLabel = selectedOrder.orderNumber ?? selectedOrder.id;
+
+  const itemSummary = refundableItems
+    .map((item) => `${item.name} (${item.refundableQuantity} ${item.unit})`)
+    .join(', ');
+
+  const reason = itemSummary
+    ? `Quality rejection refund for order ${orderLabel}: ${itemSummary}`
+    : `Quality rejection refund for order ${orderLabel}`;
+
+  return {
+    amount: refundableAmount > 0 ? refundableAmount.toFixed(2) : '',
+    reason,
+  };
+};
+
 const RefundInitiationScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState('');
   const [orders, setOrders] = useState([]);
-  const [selectedOrderId, setSelectedOrderId] = useState(route?.params?.order?.id ?? null);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
@@ -32,10 +55,15 @@ const RefundInitiationScreen = ({ navigation, route }) => {
       try {
         setLoading(true);
         const eligibleOrders = await fieldAdminApi.getRefundEligibleOrders();
-        setOrders(eligibleOrders ?? []);
-        if (!selectedOrderId && eligibleOrders?.length) {
-          setSelectedOrderId(eligibleOrders[0].id);
-        }
+        const normalizedOrders = eligibleOrders ?? [];
+        setOrders(normalizedOrders);
+
+        const initialOrderId = route?.params?.order?.id;
+        const validSelectedOrderId = normalizedOrders.some((entry) => entry.id === initialOrderId)
+          ? initialOrderId
+          : normalizedOrders[0]?.id ?? null;
+
+        setSelectedOrderId(validSelectedOrderId);
       } catch {
         Alert.alert('Error', 'Failed to load orders for refund.');
       } finally {
@@ -43,7 +71,7 @@ const RefundInitiationScreen = ({ navigation, route }) => {
       }
     };
     loadOrders();
-  }, []);
+  }, [route?.params?.order?.id]);
 
   const selectedOrder = useMemo(
     () => orders.find((entry) => entry.id === selectedOrderId) || null,
@@ -57,8 +85,16 @@ const RefundInitiationScreen = ({ navigation, route }) => {
       orderId: selectedOrder.orderNumber ?? selectedOrder.id,
       customer: selectedOrder.customer ?? 'Customer',
       totalAmount: `Rs. ${Number(selectedOrder.totalAmount ?? 0).toFixed(2)}`,
+      refundableAmount: Number(selectedOrder.refundableAmount ?? 0),
       status: selectedOrder.status ?? 'N/A',
+      items: (selectedOrder.items ?? []).filter((item) => item.refundableQuantity > 0),
     };
+  }, [selectedOrder]);
+
+  useEffect(() => {
+    const defaults = buildRefundDefaults(selectedOrder);
+    setAmount(defaults.amount);
+    setReason(defaults.reason);
   }, [selectedOrder]);
 
   const filteredOrders = useMemo(() => {
@@ -78,26 +114,32 @@ const RefundInitiationScreen = ({ navigation, route }) => {
       Alert.alert('Error', 'No order selected for refund.');
       return;
     }
+    const requestedAmount = Number(amount);
+    if (requestedAmount <= 0 || requestedAmount > order.refundableAmount) {
+      Alert.alert('Error', `Refund amount must be between 0 and Rs. ${order.refundableAmount.toFixed(2)}.`);
+      return;
+    }
+
+    const orderItemIds = order.items?.map((item) => item.id) ?? [];
+
     setSubmitting(true);
     fieldAdminApi
       .initiateRefund({
         orderId: order.id,
-        amount: Number(amount),
+        amount: requestedAmount,
         reason,
+        orderItemIds,
       })
       .then(() => {
         Alert.alert('Success', 'Refund initiated.');
-        setReason('');
-        setAmount('');
         return fieldAdminApi.getRefundEligibleOrders();
       })
       .then((eligibleOrders) => {
         if (eligibleOrders) {
           setOrders(eligibleOrders);
           const stillExists = eligibleOrders.some((entry) => entry.id === order.id);
-          if (!stillExists) {
-            setSelectedOrderId(eligibleOrders[0]?.id ?? null);
-          }
+          const nextOrderId = stillExists ? order.id : (eligibleOrders[0]?.id ?? null);
+          setSelectedOrderId(nextOrderId);
         }
       })
       .catch(() => Alert.alert('Error', 'Failed to initiate refund.'))
@@ -166,11 +208,29 @@ const RefundInitiationScreen = ({ navigation, route }) => {
           <Text style={[styles.detail, { color: theme.colors.text.primary }]}>{order?.customer ?? '-'}</Text>
           <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Order Total</Text>
           <Text style={[styles.detail, { color: theme.colors.text.primary }]}>{order?.totalAmount ?? 'Rs. 0.00'}</Text>
+          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Max Refund</Text>
+          <Text style={[styles.detail, { color: theme.colors.text.primary }]}>{`Rs. ${order?.refundableAmount?.toFixed(2) ?? '0.00'}`}</Text>
           <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Status</Text>
-          <View style={[styles.statusBadge, { backgroundColor: `${theme.colors.error}20` }]}>
+          <View style={[styles.statusBadge, { backgroundColor: `${theme.colors.error}20` }]}> 
             <Text style={[styles.statusText, { color: theme.colors.error }]}>{order?.status ?? 'N/A'}</Text>
           </View>
         </Card>
+
+        {order?.items?.length ? (
+          <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.refundItemsCard}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary, marginBottom: 8 }]}>Refundable Items</Text>
+            {order.items.map((item) => (
+              <View key={item.id} style={styles.refundItemRow}>
+                <View style={styles.refundItemLeft}>
+                  <Text style={[styles.refundItemName, { color: theme.colors.text.primary }]}>{item.name}</Text>
+                  <Text style={[styles.refundItemMeta, { color: theme.colors.text.secondary }]}>Rejected: {item.rejectedQuantity} {item.unit}</Text>
+                  <Text style={[styles.refundItemMeta, { color: theme.colors.text.secondary }]}>Refundable: {item.refundableQuantity} {item.unit}</Text>
+                </View>
+                <Text style={[styles.refundItemAmount, { color: theme.colors.text.primary }]}>Rs. {Number(item.refundableAmount ?? 0).toFixed(2)}</Text>
+              </View>
+            ))}
+          </Card>
+        ) : null}
 
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Refund Reason
@@ -203,7 +263,7 @@ const RefundInitiationScreen = ({ navigation, route }) => {
             />
           </View>
           <Text style={[styles.hint, { color: theme.colors.text.tertiary }]}>
-            Maximum refundable: {order?.totalAmount ?? 'Rs. 0.00'}
+            Auto-filled from selected order. Maximum refundable: Rs. {order?.refundableAmount?.toFixed(2) ?? '0.00'}
           </Text>
         </Card>
 
@@ -266,7 +326,7 @@ const RefundInitiationScreen = ({ navigation, route }) => {
                     <View>
                       <Text style={[styles.modalOrderNumber, { color: theme.colors.text.primary }]}>{entry.orderNumber}</Text>
                       <Text style={[styles.modalOrderMeta, { color: theme.colors.text.secondary }]}>
-                        {entry.customer} • Rs. {Number(entry.totalAmount ?? 0).toFixed(2)}
+                        {entry.customer} • Refund: Rs. {Number(entry.refundableAmount ?? 0).toFixed(2)}
                       </Text>
                     </View>
                     {active ? <Text style={[styles.modalSelectedTick, { color: theme.colors.primary.main }]}>✓</Text> : null}
@@ -345,7 +405,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: { 
     paddingHorizontal: 20, 
-    paddingBottom: 32,
+    paddingBottom: 120,
     zIndex: 1,
   },
   header: {
@@ -384,7 +444,7 @@ const styles = StyleSheet.create({
   currency: { fontSize: 18, fontWeight: '600', marginRight: 8 },
   amountInput: { flex: 1, fontSize: 24, fontWeight: '700' },
   hint: { fontSize: 12, marginTop: 4 },
-  submitButton: { marginTop: 8 },
+  submitButton: { marginTop: 8, marginBottom: 16 },
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',

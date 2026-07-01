@@ -89,11 +89,12 @@ export const submitRouteReassessment = async ({ routeId, reason, oldData, newDat
   return response.data;
 };
 
-export const initiateRefund = async ({ orderId, amount, reason }) => {
+export const initiateRefund = async ({ orderId, amount, reason, orderItemIds }) => {
   const response = await apiClient.post('/fieldadmin/payment/refunds/initiate', {
     orderId,
     amount,
     reason,
+    orderItemIds,
   });
   return response.data;
 };
