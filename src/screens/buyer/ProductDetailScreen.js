@@ -1,25 +1,117 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  Image,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-import { getProductById } from '../../utils/catalog';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import { useDispatch } from 'react-redux';
-import { addItem } from '../../store/slices/cartSlice';
+import api from '../../api/client';
+
+// ── Component ──────────────────────────────────────────────────────────────────
 
 const ProductDetailScreen = ({ route, navigation }) => {
   const { productId } = route.params || {};
   const { theme } = useTheme();
-  const dispatch = useDispatch();
 
-  const product = useMemo(() => getProductById(productId), [productId]);
-  const [selectedSellerId, setSelectedSellerId] = useState(
-    product?.sellers?.[0]?.id || null
-  );
-  const [quantity, setQuantity] = useState(1);
+  const [product, setProduct]               = useState(null);
+  const [sellers, setSellers]               = useState([]);
+  const [selectedSellerId, setSelectedSellerId] = useState(null);
+  const [quantity, setQuantity]             = useState(1);
+  const [loading, setLoading]               = useState(true);
+  const [addingToCart, setAddingToCart]     = useState(false);
+  const [error, setError]                   = useState(null);
 
-  if (!product) {
+  // ── Fetch product + sellers ───────────────────────────────────────────────────
+
+  const fetchData = useCallback(async () => {
+    if (!productId) return;
+    try {
+      setError(null);
+      // Run both requests in parallel
+      const [productRes, sellersRes] = await Promise.all([
+        api.get(`/products/${productId}`),
+        api.get(`/products/${productId}/sellers`),
+      ]);
+
+      setProduct(productRes.data);
+      setSellers(sellersRes.data);
+
+      // Auto-select the cheapest seller (already sorted by price asc from backend)
+      if (sellersRes.data.length > 0) {
+        setSelectedSellerId(sellersRes.data[0].sellerId);
+      }
+    } catch (err) {
+      console.error('Product detail fetch error:', err);
+      setError(err?.response?.data?.message || 'Failed to load product.');
+    } finally {
+      setLoading(false);
+    }
+  }, [productId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // ── Quantity controls ─────────────────────────────────────────────────────────
+
+  const handleQuantityChange = (delta) => {
+    setQuantity((prev) => {
+      const next = prev + delta;
+      if (next < 1) return 1;
+      // Cap at selected seller's stock
+      const sellerStock = sellers.find((s) => s.sellerId === selectedSellerId)?.stock ?? 999;
+      return next > sellerStock ? sellerStock : next;
+    });
+  };
+
+  // ── Add to cart ───────────────────────────────────────────────────────────────
+
+  const handleAddToCart = async () => {
+    if (!selectedSellerId) {
+      Alert.alert('Select a seller', 'Please select a seller before adding to cart.');
+      return;
+    }
+
+    setAddingToCart(true);
+    try {
+      // POST /api/v1/cart/add
+      await api.post('/cart/add', {
+        productId,
+        quantity,
+        sellerId: selectedSellerId,
+      });
+
+      // Navigate to cart on success
+      navigation.navigate('CartTab');
+    } catch (err) {
+      console.error('Add to cart error:', err);
+      Alert.alert(
+        'Could not add to cart',
+        err?.response?.data?.message || 'Please try again.'
+      );
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  // ── Selected seller helper ────────────────────────────────────────────────────
+
+  const selectedSeller = sellers.find((s) => s.sellerId === selectedSellerId);
+  const estimatedTotal = selectedSeller
+    ? (selectedSeller.price * quantity).toFixed(2)
+    : '0.00';
+
+  // ── Loading ───────────────────────────────────────────────────────────────────
+
+  if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
@@ -27,44 +119,47 @@ const ProductDetailScreen = ({ route, navigation }) => {
             <Text style={[styles.backButton, { color: theme.colors.primary.main }]}>← Back</Text>
           </TouchableOpacity>
           <Text style={[styles.title, { color: theme.colors.text.primary }]}>Product</Text>
-          <View style={{ width: 50 }} />
+          <View style={{ width: 40 }} />
         </View>
-        <View style={styles.center}>
-          <Text style={{ color: theme.colors.text.secondary }}>
-            Product not found.
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={theme.colors.primary.main} />
+          <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
+            Loading product…
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const selectedSeller = product.sellers.find((s) => s.id === selectedSellerId);
+  // ── Error / Not found ─────────────────────────────────────────────────────────
 
-  const handleQuantityChange = (delta) => {
-    setQuantity((prev) => {
-      const next = prev + delta;
-      return next < 1 ? 1 : next;
-    });
-  };
-
-  const handleAddToCart = () => {
-    if (!selectedSeller) return;
-
-    dispatch(
-      addItem({
-        productId: product.id,
-        productName: product.name,
-        productImage: product.image,
-        sellerId: selectedSeller.id,
-        sellerName: selectedSeller.name,
-        unit: product.unit,
-        price: selectedSeller.price,
-        quantity,
-      })
+  if (error || !product) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={[styles.backButton, { color: theme.colors.primary.main }]}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: theme.colors.text.primary }]}>Product</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.centered}>
+          <Text style={{ fontSize: 40, marginBottom: 12 }}>⚠️</Text>
+          <Text style={[{ fontSize: 15, textAlign: 'center', marginBottom: 20 }, { color: theme.colors.text.primary }]}>
+            {error || 'Product not found.'}
+          </Text>
+          <TouchableOpacity
+            style={[styles.retryBtn, { backgroundColor: theme.colors.primary.main }]}
+            onPress={() => { setLoading(true); fetchData(); }}
+          >
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
+  }
 
-    navigation.navigate('CartTab');
-  };
+  // ── Main ──────────────────────────────────────────────────────────────────────
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -73,7 +168,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={[styles.backButton, { color: theme.colors.primary.main }]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.colors.text.primary }]}>
+        <Text style={[styles.title, { color: theme.colors.text.primary }]} numberOfLines={1}>
           {product.name}
         </Text>
         <TouchableOpacity onPress={() => navigation.navigate('CartTab')}>
@@ -86,124 +181,144 @@ const ProductDetailScreen = ({ route, navigation }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Product hero */}
-        <Card style={styles.heroCard}>
-          <View
-            style={[
-              styles.heroImage,
-              { backgroundColor: theme.colors.primary.light },
-            ]}
-          >
-            <Text style={styles.heroEmoji}>{product.image}</Text>
-          </View>
+        {/* Hero card */}
+        <Card style={styles.heroCard} onPress={() => {}}>
+          {product.imageUrl ? (
+            <Image
+              source={{ uri: product.imageUrl }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.heroImage, styles.heroImagePlaceholder, { backgroundColor: theme.colors.primary.light }]}>
+              <Text style={styles.heroEmoji}>🛒</Text>
+            </View>
+          )}
           <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
             {product.name}
           </Text>
           <Text style={[styles.metaText, { color: theme.colors.text.secondary }]}>
-            {product.unit} • ⭐ {product.rating}
+            {product.unit} • {product.category}
           </Text>
+          {product.description ? (
+            <Text style={[styles.description, { color: theme.colors.text.secondary }]}>
+              {product.description}
+            </Text>
+          ) : null}
+
+          {/* Stock info */}
+          <View style={styles.stockRow}>
+            {product.stock <= 0 ? (
+              <Text style={[styles.stockBadge, { color: '#ef4444', backgroundColor: '#ef444420' }]}>
+                Out of stock
+              </Text>
+            ) : product.stock <= 10 ? (
+              <Text style={[styles.stockBadge, { color: '#f59e0b', backgroundColor: '#f59e0b20' }]}>
+                Only {product.stock} {product.unit} left
+              </Text>
+            ) : (
+              <Text style={[styles.stockBadge, { color: '#22c55e', backgroundColor: '#22c55e20' }]}>
+                In stock • {product.stock} {product.unit}
+              </Text>
+            )}
+          </View>
         </Card>
 
         {/* Sellers list */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-            Available sellers
+            Available Sellers ({sellers.length})
           </Text>
-          {product.sellers.map((seller) => {
-            const isSelected = seller.id === selectedSellerId;
-            return (
-              <TouchableOpacity
-                key={seller.id}
-                onPress={() => setSelectedSellerId(seller.id)}
-              >
-                <Card
-                  style={[
-                    styles.sellerCard,
-                    isSelected && {
-                      borderWidth: 1.5,
-                      borderColor: theme.colors.primary.main,
-                    },
-                  ]}
+
+          {sellers.length === 0 ? (
+            <Text style={[{ fontSize: 14, color: theme.colors.text.secondary }]}>
+              No sellers available for this product.
+            </Text>
+          ) : (
+            sellers.map((sellerEntry) => {
+              // Backend returns SellerProduct entries with nested seller
+              const isSelected = sellerEntry.sellerId === selectedSellerId;
+              const sellerName = sellerEntry.seller?.user?.name ?? 'Unknown Seller';
+              const outOfStock = sellerEntry.stock <= 0;
+
+              return (
+                <TouchableOpacity
+                  key={sellerEntry.sellerId}
+                  onPress={() => {
+                    if (!outOfStock) {
+                      setSelectedSellerId(sellerEntry.sellerId);
+                      setQuantity(1); // reset quantity on seller change
+                    }
+                  }}
+                  disabled={outOfStock}
                 >
-                  <View style={styles.sellerHeader}>
-                    <View>
-                      <Text
-                        style={[
-                          styles.sellerName,
-                          { color: theme.colors.text.primary },
-                        ]}
-                      >
-                        {seller.name}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.sellerMeta,
-                          { color: theme.colors.text.secondary },
-                        ]}
-                      >
-                        ⭐ {seller.rating} • {seller.distanceKm} km away
-                      </Text>
-                    </View>
-                    <View style={styles.priceBlock}>
-                      <Text
-                        style={[
-                          styles.price,
-                          { color: theme.colors.primary.main },
-                        ]}
-                      >
-                        ${seller.price.toFixed(2)}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.priceUnit,
-                          { color: theme.colors.text.secondary },
-                        ]}
-                      >
-                        per {product.unit}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.sellerFooter}>
-                    <Text
-                      style={[
-                        styles.deliveryMeta,
-                        { color: theme.colors.text.secondary },
-                      ]}
-                    >
-                      ETA {seller.etaMinutes} min • FreshRoute delivery
-                    </Text>
-                    {seller.badge ? (
-                      <View
-                        style={[
-                          styles.badge,
-                          { backgroundColor: theme.colors.primary.light },
-                        ]}
-                      >
-                        <Text style={styles.badgeText}>{seller.badge}</Text>
+                  <Card
+                    style={[
+                      styles.sellerCard,
+                      outOfStock && { opacity: 0.5 },
+                      isSelected && {
+                        borderWidth: 1.5,
+                        borderColor: theme.colors.primary.main,
+                      },
+                    ]}
+                    onPress={() => {
+                      if (!outOfStock) {
+                        setSelectedSellerId(sellerEntry.sellerId);
+                        setQuantity(1);
+                      }
+                    }}
+                  >
+                    <View style={styles.sellerHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.sellerName, { color: theme.colors.text.primary }]}>
+                          {sellerName}
+                        </Text>
+                        <Text style={[styles.sellerMeta, { color: theme.colors.text.secondary }]}>
+                          Stock: {sellerEntry.stock} {product.unit}
+                        </Text>
                       </View>
-                    ) : null}
-                  </View>
-                </Card>
-              </TouchableOpacity>
-            );
-          })}
+                      <View style={styles.priceBlock}>
+                        <Text style={[styles.price, { color: theme.colors.primary.main }]}>
+                          Rs. {sellerEntry.price.toFixed(2)}
+                        </Text>
+                        <Text style={[styles.priceUnit, { color: theme.colors.text.secondary }]}>
+                          per {product.unit}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Out of stock badge */}
+                    {outOfStock && (
+                      <Text style={[styles.outOfStockText, { color: '#ef4444' }]}>
+                        Out of stock from this seller
+                      </Text>
+                    )}
+
+                    {/* Selected checkmark */}
+                    {isSelected && !outOfStock && (
+                      <Text style={[styles.selectedText, { color: theme.colors.primary.main }]}>
+                        ✓ Selected
+                      </Text>
+                    )}
+                  </Card>
+                </TouchableOpacity>
+              );
+            })
+          )}
         </View>
       </ScrollView>
 
       {/* Bottom bar */}
-      <View style={[styles.bottomBar, { borderTopColor: theme.colors.border }]}>
+      <View style={[styles.bottomBar, { borderTopColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
+        {/* Quantity */}
         <View style={styles.quantityWrapper}>
-          <Text style={[styles.bottomLabel, { color: theme.colors.text.secondary }]}>
-            Quantity
-          </Text>
+          <Text style={[styles.bottomLabel, { color: theme.colors.text.secondary }]}>Quantity</Text>
           <View style={styles.quantityControl}>
             <TouchableOpacity
               onPress={() => handleQuantityChange(-1)}
               style={[styles.quantityButton, { backgroundColor: theme.colors.card }]}
             >
-              <Text style={[styles.quantityButtonText, { color: theme.colors.text.primary }]}>
-                −
-              </Text>
+              <Text style={[styles.quantityButtonText, { color: theme.colors.text.primary }]}>−</Text>
             </TouchableOpacity>
             <Text style={[styles.quantityValue, { color: theme.colors.text.primary }]}>
               {quantity}
@@ -217,18 +332,21 @@ const ProductDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
 
+        {/* Estimated total */}
         <View style={styles.checkoutWrapper}>
           <Text style={[styles.totalLabel, { color: theme.colors.text.secondary }]}>
             Estimated total
           </Text>
           <Text style={[styles.totalValue, { color: theme.colors.primary.main }]}>
-            ${selectedSeller ? (selectedSeller.price * quantity).toFixed(2) : '0.00'}
+            Rs. {estimatedTotal}
           </Text>
         </View>
 
+        {/* Add to cart button */}
         <Button
-          title="Add to cart"
+          title={addingToCart ? 'Adding…' : 'Add to Cart'}
           onPress={handleAddToCart}
+          disabled={addingToCart || !selectedSellerId || product.stock <= 0}
           style={styles.addToCartButton}
         />
       </View>
@@ -236,176 +354,57 @@ const ProductDetailScreen = ({ route, navigation }) => {
   );
 };
 
+// ── Styles ─────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-  },
-  backButton: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  cartIcon: {
-    fontSize: 24,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 140,
-  },
-  heroCard: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    marginBottom: 16,
-  },
-  heroImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  heroEmoji: {
-    fontSize: 48,
-  },
-  productName: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  metaText: {
-    fontSize: 13,
-  },
-  section: {
-    marginTop: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  sellerCard: {
-    marginBottom: 10,
-    padding: 14,
-  },
-  sellerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  sellerName: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  sellerMeta: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  priceBlock: {
-    alignItems: 'flex-end',
-  },
-  price: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  priceUnit: {
-    fontSize: 11,
-  },
-  sellerFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  deliveryMeta: {
-    fontSize: 12,
-  },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 90,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 16,
-    borderTopWidth: 1,
-    backgroundColor: 'rgba(0,0,0,0.02)',
-  },
-  quantityWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  bottomLabel: {
-    fontSize: 13,
-  },
-  quantityControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  quantityButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quantityButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  quantityValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginHorizontal: 16,
-  },
-  checkoutWrapper: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: 6,
-  },
-  totalLabel: {
-    fontSize: 12,
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  addToCartButton: {
-    marginTop: 6,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container:   { flex: 1 },
+  centered:    { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  loadingText: { marginTop: 12, fontSize: 14 },
+  retryBtn:    { paddingHorizontal: 28, paddingVertical: 12, borderRadius: 8 },
+  retryBtnText:{ color: '#fff', fontWeight: '700', fontSize: 14 },
+
+  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
+  backButton: { fontSize: 16, fontWeight: '600' },
+  title:      { fontSize: 18, fontWeight: '700', flex: 1, textAlign: 'center' },
+  cartIcon:   { fontSize: 24 },
+
+  scroll:        { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 200 },
+
+  heroCard:               { alignItems: 'center', paddingVertical: 20, marginBottom: 16 },
+  heroImage:              { width: 110, height: 110, borderRadius: 55, marginBottom: 12 },
+  heroImagePlaceholder:   { justifyContent: 'center', alignItems: 'center' },
+  heroEmoji:              { fontSize: 52 },
+  productName:            { fontSize: 20, fontWeight: '700', marginBottom: 4, textAlign: 'center' },
+  metaText:               { fontSize: 13, marginBottom: 6, textTransform: 'capitalize' },
+  description:            { fontSize: 13, textAlign: 'center', marginTop: 6, lineHeight: 20, paddingHorizontal: 8 },
+  stockRow:               { marginTop: 10 },
+  stockBadge:             { fontSize: 12, fontWeight: '600', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
+
+  section:      { marginTop: 8 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 10 },
+
+  sellerCard:      { marginBottom: 10, padding: 14 },
+  sellerHeader:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  sellerName:      { fontSize: 15, fontWeight: '600', marginBottom: 3 },
+  sellerMeta:      { fontSize: 12 },
+  priceBlock:      { alignItems: 'flex-end' },
+  price:           { fontSize: 18, fontWeight: '700' },
+  priceUnit:       { fontSize: 11 },
+  outOfStockText:  { fontSize: 12, fontWeight: '600', marginTop: 6 },
+  selectedText:    { fontSize: 12, fontWeight: '700', marginTop: 6 },
+
+  bottomBar:       { position: 'absolute', left: 0, right: 0, bottom: 90, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16, borderTopWidth: 1 },
+  quantityWrapper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  bottomLabel:     { fontSize: 13 },
+  quantityControl: { flexDirection: 'row', alignItems: 'center' },
+  quantityButton:  { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  quantityButtonText: { fontSize: 18, fontWeight: '600' },
+  quantityValue:   { fontSize: 16, fontWeight: '600', marginHorizontal: 16 },
+  checkoutWrapper: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 },
+  totalLabel:      { fontSize: 12 },
+  totalValue:      { fontSize: 18, fontWeight: '700' },
+  addToCartButton: { marginTop: 4 },
 });
 
 export default ProductDetailScreen;
-
-

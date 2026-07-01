@@ -1,17 +1,37 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { useTheme } from '../hooks/useTheme';
 
 // Seller Screens
 import DashboardScreen from '../screens/seller/DashboardScreen';
 import ProductsScreen from '../screens/seller/ProductsScreen';
-import OrdersScreen from '../screens/buyer/OrdersScreen'; // Reuse
-import ProfileScreen from '../screens/buyer/ProfileScreen'; // Reuse
+import AddProductScreen from '../screens/seller/AddProductScreen';
+import EditProductScreen from '../screens/seller/EditProductScreen';
+import OrdersScreen from '../screens/buyer/OrdersScreen';
+import ProfileScreen from '../screens/buyer/ProfileScreen';
+
+// Extra screens (stack screens, not tabs)
+// import EditProductScreen from '../screens/seller/EditProductScreen';
+// import InventoryScreen from '../screens/seller/InventoryScreen';
+// import EarningsScreen from '../screens/seller/EarningsScreen';
+// import OrderDetailScreen from '../screens/seller/OrderDetailScreen';
+
+// ── Placeholder screens (remove once real screens exist) ──────────────────────
+import { View } from 'react-native';
+const PlaceholderScreen = ({ route }) => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <Text style={{ fontSize: 16 }}>{route.name} — Coming soon</Text>
+  </View>
+);
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
-const SellerNavigator = () => {
+// ── Bottom tab navigator ───────────────────────────────────────────────────────
+
+const SellerTabs = () => {
   const { theme } = useTheme();
 
   return (
@@ -49,7 +69,7 @@ const SellerNavigator = () => {
         component={DashboardScreen}
         options={{
           tabBarLabel: 'Dashboard',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📊</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📊</Text>,
         }}
       />
       <Tab.Screen
@@ -57,7 +77,7 @@ const SellerNavigator = () => {
         component={ProductsScreen}
         options={{
           tabBarLabel: 'Products',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>🏪</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🏪</Text>,
         }}
       />
       <Tab.Screen
@@ -65,7 +85,7 @@ const SellerNavigator = () => {
         component={OrdersScreen}
         options={{
           tabBarLabel: 'Orders',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📦</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>,
         }}
       />
       <Tab.Screen
@@ -73,12 +93,29 @@ const SellerNavigator = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>👤</Text>,
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>,
         }}
       />
     </Tab.Navigator>
   );
 };
 
-export default SellerNavigator;
+// ── Root stack (tabs + extra screens) ─────────────────────────────────────────
 
+const SellerNavigator = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {/* Main tabs */}
+      <Stack.Screen name="SellerTabs" component={SellerTabs} />
+
+      {/* Stack screens — swap PlaceholderScreen with real screens when ready */}
+      <Stack.Screen name="AddProduct"   component={AddProductScreen} />
+      <Stack.Screen name="EditProduct"  component={EditProductScreen} />
+      <Stack.Screen name="Inventory"    component={PlaceholderScreen} />
+      <Stack.Screen name="Earnings"     component={PlaceholderScreen} />
+      <Stack.Screen name="OrderDetail"  component={PlaceholderScreen} />
+    </Stack.Navigator>
+  );
+};
+
+export default SellerNavigator;

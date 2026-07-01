@@ -3,9 +3,9 @@
 
 const ENV = {
   dev: {
-    apiUrl: 'http://localhost:3000/api',
-    wsUrl: 'ws://localhost:3000',
-  },
+  apiUrl: 'http://172.20.10.2:5000/api',  
+  wsUrl: 'ws://172.20.10.2:5000',
+},
   staging: {
     apiUrl: 'https://staging-api.freshroute.com/api',
     wsUrl: 'wss://staging-api.freshroute.com',

@@ -15,18 +15,46 @@ import AnalyticsScreen from '../screens/buyer/AnalyticsScreen';
 import TrackOrderScreen from '../screens/buyer/TrackOrderScreen';
 import CheckoutScreen from '../screens/buyer/CheckoutScreen';
 
+// TODO: create this screen — shows order number + success message after placing order
+// import OrderConfirmationScreen from '../screens/buyer/OrderConfirmationScreen';
+
+import { View } from 'react-native';
+const OrderConfirmationScreen = ({ route, navigation }) => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <Text style={{ fontSize: 40, marginBottom: 12 }}>🎉</Text>
+    <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>
+      Order Placed!
+    </Text>
+    <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>
+      {route.params?.orderNumber}
+    </Text>
+    <Text style={{ fontSize: 13, color: '#6b7280', marginBottom: 24 }}>
+      Total: Rs. {route.params?.total?.toFixed(2)}
+    </Text>
+    <Text
+      style={{ fontSize: 15, fontWeight: '600', color: '#22c55e' }}
+      onPress={() => navigation.navigate('OrdersTab')}
+    >
+      View My Orders →
+    </Text>
+  </View>
+);
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+// ── Home stack ─────────────────────────────────────────────────────────────────
+
 const HomeStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="Home" component={HomeScreen} />
+    <Stack.Screen name="Home"          component={HomeScreen} />
     <Stack.Screen name="ProductBrowse" component={ProductBrowseScreen} />
     <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
-    <Stack.Screen name="Analytics" component={AnalyticsScreen} />
-    <Stack.Screen name="TrackOrder" component={TrackOrderScreen} />
+    <Stack.Screen name="Analytics"     component={AnalyticsScreen} />
   </Stack.Navigator>
 );
+
+// ── Browse stack ───────────────────────────────────────────────────────────────
 
 const BrowseStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -35,12 +63,27 @@ const BrowseStack = () => (
   </Stack.Navigator>
 );
 
+// ── Cart stack ─────────────────────────────────────────────────────────────────
+
 const CartStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="Cart" component={CartScreen} />
-    <Stack.Screen name="Checkout" component={CheckoutScreen} />
+    <Stack.Screen name="Cart"                component={CartScreen} />
+    <Stack.Screen name="Checkout"            component={CheckoutScreen} />
+    <Stack.Screen name="OrderConfirmation"   component={OrderConfirmationScreen} />
   </Stack.Navigator>
 );
+
+// ── Orders stack ───────────────────────────────────────────────────────────────
+// Wrapped in a stack so TrackOrder can be pushed on top
+
+const OrdersStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Orders"     component={OrdersScreen} />
+    <Stack.Screen name="TrackOrder" component={TrackOrderScreen} />
+  </Stack.Navigator>
+);
+
+// ── Bottom tabs ────────────────────────────────────────────────────────────────
 
 const BuyerTabs = () => {
   const { theme } = useTheme();
@@ -101,7 +144,7 @@ const BuyerTabs = () => {
       />
       <Tab.Screen
         name="OrdersTab"
-        component={OrdersScreen}
+        component={OrdersStack}
         options={{
           tabBarLabel: 'My Orders',
           tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>,
@@ -119,12 +162,12 @@ const BuyerTabs = () => {
   );
 };
 
+// ── Root navigator ─────────────────────────────────────────────────────────────
+
 const BuyerNavigator = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="MainTabs" component={BuyerTabs} />
-    <Stack.Screen name="TrackOrder" component={TrackOrderScreen} />
   </Stack.Navigator>
 );
 
 export default BuyerNavigator;
-
