@@ -1,17 +1,8 @@
 import apiClient from './client';
 
-const roleLoginPath = {
-  fieldadmin: '/auth/fieldadmin/login',
-  driver: '/auth/driver/login',
-};
-
-export const loginByRole = async ({ email, password, role }) => {
-  const path = roleLoginPath[role];
-  if (!path) {
-    throw new Error(`Unsupported backend login role: ${role}`);
-  }
-
-  const response = await apiClient.post(path, { email, password });
+// Backend uses a unified login endpoint for all roles.
+export const loginByRole = async ({ email, password }) => {
+  const response = await apiClient.post('/auth/login', { email, password });
   return response.data;
 };
 

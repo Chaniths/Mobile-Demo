@@ -49,13 +49,18 @@ const LoginScreen = ({ navigation }) => {
       // Try live backend Field Admin login first.
       // This lets seeded DB users log in even if they do not exist in demoUsers.
       try {
-        const data = await loginByRole({ email, password, role: 'fieldadmin' });
+        const data = await loginByRole({ email, password });
+        const serverUser = data.user ?? data.fieldAdmin ?? {};
+        const normalizedRole = serverUser.role
+          ? serverUser.role.toLowerCase().replace(/_/g, '')
+          : 'fieldadmin';
         const authPayload = {
           user: {
-            id: data.fieldAdmin?.id,
-            name: data.fieldAdmin?.name,
-            email: data.fieldAdmin?.email,
-            role: 'fieldadmin',
+            id: serverUser.id,
+            name: serverUser.name,
+            email: serverUser.email,
+            role: normalizedRole,
+            status: serverUser.status,
           },
           token: data.token,
         };
