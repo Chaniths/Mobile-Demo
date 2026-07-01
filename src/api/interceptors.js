@@ -4,21 +4,21 @@ import { STORAGE_KEYS } from '../utils/constants';
 export const setupInterceptors = (axiosInstance) => {
   // Request interceptor - add auth token
   axiosInstance.interceptors.request.use(
-    async (config) => {
-      try {
-        const token = await AsyncStorageService.getItem(STORAGE_KEYS.AUTH_TOKEN);
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      } catch (error) {
-        console.error('Error getting auth token:', error);
+  async (config) => {
+    try {
+      const token = await AsyncStorageService.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
+    } catch (error) {
+      console.error('Error getting auth token:', error);
     }
-  );
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
   // Response interceptor - handle errors
   axiosInstance.interceptors.response.use(

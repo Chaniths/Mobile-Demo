@@ -9,6 +9,7 @@ import {
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
+import NotificationBell from '../../components/NotificationBell';
 
 const DashboardScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -50,9 +51,12 @@ const DashboardScreen = ({ navigation }) => {
               My Store
             </Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <Avatar name="My Store" size="medium" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <NotificationBell />
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+              <Avatar name="My Store" size="medium" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Stats */}

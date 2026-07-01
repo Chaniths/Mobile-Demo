@@ -10,6 +10,7 @@ import {
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
+import NotificationBell from '../../components/NotificationBell';
 
 const categories = [
   { id: 'fruits', name: 'Fruits', icon: '🍎' },
@@ -88,9 +89,12 @@ const HomeScreen = ({ navigation }) => {
               John Doe
             </Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <Avatar name="John Doe" size="medium" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <NotificationBell />
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+              <Avatar name="John Doe" size="medium" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Search Bar */}

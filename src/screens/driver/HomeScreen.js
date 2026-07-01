@@ -10,6 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
+import NotificationBell from '../../components/NotificationBell';
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -59,9 +60,12 @@ const HomeScreen = ({ navigation }) => {
               Driver Mike
             </Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <Avatar name="Mike" size="medium" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <NotificationBell />
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+              <Avatar name="Mike" size="medium" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Active Route Card */}
