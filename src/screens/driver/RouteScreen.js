@@ -31,7 +31,7 @@ const RouteScreen = ({ route, navigation }) => {
   const mapRef = useRef(null);
   const lastCameraUpdateRef = useRef(0);
 
-  const routeData = data.activeRoute || data.route;
+  const routeData = data.route || data.activeRoute;
   const allStops = useMemo(() => {
     const source = routeData?.stops?.length ? routeData.stops : data.orders;
     if (!source.length) return [];
@@ -436,15 +436,17 @@ const RouteScreen = ({ route, navigation }) => {
 
         <Card style={styles.activeStopCard}>
           <View style={styles.activeStopHeader}>
-            <View>
-              <Text
-                style={[
-                  styles.activeStopLabel,
-                  { color: theme.colors.text.secondary },
-                ]}
-              >
-                Current stop
-              </Text>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                <View style={[styles.stopTypeBadge, { backgroundColor: activeStop.type === 'PICKUP' ? '#f59e0b' : theme.colors.primary.main }]}>
+                  <Text style={styles.stopTypeBadgeText}>
+                    {activeStop.type === 'PICKUP' ? '⬆ PICKUP' : '⬇ DELIVERY'}
+                  </Text>
+                </View>
+                <Text style={[styles.activeStopLabel, { color: theme.colors.text.secondary }]}>
+                  Stop {activeStop.sequence ?? ''}
+                </Text>
+              </View>
               <Text
                 style={[
                   styles.activeStopCustomer,
@@ -544,15 +546,17 @@ const RouteScreen = ({ route, navigation }) => {
             <TouchableOpacity
               style={styles.deliveredBtn}
               onPress={() => {
-                Alert.alert("Mark Delivered", `Mark stop for ${activeStop.customer} as delivered?`, [
+                const isPickup = activeStop.type === 'PICKUP';
+                const label = isPickup ? 'Picked Up' : 'Delivered';
+                Alert.alert(`Mark ${label}`, `Mark stop for ${activeStop.customer} as ${label.toLowerCase()}?`, [
                   { text: "Cancel", style: "cancel" },
                   {
-                    text: "Delivered",
+                    text: label,
                     onPress: async () => {
                       try {
                         const stopId = activeStop.currentStopId || activeStop.id;
                         await driverApi.completeStop(stopId, { status: "COMPLETED" });
-                        Alert.alert("Done", "Stop marked as delivered.");
+                        Alert.alert("Done", `Stop marked as ${label.toLowerCase()}.`);
                         refresh();
                       } catch (e) {
                         Alert.alert("Error", e?.message || "Could not update stop.");
@@ -563,7 +567,7 @@ const RouteScreen = ({ route, navigation }) => {
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.deliveredBtnText}>{"✓  Delivered"}</Text>
+              <Text style={styles.deliveredBtnText}>{activeStop.type === 'PICKUP' ? '✓  Picked Up' : '✓  Delivered'}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.failedBtn, failedPanelOpen && styles.failedBtnActive]}
@@ -641,17 +645,14 @@ const RouteScreen = ({ route, navigation }) => {
                             },
                           ]}
                         >
-                          {index + 1}
+                          {stop.sequence ?? index + 1}
                         </Text>
                       </View>
-                      <Text
-                        style={[
-                          styles.stopOrderId,
-                          { color: theme.colors.text.secondary },
-                        ]}
-                      >
-                        {stop.orderId}
-                      </Text>
+                      <View style={[styles.stopTypePill, { backgroundColor: stop.type === 'PICKUP' ? '#fef3c7' : '#eff6ff' }]}>
+                        <Text style={[styles.stopTypePillText, { color: stop.type === 'PICKUP' ? '#b45309' : '#1d4ed8' }]}>
+                          {stop.type === 'PICKUP' ? 'PICKUP' : 'DELIVERY'}
+                        </Text>
+                      </View>
                     </View>
                     <Text
                       style={[
@@ -811,6 +812,19 @@ const styles = StyleSheet.create({
   },
   stopNumberText: { fontSize: 12, fontWeight: "700" },
   stopOrderId: { fontSize: 11 },
+  stopTypePill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 4,
+  },
+  stopTypePillText: { fontSize: 9, fontWeight: '700' },
+  stopTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  stopTypeBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
   stopCustomer: { fontSize: 14, fontWeight: "600" },
   stopMeta: { fontSize: 12, marginTop: 6 },
   emptyIcon: { fontSize: 64 },

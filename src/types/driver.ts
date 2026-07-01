@@ -30,12 +30,18 @@ export interface DriverOrder {
   scheduledAt?: string;
   coordinates?: Coordinates;
   currentStopId?: string;
+  // OR-Tools optimized sequence and stop metadata
+  sequence?: number;
+  type?: 'PICKUP' | 'DELIVERY';
+  notes?: string;
 }
 
 export interface DriverRoute {
   id: string;
+  routeNumber?: string;
   truckNumber?: string;
   assignedAt?: string;
+  status?: string;
   totalDistanceKm?: number;
   estimatedDurationMinutes?: number;
   stops: DriverOrder[];

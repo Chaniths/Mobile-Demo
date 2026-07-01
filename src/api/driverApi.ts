@@ -43,17 +43,23 @@ const normalizeOrder = (raw: any, index: number): DriverOrder => {
   return {
     id: asString(raw?.id || raw?._id, `order-${index}`),
     orderId: asString(raw?.orderId || raw?.orderNumber, `ORDER-${index + 1}`),
-    customer: asString(raw?.customerName || raw?.customer?.name, 'Customer'),
+    // backend returns `name` (buyer or seller name depending on stop type)
+    customer: asString(raw?.name || raw?.customerName || raw?.customer?.name, 'Customer'),
     address: asString(raw?.address || raw?.deliveryAddress || raw?.customer?.address, 'Address unavailable'),
     status: asString(raw?.status, 'pending'),
     priority: raw?.priority === 'high' ? 'high' : 'normal',
-    etaMinutes: asNumber(raw?.etaMinutes ?? raw?.eta ?? raw?.estimatedArrivalMinutes, 0),
+    // backend returns `minutesAway` for ETA
+    etaMinutes: asNumber(raw?.minutesAway ?? raw?.etaMinutes ?? raw?.eta ?? raw?.estimatedArrivalMinutes, 0),
     distanceKm: asNumber(raw?.distanceKm ?? raw?.distance ?? raw?.distance_km, 0),
     scheduledAt: raw?.scheduledAt || raw?.scheduledTime || raw?.time,
     coordinates: Number.isFinite(latitude) && Number.isFinite(longitude)
       ? { latitude, longitude }
       : undefined,
     currentStopId: raw?.stopId || raw?.currentStopId,
+    // preserve backend fields for stop type and sequence
+    type: raw?.type,
+    sequence: asNumber(raw?.sequence ?? raw?.sequenceOrder, index + 1),
+    notes: raw?.notes,
   };
 };
 
@@ -62,13 +68,18 @@ const normalizeRoute = (raw: any): DriverRoute | null => {
 
   const rawStops = raw.stops || raw.orders || [];
   const stops = Array.isArray(rawStops)
-    ? rawStops.map((stop: any, index: number) => normalizeOrder(stop, index))
+    ? rawStops
+        .map((stop: any, index: number) => normalizeOrder(stop, index))
+        // preserve OR-Tools optimized sequence order
+        .sort((a: any, b: any) => (a.sequence ?? 0) - (b.sequence ?? 0))
     : [];
 
   return {
     id: asString(raw?.id || raw?._id || raw?.routeId, 'active-route'),
+    routeNumber: raw?.routeNumber,
     truckNumber: raw?.truckNumber || raw?.vehicleNumber,
     assignedAt: raw?.assignedAt,
+    status: raw?.status,
     totalDistanceKm: asNumber(raw?.totalDistanceKm ?? raw?.totalDistance ?? 0, 0),
     estimatedDurationMinutes: asNumber(raw?.estimatedDurationMinutes ?? raw?.estimatedDuration ?? 0, 0),
     stops,
@@ -79,7 +90,7 @@ const normalizeStats = (raw: any): DriverStats => ({
   totalDeliveries: asNumber(raw?.totalDeliveries ?? raw?.deliveries ?? raw?.assignedDeliveries ?? 0, 0),
   completedDeliveries: asNumber(raw?.completedDeliveries ?? raw?.completed ?? 0, 0),
   remainingDeliveries: asNumber(raw?.remainingDeliveries ?? raw?.remaining ?? 0, 0),
-  earningsToday: asNumber(raw?.earningsToday ?? raw?.todayEarnings ?? 0, 0),
+  earningsToday: asNumber(raw?.earningsToday ?? raw?.todayEarnings ?? raw?.earnings ?? 0, 0),
 });
 
 const normalizeLiveSeedPoint = (raw: any): DriverLiveSeedPoint | null => {

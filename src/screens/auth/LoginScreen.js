@@ -7,16 +7,18 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
-import { useTheme } from "../../hooks/useTheme";
 import { loginDriverAsync } from "../../store/slices/authSlice";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 
+const PRIMARY = "#14b8a6";
+const DARK_BG = "#0a1929";
+
 const LoginScreen = ({ navigation }) => {
-  const { theme } = useTheme();
   const dispatch = useDispatch();
   const [email, setEmail] = useState("mike@freshroute.com");
   const [password, setPassword] = useState("driver123");
@@ -26,9 +28,8 @@ const LoginScreen = ({ navigation }) => {
   const [authError, setAuthError] = useState("");
 
   const handleLogin = async () => {
-    // Validation
     const newErrors = {};
-    if (!email) newErrors.email = "Email is required";
+    if (!email.trim()) newErrors.email = "Email is required";
     if (!password) newErrors.password = "Password is required";
 
     if (Object.keys(newErrors).length > 0) {
@@ -40,14 +41,11 @@ const LoginScreen = ({ navigation }) => {
     setAuthError("");
     try {
       await dispatch(
-        loginDriverAsync({
-          email: email.trim().toLowerCase(),
-          password,
-        }),
+        loginDriverAsync({ email: email.trim().toLowerCase(), password }),
       ).unwrap();
     } catch (error) {
       const message =
-        typeof error === "string" ? error : "Login failed. Please try again.";
+        typeof error === "string" ? error : "Invalid credentials. Please try again.";
       setAuthError(message);
     } finally {
       setLoading(false);
@@ -55,198 +53,162 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.flex}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={DARK_BG} />
+      <SafeAreaView style={styles.flex}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.flex}
         >
-          {/* Logo/Header */}
-          <View style={styles.header}>
-            <View
-              style={[
-                styles.logo,
-                { backgroundColor: theme.colors.primary.main },
-              ]}
-            >
-              <Text style={styles.logoText}>🌱</Text>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Top brand area */}
+            <View style={[styles.brandArea, { backgroundColor: DARK_BG }]}>
+              <View style={[styles.logoBox, { backgroundColor: PRIMARY }]}>
+                <Text style={styles.logoText}>🌱</Text>
+              </View>
+              <Text style={styles.brandName}>FreshRoute</Text>
+              <Text style={styles.brandTagline}>Driver Portal</Text>
             </View>
-            <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-              Welcome Back
-            </Text>
-            <Text
-              style={[styles.subtitle, { color: theme.colors.text.secondary }]}
-            >
-              Sign in to continue to FreshRoute
-            </Text>
-          </View>
 
-          {/* Form */}
-          <View style={styles.form}>
-            <Input
-              label="Email"
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                setErrors({ ...errors, email: "" });
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={errors.email}
-            />
+            {/* Form area */}
+            <View style={styles.formArea}>
+              <Text style={styles.formTitle}>Sign In</Text>
+              <Text style={styles.formSubtitle}>Enter your credentials to continue</Text>
 
-            <Input
-              label="Password"
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setErrors({ ...errors, password: "" });
-              }}
-              secureTextEntry={!showPassword}
-              error={errors.password}
-              rightIcon={
-                <Text style={{ color: theme.colors.primary.main }}>
-                  {showPassword ? "👁️" : "👁️‍🗨️"}
-                </Text>
-              }
-              onRightIconPress={() => setShowPassword(!showPassword)}
-            />
+              <View style={styles.inputGroup}>
+                <Input
+                  label="Email address"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (errors.email) setErrors({ ...errors, email: "" });
+                  }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  error={errors.email}
+                />
 
-            <TouchableOpacity
-              onPress={() => navigation.navigate("ForgotPassword")}
-              style={styles.forgotPassword}
-            >
-              <Text
-                style={[
-                  styles.forgotText,
-                  { color: theme.colors.primary.main },
-                ]}
+                <Input
+                  label="Password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (errors.password) setErrors({ ...errors, password: "" });
+                  }}
+                  secureTextEntry={!showPassword}
+                  error={errors.password}
+                  rightIcon={
+                    <Text style={{ color: PRIMARY, fontSize: 16 }}>
+                      {showPassword ? "👁️" : "👁️‍🗨️"}
+                    </Text>
+                  }
+                  onRightIconPress={() => setShowPassword(!showPassword)}
+                />
+              </View>
+
+              <TouchableOpacity
+                onPress={() => navigation.navigate("ForgotPassword")}
+                style={styles.forgotRow}
               >
-                Forgot Password?
-              </Text>
-            </TouchableOpacity>
+                <Text style={[styles.forgotText, { color: PRIMARY }]}>Forgot Password?</Text>
+              </TouchableOpacity>
 
-            <Button
-              title="Sign In"
-              onPress={handleLogin}
-              loading={loading}
-              style={styles.loginButton}
-            />
+              {!!authError && (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorBoxText}>{authError}</Text>
+                </View>
+              )}
 
-            {!!authError && (
-              <Text
-                style={[
-                  styles.errorText,
-                  { color: theme.colors.error?.main || "#d32f2f" },
-                ]}
-              >
-                {authError}
-              </Text>
-            )}
-          </View>
+              <Button
+                title={loading ? "Signing in..." : "Sign In"}
+                onPress={handleLogin}
+                loading={loading}
+                disabled={loading}
+                style={styles.loginButton}
+              />
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text
-              style={[
-                styles.footerText,
-                { color: theme.colors.text.secondary },
-              ]}
-            >
-              Don't have an account?{" "}
-            </Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-              <Text
-                style={[
-                  styles.signupText,
-                  { color: theme.colors.primary.main },
-                ]}
-              >
-                Sign Up
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>Don't have an account? </Text>
+                <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+                  <Text style={[styles.signupText, { color: PRIMARY }]}>Sign Up</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  flex: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 24,
-    justifyContent: "center",
-  },
-  header: {
+  container: { flex: 1, backgroundColor: "#f1f5f9" },
+  flex: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+
+  brandArea: {
+    paddingTop: 60,
+    paddingBottom: 48,
     alignItems: "center",
-    marginBottom: 40,
   },
-  logo: {
-    width: 80,
-    height: 80,
+  logoBox: {
+    width: 72,
+    height: 72,
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 14,
+    shadowColor: "#14b8a6",
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 8,
   },
-  logoText: {
-    fontSize: 40,
+  logoText: { fontSize: 36 },
+  brandName: { fontSize: 28, fontWeight: "800", color: "#f8fafc", letterSpacing: -0.5 },
+  brandTagline: { fontSize: 13, color: "#64748b", marginTop: 4, letterSpacing: 1 },
+
+  formArea: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    marginTop: -24,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 40,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 8,
+  formTitle: { fontSize: 24, fontWeight: "800", color: "#0f172a", marginBottom: 4 },
+  formSubtitle: { fontSize: 14, color: "#64748b", marginBottom: 28 },
+
+  inputGroup: { gap: 4, marginBottom: 8 },
+
+  forgotRow: { alignSelf: "flex-end", marginBottom: 20 },
+  forgotText: { fontSize: 13, fontWeight: "600" },
+
+  errorBox: {
+    backgroundColor: "#fef2f2",
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 16,
   },
-  subtitle: {
-    fontSize: 14,
-    textAlign: "center",
-  },
-  form: {
-    marginBottom: 24,
-  },
-  forgotPassword: {
-    alignSelf: "flex-end",
-    marginBottom: 24,
-  },
-  forgotText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  loginButton: {
-    marginTop: 8,
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  footerText: {
-    fontSize: 14,
-  },
-  signupText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  errorText: {
-    marginTop: 12,
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-  },
+  errorBoxText: { fontSize: 13, color: "#b91c1c", fontWeight: "500", textAlign: "center" },
+
+  loginButton: { marginBottom: 24 },
+
+  footer: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
+  footerText: { fontSize: 14, color: "#64748b" },
+  signupText: { fontSize: 14, fontWeight: "700" },
 });
 
 export default LoginScreen;

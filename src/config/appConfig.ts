@@ -31,7 +31,7 @@ export const appConfig = {
   requestTimeoutMs: 30000,
   endpoints: {
     health: '/health',
-    driverLogin: '/auth/driver/login',
+    driverLogin: '/auth/login',
     driverMe: '/driver/me',
     driverLiveSeed: '/driver/me/live-seed',
     driverStats: '/driver/me/stats',
