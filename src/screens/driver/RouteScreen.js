@@ -25,7 +25,7 @@ import { promptNavigation } from "../../utils/navigationUtils";
 const HUB_COORDS = { latitude: 13.0707, longitude: 80.2507 };
 
 const RouteScreen = ({ route, navigation }) => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const { deliveryId } = route?.params || {};
   const { data, loading, refreshing, error, refresh, reload } = useDriverData();
   const mapRef = useRef(null);
@@ -359,67 +359,34 @@ const RouteScreen = ({ route, navigation }) => {
         )}
 
         <Card style={styles.trackingCard}>
-          <Text
-            style={[styles.trackingTitle, { color: theme.colors.text.primary }]}
-          >
-            Live Tracking
-          </Text>
-          <Text
-            style={[
-              styles.trackingStatus,
-              { color: theme.colors.text.secondary },
-            ]}
-          >
+          <View style={styles.trackingHeaderRow}>
+            <Text style={[styles.trackingTitle, { color: theme.colors.text.primary }]}>
+              Live Tracking
+            </Text>
+            <View style={[
+              styles.trackingStatusPill,
+              { backgroundColor: isTracking ? "#22c55e18" : (isDarkMode ? "#1e293b" : "#f1f5f9") }
+            ]}>
+              <View style={[styles.trackingDot, { backgroundColor: isTracking ? "#22c55e" : "#94a3b8" }]} />
+              <Text style={[styles.trackingStatusPillText, { color: isTracking ? "#22c55e" : (isDarkMode ? "#94a3b8" : "#64748b") }]}>
+                {isTracking ? "Active" : "Inactive"}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={[styles.trackingStatusLabel, { color: theme.colors.text.secondary }]}>
             {statusLabel}
-          </Text>
-          <Text
-            style={[
-              styles.trackingStatusMeta,
-              { color: theme.colors.text.tertiary },
-            ]}
-          >
-            {trackingStatus.toUpperCase()} •{" "}
-            {socketMessage || "Awaiting live updates"}
-          </Text>
-          {!!socketMessage && (
-            <Text
-              style={[
-                styles.trackingMessage,
-                { color: theme.colors.text.tertiary },
-              ]}
-            >
-              {socketMessage}
-            </Text>
-          )}
-          {activeSessionId && (
-            <Text
-              style={[
-                styles.sessionIdText,
-                { color: theme.colors.primary.main },
-              ]}
-            >
-              Session: {activeSessionId}
-            </Text>
-          )}
-          <Text
-            style={[
-              styles.trackingStatusMeta,
-              { color: theme.colors.text.tertiary },
-            ]}
-          >
-            Queue: {pendingPointQueue.length} • Latest sequence:{" "}
-            {latestServerPoint?.sequence ?? "-"}
           </Text>
 
           <View style={styles.trackingButtons}>
             <Button
-              title={isTracking ? "Tracking Active" : "Start Tracking"}
+              title={isTracking ? "Tracking On" : "Start Tracking"}
               onPress={handleStartTracking}
               disabled={isTracking}
               style={styles.actionButton}
             />
             <Button
-              title="Stop Tracking"
+              title="Stop"
               variant="outline"
               onPress={handleStopTracking}
               disabled={!isTracking}
@@ -427,7 +394,7 @@ const RouteScreen = ({ route, navigation }) => {
             />
           </View>
           <Button
-            title={followMode ? "Follow Mode On" : "Follow Mode Off"}
+            title={followMode ? "📍 Following" : "Follow Me"}
             variant="outline"
             onPress={handleToggleFollow}
             style={styles.followButton}
@@ -570,7 +537,10 @@ const RouteScreen = ({ route, navigation }) => {
               <Text style={styles.deliveredBtnText}>{activeStop.type === 'PICKUP' ? '✓  Picked Up' : '✓  Delivered'}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.failedBtn, failedPanelOpen && styles.failedBtnActive]}
+              style={[
+                styles.failedBtn,
+                { backgroundColor: isDarkMode ? (failedPanelOpen ? "#4d1515" : "#3d1515") : (failedPanelOpen ? "#fecaca" : "#fee2e2") },
+              ]}
               onPress={() => {
                 setFailedPanelOpen((prev) => !prev);
                 setFailedNotes("");
@@ -580,7 +550,7 @@ const RouteScreen = ({ route, navigation }) => {
               <Text style={styles.failedBtnText}>Failed</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.skipBtn}
+              style={[styles.skipBtn, { backgroundColor: isDarkMode ? "#1e293b" : "#f1f5f9" }]}
               onPress={async () => {
                 try {
                   const stopId = activeStop.currentStopId || activeStop.id;
@@ -610,66 +580,65 @@ const RouteScreen = ({ route, navigation }) => {
           >
             {allStops.map((stop, index) => {
               const isActive = stop.id === activeStop?.id;
+              const isDone = stop.status === "COMPLETED" || stop.status === "FAILED" || stop.status === "SKIPPED";
+              const isPickup = stop.type === "PICKUP";
               return (
                 <TouchableOpacity
                   key={stop.id}
                   onPress={() => setActiveStopId(stop.id)}
+                  activeOpacity={0.7}
                 >
                   <Card
                     style={[
                       styles.stopCard,
-                      isActive && {
-                        borderWidth: 1.5,
-                        borderColor: theme.colors.primary.main,
-                      },
+                      isActive && { borderWidth: 1.5, borderColor: theme.colors.primary.main },
+                      isDone && { opacity: 0.55 },
                     ]}
                   >
                     <View style={styles.stopCardHeader}>
-                      <View
-                        style={[
-                          styles.stopNumber,
-                          {
-                            backgroundColor: isActive
-                              ? theme.colors.primary.main
-                              : theme.colors.card,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.stopNumberText,
-                            {
-                              color: isActive
-                                ? "#fff"
-                                : theme.colors.text.primary,
-                            },
-                          ]}
-                        >
-                          {stop.sequence ?? index + 1}
+                      <View style={[
+                        styles.stopNumber,
+                        {
+                          backgroundColor: isActive
+                            ? theme.colors.primary.main
+                            : stop.status === "COMPLETED" ? "#22c55e"
+                            : stop.status === "FAILED" ? "#ef4444"
+                            : theme.colors.card,
+                        },
+                      ]}>
+                        <Text style={[
+                          styles.stopNumberText,
+                          { color: (isActive || isDone) ? "#fff" : theme.colors.text.primary },
+                        ]}>
+                          {stop.status === "COMPLETED" ? "✓"
+                            : stop.status === "FAILED" ? "✕"
+                            : stop.sequence ?? index + 1}
                         </Text>
                       </View>
-                      <View style={[styles.stopTypePill, { backgroundColor: stop.type === 'PICKUP' ? '#fef3c7' : '#eff6ff' }]}>
-                        <Text style={[styles.stopTypePillText, { color: stop.type === 'PICKUP' ? '#b45309' : '#1d4ed8' }]}>
-                          {stop.type === 'PICKUP' ? 'PICKUP' : 'DELIVERY'}
+                      <View style={[styles.stopTypePill, {
+                        backgroundColor: isPickup
+                          ? (isDarkMode ? "#451a03" : "#fef3c7")
+                          : (isDarkMode ? "#172554" : "#eff6ff"),
+                      }]}>
+                        <Text style={[styles.stopTypePillText, {
+                          color: isPickup
+                            ? (isDarkMode ? "#fed7aa" : "#b45309")
+                            : (isDarkMode ? "#bfdbfe" : "#1d4ed8"),
+                        }]}>
+                          {isPickup ? 'PICKUP' : 'DELIVERY'}
                         </Text>
                       </View>
                     </View>
                     <Text
-                      style={[
-                        styles.stopCustomer,
-                        { color: theme.colors.text.primary },
-                      ]}
+                      style={[styles.stopCustomer, { color: theme.colors.text.primary }]}
                       numberOfLines={1}
                     >
                       {stop.customer}
                     </Text>
-                    <Text
-                      style={[
-                        styles.stopMeta,
-                        { color: theme.colors.text.secondary },
-                      ]}
-                    >
-                      {stop.etaMinutes} min • {stop.distanceKm.toFixed(1)} km
+                    <Text style={[styles.stopMeta, { color: theme.colors.text.secondary }]}>
+                      {isDone
+                        ? (stop.status === "COMPLETED" ? "Completed" : stop.status === "FAILED" ? "Failed" : "Skipped")
+                        : `${stop.etaMinutes} min · ${stop.distanceKm.toFixed(1)} km`}
                     </Text>
                   </Card>
                 </TouchableOpacity>
@@ -769,11 +738,12 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 13, fontWeight: "600", marginBottom: 6 },
   retryButton: { alignSelf: "flex-start" },
   trackingCard: { marginBottom: 12 },
-  trackingTitle: { fontSize: 16, fontWeight: "700", marginBottom: 6 },
-  trackingStatus: { fontSize: 13 },
-  trackingStatusMeta: { fontSize: 11, marginTop: 4 },
-  trackingMessage: { fontSize: 12, marginTop: 4 },
-  sessionIdText: { fontSize: 12, marginTop: 6, fontWeight: "700" },
+  trackingHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  trackingTitle: { fontSize: 16, fontWeight: "700" },
+  trackingStatusPill: { flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  trackingDot: { width: 6, height: 6, borderRadius: 3, marginRight: 5 },
+  trackingStatusPillText: { fontSize: 12, fontWeight: "600" },
+  trackingStatusLabel: { fontSize: 13, marginBottom: 4 },
   trackingButtons: { flexDirection: "row", gap: 10, marginTop: 12 },
   actionButton: { flex: 1 },
   followButton: { marginTop: 10 },
@@ -844,7 +814,6 @@ const styles = StyleSheet.create({
   deliveredBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
   failedBtn: {
     flex: 1,
-    backgroundColor: "#fee2e2",
     borderRadius: 20,
     paddingVertical: 14,
     alignItems: "center",
@@ -852,14 +821,13 @@ const styles = StyleSheet.create({
   failedBtnText: { color: "#ef4444", fontSize: 13, fontWeight: "700" },
   skipBtn: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
     borderRadius: 20,
     paddingVertical: 14,
     alignItems: "center",
   },
   skipBtnText: { color: "#64748b", fontSize: 13, fontWeight: "700" },
 
-  failedBtnActive: { backgroundColor: "#fecaca" },
+  failedBtnActive: {},
   failedPanel: {
     marginTop: 12,
     borderRadius: 16,

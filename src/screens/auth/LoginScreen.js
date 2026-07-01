@@ -12,14 +12,16 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 import { loginDriverAsync } from "../../store/slices/authSlice";
+import { useTheme } from "../../hooks/useTheme";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 
 const PRIMARY = "#14b8a6";
-const DARK_BG = "#0a1929";
+const BRAND_BG = "#0a1929";
 
 const LoginScreen = ({ navigation }) => {
   const dispatch = useDispatch();
+  const { theme, isDarkMode } = useTheme();
   const [email, setEmail] = useState("mike@freshroute.com");
   const [password, setPassword] = useState("driver123");
   const [showPassword, setShowPassword] = useState(false);
@@ -52,9 +54,13 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
+  const errBoxBg   = isDarkMode ? "#2d1515" : "#fef2f2";
+  const errBoxBdr  = isDarkMode ? "#7f1d1d" : "#fecaca";
+  const errBoxText = isDarkMode ? "#fca5a5" : "#b91c1c";
+
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={DARK_BG} />
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
       <SafeAreaView style={styles.flex}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -65,8 +71,8 @@ const LoginScreen = ({ navigation }) => {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Top brand area */}
-            <View style={[styles.brandArea, { backgroundColor: DARK_BG }]}>
+            {/* Brand area — always dark navy regardless of theme */}
+            <View style={[styles.brandArea, { backgroundColor: BRAND_BG }]}>
               <View style={[styles.logoBox, { backgroundColor: PRIMARY }]}>
                 <Text style={styles.logoText}>🌱</Text>
               </View>
@@ -74,10 +80,14 @@ const LoginScreen = ({ navigation }) => {
               <Text style={styles.brandTagline}>Driver Portal</Text>
             </View>
 
-            {/* Form area */}
-            <View style={styles.formArea}>
-              <Text style={styles.formTitle}>Sign In</Text>
-              <Text style={styles.formSubtitle}>Enter your credentials to continue</Text>
+            {/* Form area — adapts to theme */}
+            <View style={[styles.formArea, { backgroundColor: theme.colors.background }]}>
+              <Text style={[styles.formTitle, { color: theme.colors.text.primary }]}>
+                Sign In
+              </Text>
+              <Text style={[styles.formSubtitle, { color: theme.colors.text.secondary }]}>
+                Enter your credentials to continue
+              </Text>
 
               <View style={styles.inputGroup}>
                 <Input
@@ -121,8 +131,8 @@ const LoginScreen = ({ navigation }) => {
               </TouchableOpacity>
 
               {!!authError && (
-                <View style={styles.errorBox}>
-                  <Text style={styles.errorBoxText}>{authError}</Text>
+                <View style={[styles.errorBox, { backgroundColor: errBoxBg, borderColor: errBoxBdr }]}>
+                  <Text style={[styles.errorBoxText, { color: errBoxText }]}>{authError}</Text>
                 </View>
               )}
 
@@ -135,7 +145,9 @@ const LoginScreen = ({ navigation }) => {
               />
 
               <View style={styles.footer}>
-                <Text style={styles.footerText}>Don't have an account? </Text>
+                <Text style={[styles.footerText, { color: theme.colors.text.secondary }]}>
+                  Don't have an account?{" "}
+                </Text>
                 <TouchableOpacity onPress={() => navigation.navigate("Register")}>
                   <Text style={[styles.signupText, { color: PRIMARY }]}>Sign Up</Text>
                 </TouchableOpacity>
@@ -149,7 +161,7 @@ const LoginScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f1f5f9" },
+  container: { flex: 1 },
   flex: { flex: 1 },
   scrollContent: { flexGrow: 1 },
 
@@ -177,7 +189,6 @@ const styles = StyleSheet.create({
 
   formArea: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     marginTop: -24,
@@ -185,8 +196,8 @@ const styles = StyleSheet.create({
     paddingTop: 32,
     paddingBottom: 40,
   },
-  formTitle: { fontSize: 24, fontWeight: "800", color: "#0f172a", marginBottom: 4 },
-  formSubtitle: { fontSize: 14, color: "#64748b", marginBottom: 28 },
+  formTitle: { fontSize: 24, fontWeight: "800", marginBottom: 4 },
+  formSubtitle: { fontSize: 14, marginBottom: 28 },
 
   inputGroup: { gap: 4, marginBottom: 8 },
 
@@ -194,20 +205,18 @@ const styles = StyleSheet.create({
   forgotText: { fontSize: 13, fontWeight: "600" },
 
   errorBox: {
-    backgroundColor: "#fef2f2",
     borderWidth: 1,
-    borderColor: "#fecaca",
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 16,
   },
-  errorBoxText: { fontSize: 13, color: "#b91c1c", fontWeight: "500", textAlign: "center" },
+  errorBoxText: { fontSize: 13, fontWeight: "500", textAlign: "center" },
 
   loginButton: { marginBottom: 24 },
 
   footer: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
-  footerText: { fontSize: 14, color: "#64748b" },
+  footerText: { fontSize: 14 },
   signupText: { fontSize: 14, fontWeight: "700" },
 });
 

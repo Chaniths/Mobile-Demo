@@ -4,6 +4,7 @@ export interface DriverUser {
   email: string;
   role: 'driver';
   phone?: string;
+  isAvailable?: boolean;
 }
 
 export interface DriverStats {
@@ -30,6 +31,7 @@ export interface DriverOrder {
   scheduledAt?: string;
   coordinates?: Coordinates;
   currentStopId?: string;
+  phone?: string;
   // OR-Tools optimized sequence and stop metadata
   sequence?: number;
   type?: 'PICKUP' | 'DELIVERY';

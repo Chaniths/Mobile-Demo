@@ -34,6 +34,7 @@ const normalizeUser = (raw: any): DriverUser => ({
   email: asString(raw?.email, ''),
   role: 'driver',
   phone: raw?.phone,
+  isAvailable: typeof raw?.isAvailable === 'boolean' ? raw.isAvailable : undefined,
 });
 
 const normalizeOrder = (raw: any, index: number): DriverOrder => {
@@ -56,6 +57,7 @@ const normalizeOrder = (raw: any, index: number): DriverOrder => {
       ? { latitude, longitude }
       : undefined,
     currentStopId: raw?.stopId || raw?.currentStopId,
+    phone: raw?.phone || undefined,
     // preserve backend fields for stop type and sequence
     type: raw?.type,
     sequence: asNumber(raw?.sequence ?? raw?.sequenceOrder, index + 1),
