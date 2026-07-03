@@ -532,9 +532,10 @@ const RouteScreen = ({ route, navigation }) => {
                   },
                 ]);
               }}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
-              <Text style={styles.deliveredBtnText}>{activeStop.type === 'PICKUP' ? '✓  Picked Up' : '✓  Delivered'}</Text>
+              <Text style={styles.deliveredBtnIcon}>{activeStop.type === 'PICKUP' ? '⬆' : '✓'}</Text>
+              <Text style={styles.deliveredBtnText}>{activeStop.type === 'PICKUP' ? 'Picked Up' : 'Delivered'}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -545,8 +546,9 @@ const RouteScreen = ({ route, navigation }) => {
                 setFailedPanelOpen((prev) => !prev);
                 setFailedNotes("");
               }}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
+              <Text style={styles.failedBtnIcon}>✕</Text>
               <Text style={styles.failedBtnText}>Failed</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -560,8 +562,9 @@ const RouteScreen = ({ route, navigation }) => {
                   Alert.alert("Error", e?.message || "Could not skip stop.");
                 }
               }}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
+              <Text style={styles.skipBtnIcon}>↷</Text>
               <Text style={styles.skipBtnText}>Skip</Text>
             </TouchableOpacity>
           </View>
@@ -801,30 +804,57 @@ const styles = StyleSheet.create({
 
   stopActionRow: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 14,
+    gap: 10,
+    marginTop: 16,
   },
   deliveredBtn: {
     flex: 2,
     backgroundColor: "#22c55e",
-    borderRadius: 20,
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 6,
+    shadowColor: "#22c55e",
+    shadowOpacity: 0.35,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 4,
   },
+  deliveredBtnIcon: { color: "#fff", fontSize: 15, fontWeight: "800" },
   deliveredBtnText: { color: "#fff", fontSize: 14, fontWeight: "700" },
   failedBtn: {
     flex: 1,
-    borderRadius: 20,
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 4,
+    borderWidth: 1.5,
+    borderColor: "#ef444450",
+    shadowColor: "#ef4444",
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
   },
+  failedBtnIcon: { color: "#ef4444", fontSize: 13, fontWeight: "800" },
   failedBtnText: { color: "#ef4444", fontSize: 13, fontWeight: "700" },
   skipBtn: {
     flex: 1,
-    borderRadius: 20,
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 4,
+    borderWidth: 1.5,
+    borderColor: "#64748b40",
+    elevation: 1,
   },
+  skipBtnIcon: { color: "#64748b", fontSize: 14, fontWeight: "800" },
   skipBtnText: { color: "#64748b", fontSize: 13, fontWeight: "700" },
 
   failedBtnActive: {},

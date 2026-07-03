@@ -9,7 +9,7 @@ import { useTheme } from "../hooks/useTheme";
 import HomeScreen from "../screens/driver/HomeScreen";
 import RouteScreen from "../screens/driver/RouteScreen";
 import OrdersScreen from "../screens/driver/OrdersScreen";
-import ProfileScreen from "../screens/buyer/ProfileScreen"; // Reuse
+import ProfileScreen from "../screens/driver/DriverProfileScreen";
 import DeliveryDetailScreen from "../screens/driver/DeliveryDetailScreen";
 import AllDeliveriesScreen from "../screens/driver/AllDeliveriesScreen";
 import ReportIssueScreen from "../screens/driver/ReportIssueScreen";
@@ -38,7 +38,7 @@ const DeliveriesStack = () => (
 );
 
 const DriverNavigator = () => {
-  const { theme } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -48,7 +48,7 @@ const DriverNavigator = () => {
         tabBarActiveTintColor: theme.colors.primary.main,
         tabBarInactiveTintColor: "#94a3b8",
         tabBarStyle: {
-          backgroundColor: "#ffffff",
+          backgroundColor: isDarkMode ? "#0f2942" : "#ffffff",
           borderTopWidth: 0,
           height: 64 + insets.bottom,
           paddingBottom: insets.bottom,
