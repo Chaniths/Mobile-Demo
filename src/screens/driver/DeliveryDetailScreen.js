@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
@@ -35,6 +36,17 @@ const STATUS_CONFIG_DARK = {
   PENDING:     { label: "Pending",     color: "#fbbf24", bg: "#451a03" },
   IN_PROGRESS: { label: "In Progress", color: "#60a5fa", bg: "#1e3a5f" },
 };
+=======
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MapView, { Marker, Polyline } from 'react-native-maps';
+import { useTheme } from '../../hooks/useTheme';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import { DRIVER_DELIVERIES, HUB_COORDS, findDeliveryById } from './deliveriesData';
+import AppIcon from '../../components/common/AppIcon';
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
 const DeliveryDetailScreen = ({ route, navigation }) => {
   const { theme, isDarkMode } = useTheme();
@@ -101,14 +113,36 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       edges={["top"]}
     >
+      {theme.isDarkMode ? (
+        <>
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
+        </>
+      )}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.headerRow}>
+<<<<<<< HEAD
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Text style={[styles.backText, { color: theme.colors.primary.main }]}>← Back</Text>
+=======
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={[styles.backText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           </TouchableOpacity>
 
           <View style={{ flex: 1 }}>
@@ -145,7 +179,7 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
         </View>
 
         {/* Map */}
-        <Card style={styles.mapCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.mapCard}>
           <View style={styles.mapContainer}>
             <MapView
               style={StyleSheet.absoluteFill}
@@ -153,59 +187,117 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
               showsUserLocation={false}
             >
               <Polyline
+<<<<<<< HEAD
                 coordinates={[HUB_COORDS, coords]}
                 strokeColor="#14b8a6"
                 strokeWidth={3}
               />
               <Marker coordinate={HUB_COORDS} title="Hub" />
               <Marker coordinate={coords} title={delivery.customer} />
+=======
+                coordinates={[HUB_COORDS, delivery.coords]}
+                strokeColor={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}
+                strokeWidth={4}
+              />
+
+              <Marker coordinate={HUB_COORDS}>
+                <View style={[styles.hubMarker, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
+                  <AppIcon name="store" size={18} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
+                </View>
+              </Marker>
+
+              <Marker coordinate={delivery.coords}>
+                <View style={[styles.stopMarker, { borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                  <AppIcon name="orders" size={16} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
+                </View>
+              </Marker>
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
             </MapView>
           </View>
         </Card>
 
         {/* ETA / Distance / Priority */}
         <View style={styles.metaRow}>
+<<<<<<< HEAD
           <Card style={styles.metaCard}>
             <Text style={[styles.metaLabel, { color: theme.colors.text.secondary }]}>ETA</Text>
+=======
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.metaCard}>
+            <Text style={[styles.metaLabel, { color: theme.colors.text.secondary }]}>
+              ETA
+            </Text>
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
             <Text style={[styles.metaValue, { color: theme.colors.text.primary }]}>
               {delivery.etaMinutes > 0 ? `${delivery.etaMinutes} min` : "—"}
             </Text>
           </Card>
+<<<<<<< HEAD
           <Card style={styles.metaCard}>
             <Text style={[styles.metaLabel, { color: theme.colors.text.secondary }]}>Distance</Text>
+=======
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.metaCard}>
+            <Text style={[styles.metaLabel, { color: theme.colors.text.secondary }]}>
+              Distance
+            </Text>
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
             <Text style={[styles.metaValue, { color: theme.colors.text.primary }]}>
               {delivery.distanceKm > 0 ? `${delivery.distanceKm.toFixed(1)} km` : "—"}
             </Text>
           </Card>
+<<<<<<< HEAD
           <Card style={styles.metaCard}>
             <Text style={[styles.metaLabel, { color: theme.colors.text.secondary }]}>Priority</Text>
             <Text style={[styles.metaValue, {
               color: delivery.priority === "high" ? "#ef4444" : theme.colors.text.primary,
             }]}>
               {delivery.priority === "high" ? "High" : "Normal"}
+=======
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.metaCard}>
+            <Text style={[styles.metaLabel, { color: theme.colors.text.secondary }]}>
+              Priority
+            </Text>
+            <Text
+              style={[
+                styles.metaValue,
+                {
+                  color:
+                    delivery.priority === 'high'
+                      ? theme.colors.error
+                      : theme.colors.text.primary,
+                },
+              ]}
+            >
+              {delivery.priority === 'high' ? 'High' : 'Normal'}
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
             </Text>
           </Card>
         </View>
 
+<<<<<<< HEAD
         {/* Contact & Address */}
         <Card style={styles.infoCard}>
+=======
+        {/* Address & contact */}
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.infoCard}>
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
             {isPickup ? "Pickup details" : "Delivery details"}
           </Text>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoIcon}>📍</Text>
+            <AppIcon name="location" size={18} color={theme.colors.text.tertiary} />
             <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
               {delivery.address}
             </Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoIcon}>👤</Text>
+            <AppIcon name="profile" size={18} color={theme.colors.text.tertiary} />
             <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
               {delivery.customer}
             </Text>
           </View>
+<<<<<<< HEAD
 
           {/* Call button — only shown when phone is available */}
           {delivery.phone ? (
@@ -244,6 +336,14 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
               </Text>
             </View>
           ) : null}
+=======
+          <View style={styles.infoRow}>
+            <AppIcon name="time" size={18} color={theme.colors.text.tertiary} />
+            <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
+              Preferred delivery window: {delivery.time}
+            </Text>
+          </View>
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
         </Card>
 
         {/* Order Items */}
@@ -306,6 +406,7 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+<<<<<<< HEAD
   container: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 120 },
   emptyIcon: { fontSize: 64 },
@@ -341,11 +442,133 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
+=======
+  container: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
+    zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
+  },
+  archStrip2: {
+    position: 'absolute',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 120,
+    zIndex: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  backText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  headerInfo: {
+    marginLeft: 16,
+  },
+  orderId: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  customerName: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  mapCard: {
+    padding: 12,
+    marginBottom: 16,
+  },
+  mapContainer: {
+    height: 220,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  hubMarker: {
+    padding: 6,
+    borderRadius: 999,
+  },
+  hubEmoji: {
+    fontSize: 16,
+  },
+  stopMarker: {
+    padding: 6,
+    borderRadius: 999,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+  },
+  stopEmoji: {
+    fontSize: 16,
+  },
+  mapHint: {
+    fontSize: 12,
+    marginTop: 8,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 10,
+  },
+  metaCard: {
+    flex: 1,
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
   },
+<<<<<<< HEAD
   callIcon: { fontSize: 16, marginRight: 10 },
   callText: { flex: 1, fontSize: 14, fontWeight: "600" },
   callPill: { backgroundColor: "#14b8a6", paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10 },
@@ -365,6 +588,63 @@ const styles = StyleSheet.create({
 
   actions: { flexDirection: "row", gap: 12, marginTop: 4 },
   actionButton: { flex: 1 },
+=======
+  metaLabel: {
+    fontSize: 12,
+  },
+  metaValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  infoCard: {
+    padding: 14,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  infoIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
+  actionButton: {
+    flex: 1,
+  },
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
+  },
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 });
 
 export default DeliveryDetailScreen;

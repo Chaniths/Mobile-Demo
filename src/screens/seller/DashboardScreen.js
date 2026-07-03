@@ -9,15 +9,16 @@ import {
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
+import AppIcon from '../../components/common/AppIcon';
 
 const DashboardScreen = ({ navigation }) => {
   const { theme } = useTheme();
 
   const stats = [
-    { id: '1', label: 'Total Sales', value: '$2,450', icon: '💰', color: '#22c55e' },
-    { id: '2', label: 'Orders', value: '45', icon: '📦', color: '#3b82f6' },
-    { id: '3', label: 'Products', value: '23', icon: '🏪', color: '#f59e0b' },
-    { id: '4', label: 'Rating', value: '4.8', icon: '⭐', color: '#8b5cf6' },
+    { id: '1', label: 'Total Sales', value: '$2,450', icon: 'cash', color: '#22c55e' },
+    { id: '2', label: 'Orders', value: '45', icon: 'orders', color: '#3b82f6' },
+    { id: '3', label: 'Products', value: '23', icon: 'store', color: '#f59e0b' },
+    { id: '4', label: 'Rating', value: '4.8', icon: 'star', color: '#8b5cf6' },
   ];
 
   const recentOrders = [
@@ -27,14 +28,31 @@ const DashboardScreen = ({ navigation }) => {
   ];
 
   const quickActions = [
-    { id: '1', title: 'Request Product', icon: '➕', screen: 'AddProduct' },
-    { id: '2', title: 'Manage Inventory', icon: '📊', screen: 'Products' },
-    { id: '3', title: 'Truck tracking', icon: '🚚', screen: 'TruckTracking' },
-    { id: '4', title: 'View Orders', icon: '📋', screen: 'Orders' },
+    { id: '1', title: 'Request Product', icon: 'add', screen: 'AddProduct' },
+    { id: '2', title: 'Manage Inventory', icon: 'chart', screen: 'Products' },
+    { id: '3', title: 'Truck tracking', icon: 'truck', screen: 'TruckTracking' },
+    { id: '4', title: 'View Orders', icon: 'clipboard', screen: 'Orders' },
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode ? (
+        <>
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
+        </>
+      )}
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -58,9 +76,9 @@ const DashboardScreen = ({ navigation }) => {
         {/* Stats */}
         <View style={styles.statsGrid}>
           {stats.map((stat) => (
-            <Card key={stat.id} style={styles.statCard}>
+            <Card variant={theme.isDarkMode ? "glass" : "default"} key={stat.id} style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
-                <Text style={styles.statIconText}>{stat.icon}</Text>
+                <AppIcon name={stat.icon} size={22} color={stat.color} />
               </View>
               <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
                 {stat.value}
@@ -80,11 +98,12 @@ const DashboardScreen = ({ navigation }) => {
           <View style={styles.actionsGrid}>
             {quickActions.map((action) => (
               <Card
+                variant={theme.isDarkMode ? "glass" : "default"}
                 key={action.id}
                 style={styles.actionCard}
                 onPress={() => navigation.navigate(action.screen)}
               >
-                <Text style={styles.actionIcon}>{action.icon}</Text>
+                <AppIcon name={action.icon} size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
                 <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]}>
                   {action.title}
                 </Text>
@@ -100,13 +119,14 @@ const DashboardScreen = ({ navigation }) => {
               Recent Orders
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Orders')}>
-              <Text style={[styles.seeAll, { color: theme.colors.primary.main }]}>
+              <Text style={[styles.seeAll, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                 See All
               </Text>
             </TouchableOpacity>
           </View>
           {recentOrders.map((order) => (
             <Card
+              variant={theme.isDarkMode ? "glass" : "default"}
               key={order.id}
               style={styles.orderCard}
               onPress={() => navigation.navigate('OrderDetail', { orderId: order.id })}
@@ -150,7 +170,7 @@ const DashboardScreen = ({ navigation }) => {
                 <Text style={[styles.orderItems, { color: theme.colors.text.tertiary }]}>
                   {order.items} items
                 </Text>
-                <Text style={[styles.orderTotal, { color: theme.colors.primary.main }]}>
+                <Text style={[styles.orderTotal, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                   ${order.total.toFixed(2)}
                 </Text>
               </View>
@@ -165,6 +185,7 @@ const DashboardScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
   scrollView: {
     flex: 1,
@@ -172,6 +193,60 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 60,
     paddingBottom: 100,
+    zIndex: 1,
+  },
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
+    zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
+  },
+  archStrip2: {
+    position: 'absolute',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
   },
   header: {
     flexDirection: 'row',
@@ -294,6 +369,23 @@ const styles = StyleSheet.create({
   orderTotal: {
     fontSize: 18,
     fontWeight: '700',
+  },
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
   },
 });
 

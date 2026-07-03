@@ -16,18 +16,19 @@ import { addUser } from '../../utils/demoUsers';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
+import AppIcon from '../../components/common/AppIcon';
 
 const availableRoles = [
   {
     id: 'buyer',
     title: 'Buyer',
-    icon: '🛒',
+    icon: 'buyer',
     description: 'Browse and purchase products.',
   },
   {
     id: 'seller',
     title: 'Seller',
-    icon: '🏪',
+    icon: 'seller',
     description: 'List and manage your products.',
   },
 ];
@@ -102,6 +103,17 @@ const RegisterScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      {theme.isDarkMode ? (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      ) : (
+        <>
+          <View style={[styles.gradientCircle1, styles.lightModeCircle1]} />
+          <View style={[styles.gradientCircle2, styles.lightModeCircle2]} />
+        </>
+      )}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
@@ -121,119 +133,126 @@ const RegisterScreen = ({ navigation }) => {
             </Text>
           </View>
 
-          {/* Role Selection */}
-          <View style={styles.rolesContainer}>
+          {/* Main Content Card with Glassmorphism */}
+          <Card variant="glass" style={styles.mainCard}>
+            {/* Role Selection */}
+            <View style={styles.rolesContainer}>
             <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
               Choose your role
             </Text>
-            {availableRoles.map((role) => (
-              <TouchableOpacity key={role.id} onPress={() => setSelectedRole(role.id)}>
-                <Card
-                  style={[
-                    styles.roleCard,
-                    selectedRole === role.id && {
-                      borderWidth: 2,
-                      borderColor: theme.colors.primary.main,
-                    },
-                  ]}
-                >
-                  <View style={styles.roleContent}>
-                    <View style={[styles.iconContainer, { backgroundColor: theme.colors.primary.light }]}>
-                      <Text style={styles.roleIcon}>{role.icon}</Text>
-                    </View>
-                    <View style={styles.roleInfo}>
-                      <Text style={[styles.roleTitle, { color: theme.colors.text.primary }]}>
-                        {role.title}
-                      </Text>
-                      <Text style={[styles.roleDescription, { color: theme.colors.text.secondary }]}>
-                        {role.description}
-                      </Text>
-                    </View>
-                    {selectedRole === role.id && (
-                      <View style={[styles.checkmark, { backgroundColor: theme.colors.primary.main }]}>
-                        <Text style={styles.checkmarkText}>✓</Text>
+              {availableRoles.map((role) => (
+                <TouchableOpacity key={role.id} onPress={() => setSelectedRole(role.id)}>
+                  <Card
+                    variant={selectedRole === role.id ? 'glass' : 'default'}
+                    style={[
+                      styles.roleCard,
+                      selectedRole === role.id && {
+                        borderWidth: 2,
+                        borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
+                        backgroundColor: theme.isDarkMode ? 'rgba(35, 101, 113, 0.2)' : undefined,
+                      },
+                    ]}
+                  >
+                    <View style={styles.roleContent}>
+                      <View style={[styles.iconContainer, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
+                        <AppIcon name={role.icon} size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
                       </View>
-                    )}
-                  </View>
-                </Card>
-              </TouchableOpacity>
-            ))}
-            {errors.role && (
-              <Text style={[styles.errorText, { color: theme.colors.error?.main || '#d32f2f' }]}>
-                {errors.role}
-              </Text>
-            )}
-            <Text style={[styles.helperText, { color: theme.colors.text.secondary }]}>
-              Drivers and field admins are added by administrators only.
-            </Text>
-          </View>
-
-          {/* Form */}
-          <View style={styles.form}>
-            <Input
-              label="Full Name"
-              placeholder="Enter your full name"
-              value={formData.name}
-              onChangeText={(text) => updateField('name', text)}
-              error={errors.name}
-            />
-
-            <Input
-              label="Email"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChangeText={(text) => updateField('email', text)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={errors.email}
-            />
-
-            <Input
-              label="Phone Number"
-              placeholder="Enter your phone number"
-              value={formData.phone}
-              onChangeText={(text) => updateField('phone', text)}
-              keyboardType="phone-pad"
-              error={errors.phone}
-            />
-
-            <Input
-              label="Password"
-              placeholder="Create a password"
-              value={formData.password}
-              onChangeText={(text) => updateField('password', text)}
-              secureTextEntry={!showPassword}
-              error={errors.password}
-            />
-
-            <Input
-              label="Confirm Password"
-              placeholder="Confirm your password"
-              value={formData.confirmPassword}
-              onChangeText={(text) => updateField('confirmPassword', text)}
-              secureTextEntry={!showPassword}
-              error={errors.confirmPassword}
-              rightIcon={
-                <Text style={{ color: theme.colors.primary.main }}>
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                      <View style={styles.roleInfo}>
+                        <Text style={[styles.roleTitle, { color: theme.colors.text.primary }]}>
+                          {role.title}
+                        </Text>
+                        <Text style={[styles.roleDescription, { color: theme.colors.text.secondary }]}>
+                          {role.description}
+                        </Text>
+                      </View>
+                      {selectedRole === role.id && (
+                        <View style={[styles.checkmark, { backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                          <AppIcon name="check" size={16} color="#ffffff" />
+                        </View>
+                      )}
+                    </View>
+                  </Card>
+                </TouchableOpacity>
+              ))}
+              {errors.role && (
+                <Text style={[styles.errorText, { color: theme.colors.error || '#d32f2f' }]}>
+                  {errors.role}
                 </Text>
-              }
-              onRightIconPress={() => setShowPassword(!showPassword)}
-            />
-
-            <Button
-              title="Sign Up"
-              onPress={handleRegister}
-              loading={loading}
-              style={styles.registerButton}
-            />
-
-            {!!formError && (
-              <Text style={[styles.errorText, { color: theme.colors.error?.main || '#d32f2f' }]}>
-                {formError}
+              )}
+              <Text style={[styles.helperText, { color: theme.colors.text.secondary }]}>
+                Drivers and field admins are added by administrators only.
               </Text>
-            )}
-          </View>
+            </View>
+
+            {/* Form */}
+            <View style={styles.form}>
+              <Input
+                label="Full Name"
+                placeholder="Enter your full name"
+                value={formData.name}
+                onChangeText={(text) => updateField('name', text)}
+                error={errors.name}
+              />
+
+              <Input
+                label="Email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChangeText={(text) => updateField('email', text)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                error={errors.email}
+              />
+
+              <Input
+                label="Phone Number"
+                placeholder="Enter your phone number"
+                value={formData.phone}
+                onChangeText={(text) => updateField('phone', text)}
+                keyboardType="phone-pad"
+                error={errors.phone}
+              />
+
+              <Input
+                label="Password"
+                placeholder="Create a password"
+                value={formData.password}
+                onChangeText={(text) => updateField('password', text)}
+                secureTextEntry={!showPassword}
+                error={errors.password}
+              />
+
+              <Input
+                label="Confirm Password"
+                placeholder="Confirm your password"
+                value={formData.confirmPassword}
+                onChangeText={(text) => updateField('confirmPassword', text)}
+                secureTextEntry={!showPassword}
+                error={errors.confirmPassword}
+                rightIcon={
+                  <AppIcon
+                    name={showPassword ? 'eye' : 'eyeOff'}
+                    size={22}
+                    color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}
+                  />
+                }
+                onRightIconPress={() => setShowPassword(!showPassword)}
+              />
+
+                <Button
+                  title="Sign Up"
+                  onPress={handleRegister}
+                  loading={loading}
+                  style={[styles.registerButton, theme.isDarkMode && { backgroundColor: theme.colors.primary.main }]}
+                />
+
+                {!!formError && (
+                  <Text style={[styles.errorText, { color: theme.colors.error || '#d32f2f' }]}>
+                    {formError}
+                  </Text>
+                )}
+              </View>
+            </Card>
 
           {/* Footer */}
           <View style={styles.footer}>
@@ -241,7 +260,7 @@ const RegisterScreen = ({ navigation }) => {
               Already have an account?{' '}
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={[styles.loginText, { color: theme.colors.primary.main }]}>
+              <Text style={[styles.loginText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                 Sign In
               </Text>
             </TouchableOpacity>
@@ -255,13 +274,40 @@ const RegisterScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
   flex: {
     flex: 1,
   },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+  },
   scrollContent: {
     flexGrow: 1,
     padding: 24,
+    zIndex: 1,
+  },
+  mainCard: {
+    borderRadius: 24,
+    padding: 20,
+    marginVertical: 8,
   },
   header: {
     alignItems: 'center',
@@ -354,6 +400,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  lightModeCircle1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.35)',
+    opacity: 0.7,
+  },
+  lightModeCircle2: {
+    backgroundColor: 'rgba(74, 222, 128, 0.2)',
+    opacity: 0.5,
   },
 });
 

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+<<<<<<< HEAD
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { useTheme } from "../../hooks/useTheme";
@@ -14,10 +15,20 @@ import { logoutAsync } from "../../store/slices/authSlice";
 import Card from "../../components/common/Card";
 import Avatar from "../../components/common/Avatar";
 import BackgroundShapes from "../../components/common/BackgroundShapes";
+=======
+} from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { useTheme } from '../../hooks/useTheme';
+import { logout } from '../../store/slices/authSlice';
+import Card from '../../components/common/Card';
+import Avatar from '../../components/common/Avatar';
+import AppIcon from '../../components/common/AppIcon';
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
 const ProfileScreen = ({ navigation }) => {
   const { theme, isDarkMode, toggleTheme } = useTheme();
   const dispatch = useDispatch();
+<<<<<<< HEAD
   const user = useSelector((state) => state.auth.user);
 
   const menuItems = [
@@ -29,13 +40,65 @@ const ProfileScreen = ({ navigation }) => {
     { id: "6", icon: "⭐", title: "My Reviews", screen: "MyReviews" },
     { id: "7", icon: "❓", title: "Help & Support", screen: "Help" },
     { id: "8", icon: "📄", title: "Terms & Privacy", screen: "Terms" },
+=======
+  const authUser = useSelector((state) => state.auth.user);
+
+  const isFieldAdmin = authUser?.role === 'fieldadmin';
+  const displayName =
+    authUser?.name ||
+    authUser?.fullName ||
+    [authUser?.firstName, authUser?.lastName].filter(Boolean).join(' ') ||
+    'User';
+  const displayEmail = authUser?.email || 'No email';
+  const displayPhone = authUser?.phone || 'No phone';
+
+  const fieldAdminMenuItems = [
+    { id: '1', icon: 'profile', title: 'Edit Profile' },
+    { id: '2', icon: 'notifications', title: 'Notifications' },
+    { id: '3', icon: 'help', title: 'Help & Support' },
+    { id: '4', icon: 'document', title: 'Terms & Privacy' },
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   ];
 
+  const defaultMenuItems = [
+    { id: '1', icon: 'profile', title: 'Edit Profile', screen: 'EditProfile' },
+    { id: '2', icon: 'location', title: 'Addresses', screen: 'Addresses' },
+    { id: '3', icon: 'card', title: 'Payment Methods', screen: 'PaymentMethods' },
+    { id: '4', icon: 'notifications', title: 'Notifications', screen: 'Notifications' },
+    { id: '5', icon: 'heart', title: 'Wishlist', screen: 'Wishlist' },
+    { id: '6', icon: 'star', title: 'My Reviews', screen: 'MyReviews' },
+    { id: '7', icon: 'help', title: 'Help & Support', screen: 'Help' },
+    { id: '8', icon: 'document', title: 'Terms & Privacy', screen: 'Terms' },
+  ];
+
+  const menuItems = isFieldAdmin ? fieldAdminMenuItems : defaultMenuItems;
+
   return (
+<<<<<<< HEAD
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       <BackgroundShapes variant="profile" />
+=======
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode ? (
+        <>
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
+        </>
+      )}
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>
@@ -49,6 +112,7 @@ const ProfileScreen = ({ navigation }) => {
         style={styles.scrollView}
       >
         {/* User Info */}
+<<<<<<< HEAD
         <Card style={styles.userCard}>
           <Avatar name={user?.name || "Driver"} size="large" />
           <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
@@ -63,14 +127,30 @@ const ProfileScreen = ({ navigation }) => {
             style={[styles.userPhone, { color: theme.colors.text.tertiary }]}
           >
             {user?.phone || "Phone not available"}
+=======
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.userCard}>
+          <Avatar name={displayName} size="large" />
+          <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
+            {displayName}
+          </Text>
+          <Text style={[styles.userEmail, { color: theme.colors.text.secondary }]}>
+            {displayEmail}
+          </Text>
+          <Text style={[styles.userPhone, { color: theme.colors.text.tertiary }]}>
+            {displayPhone}
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           </Text>
         </Card>
 
         {/* Theme Toggle */}
-        <Card style={styles.themeCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.themeCard}>
           <View style={styles.themeRow}>
             <View style={styles.themeInfo}>
+<<<<<<< HEAD
               <Text style={styles.themeIcon}>{isDarkMode ? "🌙" : "☀️"}</Text>
+=======
+              <AppIcon name={isDarkMode ? 'moon' : 'sun'} size={24} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
               <View>
                 <Text
                   style={[
@@ -95,7 +175,7 @@ const ProfileScreen = ({ navigation }) => {
               onValueChange={toggleTheme}
               trackColor={{
                 false: theme.colors.border,
-                true: theme.colors.primary.main,
+                true: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
               }}
               thumbColor="#ffffff"
             />
@@ -107,10 +187,17 @@ const ProfileScreen = ({ navigation }) => {
           {menuItems.map((item) => (
             <TouchableOpacity
               key={item.id}
-              onPress={() => navigation.navigate(item.screen)}
+              onPress={() => {
+                if (item.screen) {
+                  navigation.navigate(item.screen);
+                  return;
+                }
+                Alert.alert('Coming Soon', `${item.title} UI is prepared and can be connected next.`);
+              }}
             >
-              <Card style={styles.menuItem}>
+              <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.menuItem}>
                 <View style={styles.menuItemContent}>
+<<<<<<< HEAD
                   <Text style={styles.menuIcon}>{item.icon}</Text>
                   <Text
                     style={[
@@ -118,6 +205,10 @@ const ProfileScreen = ({ navigation }) => {
                       { color: theme.colors.text.primary },
                     ]}
                   >
+=======
+                  <AppIcon name={item.icon} size={22} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
+                  <Text style={[styles.menuTitle, { color: theme.colors.text.primary }]}>
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
                     {item.title}
                   </Text>
                 </View>
@@ -167,12 +258,67 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingBottom: 120,
+    zIndex: 1,
+  },
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
+    zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
+  },
+  archStrip2: {
+    position: 'absolute',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
   },
   header: {
     paddingHorizontal: 20,
@@ -272,6 +418,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 12,
     marginVertical: 24,
+  },
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
   },
 });
 

@@ -10,6 +10,7 @@ export const colors = {
     soft: "#99f6e4", // teal-200
   },
 
+  // Dark theme colors (matching web app with teal theme)
   // Dark theme colors (matching Figma design)
   brand: {
     background: "#0a1929", // Dark navy background
@@ -17,9 +18,38 @@ export const colors = {
     card: "#11273f", // Card background - slightly lighter than background
     muted: "#1e3a52", // Borders/separators
   },
+  
+  // Teal theme colors for dark mode
+  teal: {
+    main: '#236571',       // supply-teal (primary teal)
+    light: '#2d7a87',      // Lighter teal
+    dark: '#1a4d56',       // Darker teal
+    soft: 'rgba(35, 101, 113, 0.1)', // 10% opacity
+    medium: 'rgba(35, 101, 113, 0.2)', // 20% opacity
+    strong: 'rgba(35, 101, 113, 0.4)', // 40% opacity
+    deep: '#2E2F34',       // supply-deep (for cards)
+  },
+  
+  // Teal theme colors for dark mode
+  teal: {
+    main: '#236571',       // supply-teal (primary teal)
+    light: '#2d7a87',      // Lighter teal
+    dark: '#1a4d56',       // Darker teal
+    soft: 'rgba(35, 101, 113, 0.1)', // 10% opacity
+    medium: 'rgba(35, 101, 113, 0.2)', // 20% opacity
+    strong: 'rgba(35, 101, 113, 0.4)', // 40% opacity
+    deep: '#2E2F34',       // supply-deep (for cards)
+  },
 
   // Accent colors
   accent: {
+    yellow: '#facc15',
+    yellowSoft: '#fad850',
+    yellowDark: '#FFFACD',
+    blue: '#38bdf8',
+    greenSoft: '#bbf7d0',
+    peach: '#FFE5D9',      // Light cream/peach for textbox text
+    peachSoft: '#FFF4F0',  // Very light peach
     yellow: "#facc15",
     yellowSoft: "#fad850",
     yellowDark: "#FFFACD",

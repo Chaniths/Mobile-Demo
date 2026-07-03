@@ -44,6 +44,23 @@ const TrackOrderScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      {theme.isDarkMode ? (
+        <>
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
+        </>
+      )}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -57,17 +74,17 @@ const TrackOrderScreen = () => {
 
         {/* KPI Row */}
         <View style={styles.kpiRow}>
-          <Card style={[styles.kpiCard, styles.tintGreen]}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={[styles.kpiCard, styles.tintGreen]}>
             <Text style={[styles.kpiLabel, { color: theme.colors.text.secondary }]}>Live Deliveries</Text>
             <Text style={[styles.kpiValue, { color: theme.colors.text.highlight }]}>2</Text>
             <Text style={[styles.kpiHint, { color: theme.colors.text.secondary }]}>Tracking now</Text>
           </Card>
-          <Card style={[styles.kpiCard, styles.tintTeal]}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={[styles.kpiCard, styles.tintTeal]}>
             <Text style={[styles.kpiLabel, { color: theme.colors.text.secondary }]}>Delivered (7D)</Text>
             <Text style={[styles.kpiValue, { color: theme.colors.text.highlight }]}>14</Text>
             <Text style={[styles.kpiHint, { color: theme.colors.text.secondary }]}>+4 vs previous</Text>
           </Card>
-          <Card style={[styles.kpiCard, styles.tintAmber]}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={[styles.kpiCard, styles.tintAmber]}>
             <Text style={[styles.kpiLabel, { color: theme.colors.text.secondary }]}>Average ETA</Text>
             <Text style={[styles.kpiValue, { color: theme.colors.text.highlight }]}>21 min</Text>
             <Text style={[styles.kpiHint, { color: theme.colors.text.secondary }]}>Across Colombo routes</Text>
@@ -77,7 +94,7 @@ const TrackOrderScreen = () => {
         {/* Live Orders */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Live order tracking</Text>
         {liveOrders.map((order) => (
-          <Card key={order.id} style={styles.orderCard}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} key={order.id} style={styles.orderCard}>
             <View style={styles.orderHeader}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.orderTitle, { color: theme.colors.text.primary }]}>
@@ -110,7 +127,7 @@ const TrackOrderScreen = () => {
                   styles.timelineBarFill,
                   {
                     width: `${((order.currentIndex + 1) / order.timeline.length) * 100}%`,
-                    backgroundColor: theme.colors.primary.main,
+                    backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                   },
                 ]}
               />
@@ -123,7 +140,7 @@ const TrackOrderScreen = () => {
                     <View
                       style={[
                         styles.timelineDot,
-                        { backgroundColor: active ? theme.colors.primary.main : theme.colors.text.tertiary },
+                        { backgroundColor: active ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main) : theme.colors.text.tertiary },
                       ]}
                     />
                     <Text
@@ -140,7 +157,7 @@ const TrackOrderScreen = () => {
             </View>
 
             {/* Rider */}
-            <Card style={styles.riderCard} elevation="lg">
+            <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.riderCard} elevation="lg">
               <Text style={[styles.riderTitle, { color: theme.colors.text.primary }]}>Rider contact</Text>
               <Text style={[styles.riderName, { color: theme.colors.text.secondary }]}>{order.rider.name}</Text>
               <Text style={[styles.riderMeta, { color: theme.colors.text.tertiary }]}>{order.rider.vehicle}</Text>
@@ -155,7 +172,7 @@ const TrackOrderScreen = () => {
 
         {/* Live Map Preview */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Live map preview</Text>
-        <Card style={styles.mapCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.mapCard}>
           <View style={styles.mapContainer}>
             <MapView
               style={StyleSheet.absoluteFill}
@@ -211,8 +228,68 @@ const TrackOrderScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 120 },
+  container: { 
+    flex: 1,
+    overflow: 'hidden',
+  },
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
+    zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
+  },
+  archStrip2: {
+    position: 'absolute',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
+  },
+  scrollContent: { 
+    paddingHorizontal: 20, 
+    paddingBottom: 120,
+    zIndex: 1,
+  },
   title: { fontSize: 24, fontWeight: '800', marginTop: 8 },
   subtitle: { fontSize: 14, marginTop: 6, marginBottom: 16 },
   kpiRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
@@ -272,6 +349,23 @@ const styles = StyleSheet.create({
   tintGreen: { backgroundColor: 'rgba(34,197,94,0.62)' },
   tintTeal: { backgroundColor: 'rgba(52,211,153,0.62)' },
   tintAmber: { backgroundColor: 'rgba(251,191,36,0.70)' },
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
+  },
 });
 
 export default TrackOrderScreen;

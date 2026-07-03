@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,80 +10,91 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import fieldAdminApi from '../../api/fieldAdminApi';
+import AppIcon from '../../components/common/AppIcon';
 
 const RouteOrdersScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
-  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [routes, setRoutes] = useState([]);
 
-  const routes = [
-    {
-      id: '1',
-      routeId: 'Route #12',
-      driver: 'Mike Johnson',
-      truck: 'WP ABC-1234',
-      stops: 8,
-      distance: '45.8 km',
-      status: 'In Progress',
-      orders: [
-        {
-          id: '1',
-          orderId: '#ORD-2024-001',
-          customer: 'John Doe',
-          address: '123 Main St',
-          items: ['Tomatoes 5kg', 'Spinach 10 bunches'],
-          status: 'In Transit',
-          eta: '10:30 AM',
-        },
-        {
-          id: '2',
-          orderId: '#ORD-2024-002',
-          customer: 'Jane Smith',
-          address: '456 Oak Ave',
-          items: ['Carrots 3kg', 'Cabbage 2pcs'],
-          status: 'Scheduled',
-          eta: '11:00 AM',
-        },
-      ],
-    },
-    {
-      id: '2',
-      routeId: 'Route #15',
-      driver: 'Sarah Williams',
-      truck: 'WP XYZ-5678',
-      stops: 6,
-      distance: '32.4 km',
-      status: 'Scheduled',
-      orders: [
-        {
-          id: '3',
-          orderId: '#ORD-2024-004',
-          customer: 'Bob Johnson',
-          address: '789 Lake Rd',
-          items: ['Mangoes 5kg', 'Bananas 8pcs'],
-          status: 'Scheduled',
-          eta: '02:00 PM',
-        },
-      ],
-    },
-  ];
+  useEffect(() => {
+    const loadRoutes = async () => {
+      try {
+        const [routeData, orderData] = await Promise.all([
+          fieldAdminApi.getRoutes(),
+          fieldAdminApi.getOrdersByTab('all'),
+        ]);
+
+        const mapped = routeData.map((route) => {
+          const routeOrders = orderData.filter((order) => order.route?.id === route.id);
+          return {
+            id: route.id,
+            routeId: route.routeNumber,
+            driver: route.driver?.user?.name || 'Pending',
+            truck: route.truck?.vehicleNumber || 'Not assigned',
+            stops: route._count?.stops || 0,
+            distance: route.totalDistance ? `${route.totalDistance} km` : '-',
+            status: route.status,
+            orders: routeOrders.map((order) => ({
+              id: order.id,
+              orderId: `#${order.orderNumber}`,
+              customer: order.customer,
+              address: order.address,
+              coords: order.coords,
+              items: [`${order.itemCount} item(s)`],
+              status: order.status,
+              eta: order.eta
+                ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : 'TBD',
+            })),
+          };
+        });
+
+        setRoutes(mapped);
+      } catch (error) {
+        console.error('Failed to load route orders:', error?.message || error);
+        setRoutes([]);
+      }
+    };
+
+    loadRoutes();
+  }, []);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      {theme.isDarkMode ? (
+        <>
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
+        </>
+      )}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
+            <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
             Route Orders
           </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('RouteMap')}>
-            <Text style={[styles.mapButton, { color: theme.colors.primary.main }]}>🗺️ Map</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('RouteMap')} style={styles.mapButtonRow}>
+            <AppIcon name="map" size={16} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
+            <Text style={[styles.mapButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}> Map</Text>
           </TouchableOpacity>
         </View>
 
         {routes.map((route) => (
-          <Card key={route.id} style={styles.routeCard}>
+          <Card variant={theme.isDarkMode ? "glass" : "default"} key={route.id} style={styles.routeCard}>
             <View style={styles.routeHeader}>
               <View>
                 <Text style={[styles.routeId, { color: theme.colors.text.primary }]}>
@@ -101,7 +112,7 @@ const RouteOrdersScreen = ({ navigation, route }) => {
                   styles.statusBadge,
                   {
                     backgroundColor:
-                      route.status === 'In Progress' ? `${theme.colors.success}20` : `${theme.colors.info}20`,
+                      route.status === 'IN_PROGRESS' ? `${theme.colors.success}20` : `${theme.colors.info}20`,
                   },
                 ]}
               >
@@ -109,7 +120,7 @@ const RouteOrdersScreen = ({ navigation, route }) => {
                   style={[
                     styles.statusText,
                     {
-                      color: route.status === 'In Progress' ? theme.colors.success : theme.colors.info,
+                      color: route.status === 'IN_PROGRESS' ? theme.colors.success : theme.colors.info,
                     },
                   ]}
                 >
@@ -125,7 +136,7 @@ const RouteOrdersScreen = ({ navigation, route }) => {
             </Text>
 
             {route.orders.map((order) => (
-              <Card key={order.id} style={styles.orderCard}>
+              <Card variant={theme.isDarkMode ? "glass" : "default"} key={order.id} style={styles.orderCard}>
                 <View style={styles.orderHeader}>
                   <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>
                     {order.orderId}
@@ -137,9 +148,12 @@ const RouteOrdersScreen = ({ navigation, route }) => {
                 <Text style={[styles.orderCustomer, { color: theme.colors.text.primary }]}>
                   {order.customer}
                 </Text>
-                <Text style={[styles.orderAddress, { color: theme.colors.text.secondary }]}>
-                  📍 {order.address}
-                </Text>
+                <View style={styles.addressRow}>
+                  <AppIcon name="location" size={14} color={theme.colors.text.secondary} />
+                  <Text style={[styles.orderAddress, { color: theme.colors.text.secondary }]}>
+                    {order.address}
+                  </Text>
+                </View>
                 <Text style={[styles.orderItems, { color: theme.colors.text.secondary }]}>
                   Items: {order.items.join(', ')}
                 </Text>
@@ -167,8 +181,68 @@ const RouteOrdersScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 120 },
+  container: { 
+    flex: 1,
+    overflow: 'hidden',
+  },
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
+    zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
+  },
+  archStrip2: {
+    position: 'absolute',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
+  },
+  scrollContent: { 
+    paddingHorizontal: 20, 
+    paddingBottom: 120,
+    zIndex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -176,9 +250,11 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
   },
-  backButton: { fontSize: 16, color: '#16a34a', fontWeight: '600' },
+  backButton: { fontSize: 16, fontWeight: '600' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
   mapButton: { fontSize: 16, fontWeight: '600' },
+  mapButtonRow: { flexDirection: 'row', alignItems: 'center' },
+  addressRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   routeCard: { padding: 16, marginBottom: 24 },
   routeHeader: {
     flexDirection: 'row',
@@ -192,7 +268,7 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 12, fontWeight: '600' },
   divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 16 },
   ordersTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
-  orderCard: { padding: 12, marginBottom: 12, backgroundColor: '#f9fafb' },
+  orderCard: { padding: 12, marginBottom: 12 },
   orderHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -207,6 +283,23 @@ const styles = StyleSheet.create({
   orderActions: { marginTop: 4 },
   actionButton: { marginBottom: 0 },
   mapButtonCard: { marginTop: 12 },
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
+  },
 });
 
 export default RouteOrdersScreen;

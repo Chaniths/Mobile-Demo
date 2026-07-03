@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   View,
 } from 'react-native';
+import { useTheme } from '../../hooks/useTheme';
 import theme from '../../styles/theme';
 
 /**
@@ -32,6 +33,9 @@ const Button = ({
   style,
   ...props
 }) => {
+  const { theme } = useTheme();
+  const primaryColor = theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main;
+
   const getButtonStyle = () => {
     const baseStyle = [styles.button, styles[size]];
 
@@ -40,13 +44,13 @@ const Button = ({
         baseStyle.push(styles.secondary);
         break;
       case 'outline':
-        baseStyle.push(styles.outline);
+        baseStyle.push({ ...styles.outline, borderColor: primaryColor });
         break;
       case 'ghost':
         baseStyle.push(styles.ghost);
         break;
       default:
-        baseStyle.push(styles.primary);
+        baseStyle.push({ ...styles.primary, backgroundColor: primaryColor });
     }
 
     if (disabled) {
@@ -62,7 +66,7 @@ const Button = ({
     switch (variant) {
       case 'outline':
       case 'ghost':
-        baseStyle.push(styles.outlineText);
+        baseStyle.push({ ...styles.outlineText, color: primaryColor });
         break;
       default:
         baseStyle.push(styles.primaryText);
@@ -85,7 +89,7 @@ const Button = ({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'outline' || variant === 'ghost' ? theme.colors.primary.main : '#fff'}
+          color={variant === 'outline' || variant === 'ghost' ? primaryColor : '#fff'}
         />
       ) : (
         <View style={styles.content}>
@@ -113,9 +117,9 @@ const styles = StyleSheet.create({
     marginRight: theme.spacing.sm,
   },
 
-  // Variants
+  // Variants - backgroundColor will be overridden in component
   primary: {
-    backgroundColor: theme.colors.primary.main,
+    // backgroundColor set dynamically
   },
   secondary: {
     backgroundColor: theme.colors.accent.blue,
@@ -123,7 +127,7 @@ const styles = StyleSheet.create({
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: theme.colors.primary.main,
+    // borderColor set dynamically
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -151,7 +155,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   outlineText: {
-    color: theme.colors.primary.main,
+    // color set dynamically
   },
   smallText: {
     fontSize: theme.typography.fontSize.sm,

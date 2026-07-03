@@ -9,6 +9,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import Card from '../../components/common/Card';
+import AppIcon from '../../components/common/AppIcon';
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -36,9 +38,20 @@ const ForgotPasswordScreen = ({ navigation }) => {
   if (success) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        {theme.isDarkMode ? (
+          <>
+            <View style={styles.gradientCircle1} />
+            <View style={styles.gradientCircle2} />
+          </>
+        ) : (
+          <>
+            <View style={[styles.gradientCircle1, styles.lightModeCircle1]} />
+            <View style={[styles.gradientCircle2, styles.lightModeCircle2]} />
+          </>
+        )}
         <View style={styles.successContainer}>
           <View style={[styles.successIcon, { backgroundColor: theme.colors.success }]}>
-            <Text style={styles.successIconText}>✓</Text>
+            <AppIcon name="check" size={32} color="#ffffff" />
           </View>
           <Text style={[styles.successTitle, { color: theme.colors.text.primary }]}>
             Check Your Email
@@ -59,44 +72,58 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode ? (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      ) : (
+        <>
+          <View style={[styles.gradientCircle1, styles.lightModeCircle1]} />
+          <View style={[styles.gradientCircle2, styles.lightModeCircle2]} />
+        </>
+      )}
       <View style={styles.content}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Text style={[styles.backText, { color: theme.colors.primary.main }]}>
+          <Text style={[styles.backText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
             ← Back
           </Text>
         </TouchableOpacity>
 
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-            Forgot Password?
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
-            Enter your email and we'll send you instructions to reset your password
-          </Text>
-        </View>
+        {/* Card with Glassmorphism */}
+        <Card variant="glass" style={styles.formCard}>
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: theme.colors.text.primary }]}>
+              Forgot Password?
+            </Text>
+            <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
+              Enter your email and we'll send you instructions to reset your password
+            </Text>
+          </View>
 
-        <Input
-          label="Email"
-          placeholder="Enter your email"
-          value={email}
-          onChangeText={(text) => {
-            setEmail(text);
-            setError('');
-          }}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          error={error}
-        />
+          <Input
+            label="Email"
+            placeholder="Enter your email"
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              setError('');
+            }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            error={error}
+          />
 
-        <Button
-          title="Reset Password"
-          onPress={handleResetPassword}
-          loading={loading}
-          style={styles.resetButton}
-        />
+          <Button
+            title="Reset Password"
+            onPress={handleResetPassword}
+            loading={loading}
+            style={[styles.resetButton, theme.isDarkMode && { backgroundColor: theme.colors.primary.main }]}
+          />
+        </Card>
       </View>
     </SafeAreaView>
   );
@@ -105,9 +132,36 @@ const ForgotPasswordScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
   },
   content: {
     flex: 1,
+    padding: 24,
+    zIndex: 1,
+    justifyContent: 'center',
+  },
+  formCard: {
+    borderRadius: 24,
     padding: 24,
   },
   backButton: {
@@ -161,6 +215,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 20,
+  },
+  lightModeCircle1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.35)',
+    opacity: 0.7,
+  },
+  lightModeCircle2: {
+    backgroundColor: 'rgba(74, 222, 128, 0.2)',
+    opacity: 0.5,
   },
 });
 

@@ -1,9 +1,18 @@
+<<<<<<< HEAD
 import React from "react";
 import { Text } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../hooks/useTheme";
+=======
+import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../hooks/useTheme';
+import { TabBarIcon } from '../components/common/AppIcon';
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
 // Driver Screens
 import HomeScreen from "../screens/driver/HomeScreen";
@@ -74,32 +83,60 @@ const DriverNavigator = () => {
         name="HomeTab"
         component={HomeStack}
         options={{
+<<<<<<< HEAD
           tabBarLabel: "Home",
           tabBarIcon: ({ focused }) => <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>🏠</Text>,
+=======
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="home" color={color} focused={focused} />
+          ),
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
         }}
       />
       <Tab.Screen
         name="Route"
         component={RouteScreen}
         options={{
+<<<<<<< HEAD
           tabBarLabel: "Route",
           tabBarIcon: ({ focused }) => <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>🗺️</Text>,
+=======
+          tabBarLabel: 'Route',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="map" color={color} focused={focused} />
+          ),
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
         }}
       />
       <Tab.Screen
         name="Deliveries"
         component={DeliveriesStack}
         options={{
+<<<<<<< HEAD
           tabBarLabel: "Deliveries",
           tabBarIcon: ({ focused }) => <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>📦</Text>,
+=======
+          tabBarLabel: 'Deliveries',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="orders" color={color} focused={focused} />
+          ),
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
         }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
+<<<<<<< HEAD
           tabBarLabel: "Profile",
           tabBarIcon: ({ focused }) => <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>👤</Text>,
+=======
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="profile" color={color} focused={focused} />
+          ),
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
         }}
       />
     </Tab.Navigator>

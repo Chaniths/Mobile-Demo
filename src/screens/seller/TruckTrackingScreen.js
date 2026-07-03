@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
+import AppIcon from '../../components/common/AppIcon';
 
 // Mock hub, seller, and route stops for demo
 const HUB_COORDS = { latitude: 6.9155, longitude: 79.857 };
@@ -38,9 +39,18 @@ const ROUTE_STOPS = [
   },
 ];
 
-const TruckTrackingScreen = ({ navigation }) => {
+const TruckTrackingScreen = ({ route, navigation }) => {
   const { theme } = useTheme();
+  const { orderId } = route.params || {};
   const [activeStopId, setActiveStopId] = useState('you');
+  
+  // Mock order data - in production, fetch based on orderId
+  const orderInfo = orderId ? {
+    orderId: `#ORD-2024-00${orderId}`,
+    status: 'in_transit', // or 'pending', 'confirmed', etc.
+    truckId: 'FR-12',
+    routeName: 'Western Colombo',
+  } : null;
 
   const activeStop = useMemo(
     () => ROUTE_STOPS.find((s) => s.id === activeStopId) ?? ROUTE_STOPS[1],
@@ -57,6 +67,23 @@ const TruckTrackingScreen = ({ navigation }) => {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       edges={['top']}
     >
+      {theme.isDarkMode ? (
+        <>
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
+        </>
+      )}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -64,20 +91,22 @@ const TruckTrackingScreen = ({ navigation }) => {
         {/* Header */}
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={[styles.backText, { color: theme.colors.primary.main }]}>← Back</Text>
+            <Text style={[styles.backText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
           </TouchableOpacity>
           <View style={styles.headerText}>
             <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-              Pickup truck tracking
+              {orderInfo ? `Truck tracking - ${orderInfo.orderId}` : 'Pickup truck tracking'}
             </Text>
             <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
-              See when the FreshRoute truck reaches your store so you can have orders ready.
+              {orderInfo 
+                ? `Track the truck carrying order ${orderInfo.orderId}. See when it reaches your store.`
+                : 'See when the FreshRoute truck reaches your store so you can have orders ready.'}
             </Text>
           </View>
         </View>
 
         {/* Map */}
-        <Card style={styles.mapCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.mapCard}>
           <View style={styles.mapContainer}>
             <MapView
               style={StyleSheet.absoluteFill}
@@ -92,14 +121,14 @@ const TruckTrackingScreen = ({ navigation }) => {
             >
               <Polyline
                 coordinates={polylineCoords}
-                strokeColor={theme.colors.primary.main}
+                strokeColor={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}
                 strokeWidth={4}
               />
 
               {/* Hub */}
               <Marker coordinate={HUB_COORDS}>
-                <View style={[styles.hubMarker, { backgroundColor: theme.colors.primary.light }]}>
-                  <Text style={styles.hubEmoji}>🏬</Text>
+                <View style={[styles.hubMarker, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
+                  <AppIcon name="store" size={18} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
                 </View>
               </Marker>
 
@@ -112,8 +141,8 @@ const TruckTrackingScreen = ({ navigation }) => {
                       style={[
                         styles.stopMarker,
                         {
-                          backgroundColor: isYou ? theme.colors.primary.main : theme.colors.card,
-                          borderColor: theme.colors.primary.main,
+                          backgroundColor: isYou ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main) : theme.colors.card,
+                          borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                         },
                       ]}
                     >
@@ -138,7 +167,7 @@ const TruckTrackingScreen = ({ navigation }) => {
         </Card>
 
         {/* Your slot */}
-        <Card style={styles.highlightCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.highlightCard}>
           <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
             Your pickup slot
           </Text>
@@ -150,8 +179,29 @@ const TruckTrackingScreen = ({ navigation }) => {
           </Text>
           <View style={styles.highlightRow}>
             <Text style={[styles.highlightMeta, { color: theme.colors.text.tertiary }]}>
-              Route: Western Colombo · Truck FR-12
+              Route: {orderInfo?.routeName || 'Western Colombo'} · Truck {orderInfo?.truckId || 'FR-12'}
             </Text>
+            {orderInfo && (
+              <View style={[
+                styles.orderStatusBadge,
+                {
+                  backgroundColor: orderInfo.status === 'in_transit' 
+                    ? `${theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}20`
+                    : `${theme.colors.warning}20`,
+                },
+              ]}>
+                <Text style={[
+                  styles.orderStatusText,
+                  {
+                    color: orderInfo.status === 'in_transit'
+                      ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main)
+                      : theme.colors.warning,
+                  },
+                ]}>
+                  {orderInfo.status === 'in_transit' ? 'In Transit' : 'Pending Pickup'}
+                </Text>
+              </View>
+            )}
           </View>
         </Card>
 
@@ -170,15 +220,16 @@ const TruckTrackingScreen = ({ navigation }) => {
             return (
               <TouchableOpacity key={stop.id} onPress={() => setActiveStopId(stop.id)}>
                 <Card
+                  variant={theme.isDarkMode ? "glass" : "default"}
                   style={[
                     styles.stopCard,
-                    isActive && { borderWidth: 1.5, borderColor: theme.colors.primary.main },
+                    isActive && { borderWidth: 1.5, borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main },
                   ]}
                 >
                   <Text
                     style={[
                       styles.stopName,
-                      { color: isYou ? theme.colors.primary.main : theme.colors.text.primary },
+                      { color: isYou ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main) : theme.colors.text.primary },
                     ]}
                   >
                     {isYou ? 'Your store' : stop.name}
@@ -199,10 +250,65 @@ const TruckTrackingScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
+    zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
+  },
+  archStrip2: {
+    position: 'absolute',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 120,
+    zIndex: 1,
   },
   headerRow: {
     flexDirection: 'row',
@@ -281,6 +387,17 @@ const styles = StyleSheet.create({
   },
   highlightMeta: {
     fontSize: 12,
+    flex: 1,
+  },
+  orderStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  orderStatusText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   sectionTitle: {
     fontSize: 18,
@@ -303,6 +420,23 @@ const styles = StyleSheet.create({
   },
   stopEta: {
     fontSize: 12,
+  },
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
   },
 });
 

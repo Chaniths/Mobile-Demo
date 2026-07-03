@@ -1,16 +1,23 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useDispatch, useSelector } from 'react-redux';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import LocationSelectionModal from '../../components/common/LocationSelectionModal';
 import { clearCart } from '../../store/slices/cartSlice';
 
 const CheckoutScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items);
+  
+  const [isLocationModalVisible, setIsLocationModalVisible] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState({
+    address: '24/B, Green Valley Apartments',
+    coordinates: null,
+  });
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const deliveryFee = cartItems.length > 0 ? 5.99 : 0;
@@ -21,8 +28,30 @@ const CheckoutScreen = ({ navigation }) => {
     navigation.replace('Cart');
   };
 
+  const handleSelectLocation = (location) => {
+    setDeliveryAddress(location);
+    setIsLocationModalVisible(false);
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode ? (
+        <>
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
+        </>
+      )}
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>Checkout</Text>
@@ -37,7 +66,7 @@ const CheckoutScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Order summary */}
-        <Card style={styles.card}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.card}>
           <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
             Order summary
           </Text>
@@ -63,21 +92,37 @@ const CheckoutScreen = ({ navigation }) => {
           )}
         </Card>
 
-        {/* Delivery details (static placeholder) */}
-        <Card style={styles.card}>
-          <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
-            Delivery details
-          </Text>
-          <Text style={[styles.itemName, { color: theme.colors.text.primary }]}>
-            24/B, Green Valley Apartments
-          </Text>
-          <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
-            Default address • You can wire this to real profile data later
-          </Text>
-        </Card>
+        {/* Delivery details */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setIsLocationModalVisible(true)}
+        >
+          <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.card}>
+            <View style={styles.deliveryHeader}>
+              <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
+                Delivery details
+              </Text>
+              <Text style={[styles.editText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                Edit
+              </Text>
+            </View>
+            <Text style={[styles.itemName, { color: theme.colors.text.primary }]}>
+              {deliveryAddress.address}
+            </Text>
+            {deliveryAddress.coordinates ? (
+              <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
+                Location set • Tap to change
+              </Text>
+            ) : (
+              <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
+                Default address • Tap to select location
+              </Text>
+            )}
+          </Card>
+        </TouchableOpacity>
 
         {/* Payment summary */}
-        <Card style={styles.card}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.card}>
           <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
             Payment
           </Text>
@@ -102,7 +147,7 @@ const CheckoutScreen = ({ navigation }) => {
             <Text style={[styles.totalLabel, { color: theme.colors.text.primary }]}>
               Total to pay
             </Text>
-            <Text style={[styles.totalValue, { color: theme.colors.primary.main }]}>
+            <Text style={[styles.totalValue, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
               ${total.toFixed(2)}
             </Text>
           </View>
@@ -116,6 +161,13 @@ const CheckoutScreen = ({ navigation }) => {
           style={styles.placeOrderButton}
         />
       </View>
+
+      {/* Location Selection Modal */}
+      <LocationSelectionModal
+        visible={isLocationModalVisible}
+        onClose={() => setIsLocationModalVisible(false)}
+        onSelectLocation={handleSelectLocation}
+      />
     </SafeAreaView>
   );
 };
@@ -123,8 +175,63 @@ const CheckoutScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
+    zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
+  },
+  archStrip2: {
+    position: 'absolute',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
   },
   header: {
+    zIndex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 12,
@@ -143,6 +250,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 120,
+    zIndex: 1,
   },
   card: {
     marginBottom: 12,
@@ -152,6 +260,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 8,
+  },
+  deliveryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  editText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   itemRow: {
     flexDirection: 'row',
@@ -206,6 +324,23 @@ const styles = StyleSheet.create({
   },
   placeOrderButton: {
     width: '100%',
+  },
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
   },
 });
 

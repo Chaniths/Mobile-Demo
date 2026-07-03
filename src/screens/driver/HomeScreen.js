@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+<<<<<<< HEAD
   RefreshControl,
   Alert,
   StatusBar,
@@ -26,6 +27,15 @@ const getGreeting = () => {
   if (h < 17) return "Good afternoon";
   return "Good evening";
 };
+=======
+} from 'react-native';
+import { useTheme } from '../../hooks/useTheme';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import Avatar from '../../components/common/Avatar';
+import { DRIVER_DELIVERIES } from './deliveriesData';
+import AppIcon from '../../components/common/AppIcon';
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
 const HomeScreen = ({ navigation }) => {
   const { theme, isDarkMode } = useTheme();
@@ -33,11 +43,20 @@ const HomeScreen = ({ navigation }) => {
   const [isAvailable, setIsAvailable] = useState(true);
   const [availLoading, setAvailLoading] = useState(false);
 
+<<<<<<< HEAD
   useEffect(() => {
     if (typeof data.me?.isAvailable === "boolean") {
       setIsAvailable(data.me.isAvailable);
     }
   }, [data.me?.isAvailable]);
+=======
+  const todayStats = [
+    { id: '1', label: 'Deliveries', value: '12', icon: 'orders', color: '#3b82f6' },
+    { id: '2', label: 'Completed', value: '8', icon: 'check', color: '#22c55e' },
+    { id: '3', label: 'Remaining', value: '4', icon: 'time', color: '#f59e0b' },
+    { id: '4', label: 'Earnings', value: '$240', icon: 'cash', color: '#8b5cf6' },
+  ];
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
   const routeData = data.route || data.activeRoute;
   const upcomingDeliveries = useMemo(() => {
@@ -102,6 +121,7 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+<<<<<<< HEAD
       <StatusBar barStyle="light-content" backgroundColor={heroBg} />
 
       {/* ── Hero Header ── */}
@@ -258,6 +278,143 @@ const HomeScreen = ({ navigation }) => {
               </View>
             )}
           </Card>
+=======
+      {theme.isDarkMode ? (
+        <>
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
+        </>
+      )}
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        style={styles.scrollView}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.greeting, { color: theme.colors.text.secondary }]}>
+              Good Morning
+            </Text>
+            <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
+              Driver Mike
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+            <Avatar name="Mike" size="medium" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Active Route Card */}
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.activeRouteCard} elevation="lg">
+          <View style={styles.routeHeader}>
+            <Text style={[styles.routeTitle, { color: theme.colors.text.primary }]}>
+              Active Route
+            </Text>
+            <View style={[styles.activeBadge, { backgroundColor: `${theme.colors.success}20` }]}>
+              <View style={[styles.activeDot, { backgroundColor: theme.colors.success }]} />
+              <Text style={[styles.activeText, { color: theme.colors.success }]}>
+                In Progress
+              </Text>
+            </View>
+          </View>
+          <Text style={[styles.routeDetails, { color: theme.colors.text.secondary }]}>
+            12 stops • 45.8 km • Est. 4h 20m
+          </Text>
+          <Button
+            title="View Route Map"
+            onPress={() => navigation.navigate('Route')}
+            style={styles.routeButton}
+          />
+        </Card>
+
+        {/* Today's Stats */}
+        <View style={styles.statsSection}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+            Today's Performance
+          </Text>
+          <View style={styles.statsGrid}>
+            {todayStats.map((stat) => (
+              <Card variant={theme.isDarkMode ? "glass" : "default"} key={stat.id} style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
+                  <AppIcon name={stat.icon} size={22} color={stat.color} />
+                </View>
+                <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
+                  {stat.value}
+                </Text>
+                <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>
+                  {stat.label}
+                </Text>
+              </Card>
+            ))}
+          </View>
+        </View>
+
+        {/* Upcoming Deliveries */}
+        <View style={styles.deliveriesSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+              Next Deliveries
+            </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('AllDeliveries')}>
+              <Text style={[styles.seeAll, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                See All
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {upcomingDeliveries.map((delivery, index) => (
+            <Card
+              variant={theme.isDarkMode ? "glass" : "default"}
+              key={delivery.id}
+              style={styles.deliveryCard}
+              onPress={() => navigation.navigate('DeliveryDetail', { deliveryId: delivery.id })}
+            >
+              {delivery.priority === 'high' && (
+                <View style={[styles.priorityStrip, { backgroundColor: theme.colors.error }]} />
+              )}
+              <View style={styles.deliveryHeader}>
+                <View>
+                  <Text style={[styles.orderNumber, { color: theme.colors.text.primary }]}>
+                    {delivery.orderId}
+                  </Text>
+                  <Text style={[styles.customerName, { color: theme.colors.text.secondary }]}>
+                    {delivery.customer}
+                  </Text>
+                </View>
+                <Text style={[styles.deliveryTime, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                  {delivery.time}
+                </Text>
+              </View>
+              <View style={styles.deliveryDetails}>
+                <AppIcon name="location" size={16} color={theme.colors.text.tertiary} />
+                <Text style={[styles.address, { color: theme.colors.text.secondary }]}>
+                  {delivery.address}
+                </Text>
+              </View>
+              <View style={styles.deliveryFooter}>
+                <Text style={[styles.distance, { color: theme.colors.text.tertiary }]}>
+                  {delivery.distance} away
+                </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Route')}>
+                  <Text style={[styles.startButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                    Start →
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </Card>
+          ))}
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
         </View>
 
         {/* ── Next Stops ── */}
@@ -379,11 +536,17 @@ const HomeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+<<<<<<< HEAD
   container: { flex: 1 },
   heroHeader: { paddingHorizontal: 20, paddingBottom: 20 },
   headerRow: {
     flexDirection: "row", justifyContent: "space-between",
     alignItems: "flex-start", paddingTop: 8, marginBottom: 20,
+=======
+  container: {
+    flex: 1,
+    overflow: 'hidden',
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   },
   headerTextGroup: { flex: 1 },
   heroGreeting: { fontSize: 13, color: "#94a3b8", marginBottom: 4 },
@@ -404,6 +567,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20, marginTop: 16, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1,
   },
+<<<<<<< HEAD
   errorBannerIcon: { fontSize: 14, marginRight: 8 },
   errorBannerText: { flex: 1, fontSize: 13, fontWeight: "500" },
   errorBannerAction: { fontSize: 13, fontWeight: "700" },
@@ -412,6 +576,65 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     marginHorizontal: 20, marginTop: 12, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1,
+=======
+  scrollContent: {
+    paddingTop: 60,
+    paddingBottom: 100,
+    zIndex: 1,
+  },
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
+    zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
+  },
+  archStrip2: {
+    position: 'absolute',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   },
   updateBannerText: { fontSize: 13, fontWeight: "500" },
   updateBannerAction: { fontSize: 13, fontWeight: "700" },
@@ -465,9 +688,29 @@ const styles = StyleSheet.create({
     alignItems: "center", borderWidth: 1.5,
     shadowColor: "#000", shadowOpacity: 0.06, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6, elevation: 2,
   },
+<<<<<<< HEAD
   actionCardIcon: { fontSize: 28, marginBottom: 8 },
   actionCardLabel: { fontSize: 13, fontWeight: "600", textAlign: "center" },
   emptyIcon: { fontSize: 48 },
+=======
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
+  },
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 });
 
 export default HomeScreen;

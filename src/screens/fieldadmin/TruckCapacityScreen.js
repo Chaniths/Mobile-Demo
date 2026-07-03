@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,17 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+<<<<<<< HEAD
 import BackgroundShapes from '../../components/common/BackgroundShapes';
+=======
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import fieldAdminApi from '../../api/fieldAdminApi';
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
 const TruckCapacityScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -24,18 +31,45 @@ const TruckCapacityScreen = ({ navigation, route }) => {
 
   const [capacity, setCapacity] = useState(truck.currentCapacity);
   const [notes, setNotes] = useState('');
+  const [trucks, setTrucks] = useState([]);
 
-  const trucks = [
-    { id: 'truck-001', licensePlate: 'WP ABC-1234', driver: 'Mike Johnson', capacity: '75/100 kg' },
-    { id: 'truck-002', licensePlate: 'WP XYZ-5678', driver: 'Sarah Williams', capacity: '45/100 kg' },
-    { id: 'truck-003', licensePlate: 'WP DEF-9012', driver: 'Tom Brown', capacity: '90/100 kg' },
-  ];
+  useEffect(() => {
+    const loadTrucks = async () => {
+      try {
+        const routes = await fieldAdminApi.getRoutes();
+        const mapped = routes
+          .filter((r) => r?.truck?.id && r?.driver?.id)
+          .map((r) => ({
+            id: r.truck.id,
+            driverId: r.driver.id,
+            licensePlate: r.truck.vehicleNumber ?? 'Unknown',
+            driver: r.driver?.user?.name ?? 'Driver',
+            currentCapacity: String(r.truck.currentLoadWeight ?? 0),
+            maxCapacity: String(r.truck.maxWeight ?? 0),
+            currentLoadVolume: String(r.truck.currentLoadVolume ?? 0),
+            maxVolume: String(r.truck.maxVolume ?? 0),
+            currentLoadStops: String(r.truck.currentLoadStops ?? 0),
+            maxStops: String(r.truck.maxStops ?? 0),
+            unit: 'kg',
+          }));
+        setTrucks(mapped);
+        if (mapped.length > 0) {
+          setTruck(mapped[0]);
+          setCapacity(mapped[0].currentCapacity);
+        }
+      } catch {
+        Alert.alert('Error', 'Failed to load trucks.');
+      }
+    };
+    loadTrucks();
+  }, []);
 
   const handleUpdateCapacity = () => {
-    if (!capacity.trim() || isNaN(capacity) || parseFloat(capacity) < 0 || parseFloat(capacity) > 100) {
-      alert('Please enter a valid capacity (0-100)');
+    if (!capacity.trim() || isNaN(capacity) || parseFloat(capacity) < 0) {
+      alert('Please enter a valid capacity value');
       return;
     }
+<<<<<<< HEAD
     console.log('Capacity updated:', { truckId: truck.id, capacity: parseFloat(capacity), notes });
     navigation.goBack();
   };
@@ -50,11 +84,57 @@ const TruckCapacityScreen = ({ navigation, route }) => {
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={[styles.backText, { color: teal }]}>{'<- Back'}</Text>
+=======
+    if (!truck.driverId) {
+      Alert.alert('Error', 'No driver linked to this truck.');
+      return;
+    }
+    fieldAdminApi
+      .updateTruckCapacity({
+        driverId: truck.driverId,
+        vehicleCapacity: parseFloat(capacity),
+      })
+      .then(() => {
+        Alert.alert('Success', notes ? `Capacity updated. Note: ${notes}` : 'Capacity updated.');
+        navigation.goBack();
+      })
+      .catch(() => Alert.alert('Error', 'Failed to update truck capacity.'));
+  };
+
+  const currentWeight = parseFloat(truck.currentCapacity || '0');
+  const maxWeight = parseFloat(truck.maxCapacity || '0');
+  const capacityPercent = maxWeight > 0 ? (currentWeight / maxWeight) * 100 : 0;
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      {theme.isDarkMode ? (
+        <>
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
+        </>
+      )}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Truck Capacity</Text>
           <View style={{ width: 70 }} />
         </View>
 
+<<<<<<< HEAD
         {/* Select Truck */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Select Truck</Text>
         {trucks.map((t) => {
@@ -75,6 +155,50 @@ const TruckCapacityScreen = ({ navigation, route }) => {
           <Text style={styles.fieldLabel}>TRUCK DETAILS</Text>
           <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>License: {truck.licensePlate}</Text>
           <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>Driver: {truck.driver}</Text>
+=======
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+          Select Truck
+        </Text>
+        {trucks.map((t) => (
+          <TouchableOpacity
+            key={t.id}
+            onPress={() => {
+              setTruck(t);
+              setCapacity(t.currentCapacity);
+            }}
+          >
+            <Card
+              variant={theme.isDarkMode ? "glass" : "default"}
+              style={[
+                styles.truckCard,
+                truck.id === t.id && {
+                  borderWidth: 2,
+                  borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
+                },
+              ]}
+            >
+              <Text style={[styles.truckPlate, { color: theme.colors.text.primary }]}>
+                {t.licensePlate}
+              </Text>
+              <Text style={[styles.truckDriver, { color: theme.colors.text.secondary }]}>
+                Driver: {t.driver}
+              </Text>
+              <Text style={[styles.truckCapacity, { color: theme.colors.text.secondary }]}>
+                Capacity: {t.currentCapacity}/{t.maxCapacity} {t.unit}
+              </Text>
+            </Card>
+          </TouchableOpacity>
+        ))}
+
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.capacityCard}>
+          <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Truck Details</Text>
+          <Text style={[styles.detail, { color: theme.colors.text.primary }]}>
+            License: {truck.licensePlate}
+          </Text>
+          <Text style={[styles.detail, { color: theme.colors.text.primary }]}>
+            Driver: {truck.driver}
+          </Text>
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           <View style={styles.divider} />
           <Text style={styles.fieldLabel}>CURRENT CAPACITY</Text>
           <View style={styles.barWrap}>
@@ -93,16 +217,32 @@ const TruckCapacityScreen = ({ navigation, route }) => {
               {truck.currentCapacity} / {truck.maxCapacity} {truck.unit} ({Math.round(capacityPercent)}%)
             </Text>
           </View>
+<<<<<<< HEAD
         </View>
 
         {/* Update */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Update Capacity</Text>
         <View style={styles.card}>
           <View style={styles.capacityRow}>
+=======
+          <Text style={[styles.detail, { color: theme.colors.text.secondary }]}>
+            Volume: {Number(truck.currentLoadVolume ?? 0).toFixed(3)} / {truck.maxVolume ?? '0'} m3
+          </Text>
+          <Text style={[styles.detail, { color: theme.colors.text.secondary }]}>
+            Stops: {truck.currentLoadStops ?? '0'} / {truck.maxStops ?? '-'}
+          </Text>
+        </Card>
+
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+          Update Capacity
+        </Text>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.updateCard}>
+          <View style={styles.capacityInputRow}>
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
             <TextInput
-              style={[styles.capacityInput, { color: theme.colors.text.primary }]}
+              style={[styles.capacityInput, { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary }]}
               placeholder="Enter new capacity"
-              placeholderTextColor={theme.colors.text.tertiary}
+              placeholderTextColor={theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary}
               keyboardType="numeric"
               value={capacity}
               onChangeText={setCapacity}
@@ -112,13 +252,22 @@ const TruckCapacityScreen = ({ navigation, route }) => {
           <Text style={styles.hintText}>Max capacity: {truck.maxCapacity} kg</Text>
         </View>
 
+<<<<<<< HEAD
         {/* Notes */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Notes</Text>
         <View style={styles.inputCard}>
           <TextInput
             style={[styles.textInput, { color: theme.colors.text.primary }]}
+=======
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+          Notes
+        </Text>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.notesCard}>
+          <TextInput
+            style={[styles.input, { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary }]}
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
             placeholder="Add notes about capacity update..."
-            placeholderTextColor={theme.colors.text.tertiary}
+            placeholderTextColor={theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary}
             multiline
             numberOfLines={4}
             value={notes}
@@ -135,13 +284,82 @@ const TruckCapacityScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+<<<<<<< HEAD
   container: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+=======
+  container: { 
+    flex: 1,
+    overflow: 'hidden',
+  },
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
+    zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
+  },
+  archStrip2: {
+    position: 'absolute',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
+  },
+  scrollContent: { 
+    paddingHorizontal: 20, 
+    paddingBottom: 120,
+    zIndex: 1,
+  },
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingTop: 16, paddingBottom: 20,
   },
+<<<<<<< HEAD
   backText: { fontSize: 16, fontWeight: '600' },
+=======
+  backButton: { fontSize: 16, fontWeight: '600' },
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   headerTitle: { fontSize: 20, fontWeight: '700' },
   sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
 
@@ -170,6 +388,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     borderWidth: 1.5, borderColor: '#e0dcd9', borderRadius: 16, paddingHorizontal: 14, marginBottom: 8,
   },
+<<<<<<< HEAD
   capacityInput: { flex: 1, fontSize: 18, fontWeight: '600', paddingVertical: 14 },
   unitText: { fontSize: 16, fontWeight: '600', color: '#94a3b8', marginLeft: 8 },
   hintText: { fontSize: 12, color: '#94a3b8' },
@@ -182,6 +401,31 @@ const styles = StyleSheet.create({
 
   submitBtn: { borderRadius: 20, paddingVertical: 18, alignItems: 'center', marginTop: 4 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+=======
+  capacityInput: { flex: 1, fontSize: 18, fontWeight: '600', paddingVertical: 12 },
+  unitText: { fontSize: 16, fontWeight: '600', marginLeft: 8 },
+  hint: { fontSize: 12 },
+  notesCard: { padding: 16, marginBottom: 24 },
+  input: { fontSize: 14, minHeight: 100, textAlignVertical: 'top' },
+  submitButton: { marginTop: 8 },
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
+  },
+>>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 });
 
 export default TruckCapacityScreen;

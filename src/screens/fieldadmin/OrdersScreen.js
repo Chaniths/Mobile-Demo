@@ -1,73 +1,105 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-import { useSelector } from 'react-redux';
 import Card from '../../components/common/Card';
 import EmptyState from '../../components/common/EmptyState';
 import AppIcon from '../../components/common/AppIcon';
-
-const mockOrders = [
-  {
-    id: '1',
-    orderId: '#ORD-2024-001',
-    date: 'Dec 3, 2024',
-    status: 'delivered',
-    items: 3,
-    total: 18.97,
-  },
-  {
-    id: '2',
-    orderId: '#ORD-2024-002',
-    date: 'Dec 4, 2024',
-    status: 'in_transit',
-    items: 2,
-    total: 12.98,
-  },
-  {
-    id: '3',
-    orderId: '#ORD-2024-003',
-    date: 'Dec 5, 2024',
-    status: 'processing',
-    items: 4,
-    total: 24.96,
-  },
-];
+import Button from '../../components/common/Button';
+import fieldAdminApi from '../../api/fieldAdminApi';
 
 const statusColors = {
-  delivered: '#22c55e',
-  in_transit: '#3b82f6',
-  processing: '#f59e0b',
-  cancelled: '#ef4444',
+  ASSIGNED: '#3b82f6',
+  BATCHED: '#2563eb',
+  IN_TRANSIT: '#06b6d4',
+  DELIVERED: '#22c55e',
+  PENDING: '#f59e0b',
+  PAID: '#f59e0b',
+  PAYMENT_PENDING: '#f59e0b',
+  PAYMENT_FAILED: '#ef4444',
+  CANCELLED: '#ef4444',
+  FAILED: '#ef4444',
 };
 
 const statusLabels = {
-  delivered: 'Delivered',
-  in_transit: 'In Transit',
-  processing: 'Processing',
-  cancelled: 'Cancelled',
+  ASSIGNED: 'Assigned',
+  BATCHED: 'Batched',
+  IN_TRANSIT: 'In Transit',
+  DELIVERED: 'Delivered',
+  PENDING: 'Pending',
+  PAID: 'Paid',
+  PAYMENT_PENDING: 'Payment Pending',
+  PAYMENT_FAILED: 'Payment Failed',
+  CANCELLED: 'Cancelled',
+  FAILED: 'Failed',
 };
 
 const OrdersScreen = ({ navigation }) => {
   const { theme } = useTheme();
-  const user = useSelector((state) => state.auth.user);
-  const isSeller = user?.role === 'seller';
   const [activeTab, setActiveTab] = useState('all');
+  const [orders, setOrders] = useState([]);
 
-  const filteredOrders = activeTab === 'all'
-    ? mockOrders
-    : mockOrders.filter((order) => order.status === activeTab);
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        const data = await fieldAdminApi.getOrdersByTab(activeTab);
+        const mapped = data.map((order) => ({
+          id: order.id,
+          orderId: `#${order.orderNumber}`,
+          date: new Date(order.placedAt).toLocaleDateString(),
+          status: order.status,
+          customer: order.customer,
+          address: order.address,
+          coords: order.coords,
+          items: order.itemCount,
+          total: order.totalAmount,
+          route: order.route?.routeNumber || 'Not assigned',
+          driver: order.driver?.name || 'Pending',
+          eta: order.eta ? new Date(order.eta).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'TBD',
+          raw: order,
+        }));
+        setOrders(mapped);
+      } catch (error) {
+        console.error('Failed to load orders:', error?.message || error);
+        setOrders([]);
+      }
+    };
+    loadOrders();
+  }, [activeTab]);
+
+  const filteredOrders = useMemo(
+    () =>
+      activeTab === 'all'
+        ? orders
+        : orders.filter((order) => {
+            if (activeTab === 'scheduled') {
+              return order.status === 'ASSIGNED' || order.status === 'BATCHED';
+            }
+            if (activeTab === 'in_transit') {
+              return order.status === 'IN_TRANSIT';
+            }
+            if (activeTab === 'delivered') {
+              return order.status === 'DELIVERED';
+            }
+            if (activeTab === 'pending') {
+              return ['PENDING', 'PAID', 'PAYMENT_PENDING', 'PAYMENT_FAILED'].includes(order.status);
+            }
+            return true;
+          }),
+    [activeTab, orders]
+  );
 
   const renderOrder = ({ item }) => (
     <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.orderCard}>
       <View style={styles.orderHeader}>
-        <View>
+        <View style={styles.orderHeaderLeft}>
           <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>
             {item.orderId}
           </Text>
@@ -78,38 +110,99 @@ const OrdersScreen = ({ navigation }) => {
         <View
           style={[
             styles.statusBadge,
-            { backgroundColor: `${statusColors[item.status]}20` },
+            { backgroundColor: `${statusColors[item.status] ?? '#64748b'}20` },
           ]}
         >
-          <Text style={[styles.statusText, { color: statusColors[item.status] }]}>
-            {statusLabels[item.status]}
+          <Text style={[styles.statusText, { color: statusColors[item.status] ?? '#64748b' }]}>
+            {statusLabels[item.status] ?? item.status}
           </Text>
         </View>
       </View>
+
+      <View style={styles.orderInfo}>
+        <View style={styles.orderInfoRow}>
+          <Text style={[styles.orderLabel, { color: theme.colors.text.secondary }]}>
+            Customer:
+          </Text>
+          <Text style={[styles.orderValue, { color: theme.colors.text.primary }]}>
+            {item.customer}
+          </Text>
+        </View>
+        <View style={styles.orderInfoRow}>
+          <Text style={[styles.orderLabel, { color: theme.colors.text.secondary }]}>
+            Address:
+          </Text>
+          <Text style={[styles.orderValue, { color: theme.colors.text.primary }]}>
+            {item.address}
+          </Text>
+        </View>
+        <View style={styles.orderInfoRow}>
+          <Text style={[styles.orderLabel, { color: theme.colors.text.secondary }]}>
+            Route:
+          </Text>
+          <Text style={[styles.orderValue, { color: theme.colors.text.primary }]}>
+            {item.route}
+          </Text>
+        </View>
+        <View style={styles.orderInfoRow}>
+          <Text style={[styles.orderLabel, { color: theme.colors.text.secondary }]}>
+            Driver:
+          </Text>
+          <Text style={[styles.orderValue, { color: theme.colors.text.primary }]}>
+            {item.driver}
+          </Text>
+        </View>
+        <View style={styles.orderInfoRow}>
+          <Text style={[styles.orderLabel, { color: theme.colors.text.secondary }]}>
+            ETA:
+          </Text>
+          <Text style={[styles.orderValue, { color: theme.colors.text.primary }]}>
+            {item.eta}
+          </Text>
+        </View>
+      </View>
+
       <View style={styles.orderDetails}>
-        <Text style={[styles.orderInfo, { color: theme.colors.text.secondary }]}>
+        <Text style={[styles.orderItems, { color: theme.colors.text.secondary }]}>
           {item.items} items
         </Text>
         <Text style={[styles.orderTotal, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
           ${item.total.toFixed(2)}
         </Text>
       </View>
-      <TouchableOpacity
-        onPress={() => {
-          if (isSeller) {
-            // For sellers, navigate to truck tracking
-            navigation.navigate('TruckTracking', { orderId: item.id });
-          } else {
-            // For buyers, navigate to order tracking
-            navigation.navigate('TrackOrder', { orderId: item.id });
-          }
-        }}
-        style={styles.trackButton}
-      >
-        <Text style={[styles.trackButtonText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-          {isSeller ? 'Track Truck →' : 'Track Order →'}
-        </Text>
-      </TouchableOpacity>
+
+      <View style={styles.orderActions}>
+        <Button
+          title="View Details"
+          onPress={() => navigation.navigate('DeliveryPickup', { order: item })}
+          variant="outline"
+          style={styles.actionButton}
+        />
+        {item.status === 'ASSIGNED' || item.status === 'BATCHED' || item.status === 'IN_TRANSIT' ? (
+          <Button
+            title="View on Map"
+            onPress={() => {
+              // Only navigate if order has coordinates
+              if (item.coords) {
+                navigation.navigate('RouteMap', {
+                  route: {
+                    routeId: item.route,
+                    driver: item.driver,
+                    stops: 1,
+                    distance: '0 km',
+                    orders: [item],
+                  },
+                });
+              } else {
+                // Show alert if no coordinates
+                alert('This order does not have location coordinates yet.');
+              }
+            }}
+            style={styles.actionButton}
+            disabled={!item.coords}
+          />
+        ) : null}
+      </View>
     </Card>
   );
 
@@ -134,12 +227,12 @@ const OrdersScreen = ({ navigation }) => {
       )}
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text.primary }]}>My Orders</Text>
+        <Text style={[styles.title, { color: theme.colors.text.primary }]}>Orders</Text>
       </View>
 
       {/* Tabs */}
       <View style={styles.tabs}>
-        {['all', 'processing', 'in_transit', 'delivered'].map((tab) => (
+        {['all', 'pending', 'scheduled', 'in_transit', 'delivered'].map((tab) => (
           <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab)}
@@ -179,9 +272,7 @@ const OrdersScreen = ({ navigation }) => {
           <EmptyState
             icon={<AppIcon name="orders" size={64} color={theme.colors.text.tertiary} />}
             title="No orders found"
-            message="You haven't placed any orders yet"
-            actionLabel="Browse Products"
-            onAction={() => navigation.navigate('BrowseTab')}
+            message={`No ${activeTab === 'all' ? '' : activeTab.replace('_', ' ')} orders available`}
           />
         }
       />
@@ -260,6 +351,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     marginBottom: 16,
+    zIndex: 1,
   },
   tab: {
     paddingVertical: 12,
@@ -272,6 +364,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 20,
+    paddingBottom: 120,
   },
   orderCard: {
     marginBottom: 12,
@@ -282,6 +375,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
+  },
+  orderHeaderLeft: {
+    flex: 1,
   },
   orderId: {
     fontSize: 16,
@@ -300,25 +396,45 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  orderInfo: {
+    marginBottom: 12,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+  },
+  orderInfoRow: {
+    flexDirection: 'row',
+    marginVertical: 4,
+  },
+  orderLabel: {
+    fontSize: 13,
+    width: 80,
+  },
+  orderValue: {
+    fontSize: 13,
+    flex: 1,
+    fontWeight: '600',
+  },
   orderDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  orderInfo: {
+  orderItems: {
     fontSize: 13,
   },
   orderTotal: {
     fontSize: 18,
     fontWeight: '700',
   },
-  trackButton: {
-    alignSelf: 'flex-start',
+  orderActions: {
+    flexDirection: 'row',
+    gap: 8,
   },
-  trackButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+  actionButton: {
+    flex: 1,
   },
   emptyIcon: {
     fontSize: 64,
@@ -343,4 +459,3 @@ const styles = StyleSheet.create({
 });
 
 export default OrdersScreen;
-

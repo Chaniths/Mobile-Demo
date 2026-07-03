@@ -46,13 +46,31 @@ const Card = ({
     }
   };
 
-  const backgroundColor = variant === 'secondary' 
-    ? theme.colors.cardSecondary 
-    : theme.colors.card;
+  const getCardStyle = () => {
+    if (variant === 'glass' || variant === 'glassmorphism') {
+      // Glassmorphism style for dark mode with teal theme - use teal opacity instead of dark blue
+      return {
+        backgroundColor: theme.isDarkMode 
+          ? theme.colors.teal.strong // Use teal with 40% opacity instead of dark blue
+          : 'rgba(255, 255, 255, 0.9)',
+        borderWidth: 1,
+        borderColor: theme.isDarkMode 
+          ? 'rgba(255, 255, 255, 0.1)' 
+          : 'rgba(0, 0, 0, 0.1)',
+        // Note: backdrop-blur is not directly available in React Native
+        // You can use a library like react-native-blur or accept it won't blur
+      };
+    }
+    return {
+      backgroundColor: theme.isDarkMode 
+        ? (variant === 'secondary' ? theme.colors.teal.medium : theme.colors.teal.soft)
+        : (variant === 'secondary' ? theme.colors.cardSecondary : theme.colors.card),
+    };
+  };
 
   const cardStyle = [
     styles.card,
-    { backgroundColor },
+    getCardStyle(),
     getElevationStyle(),
     style,
   ];
