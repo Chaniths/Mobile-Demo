@@ -4,27 +4,14 @@ import {
   TextInput, Switch, Alert, Linking, ActivityIndicator,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { logout, loginSuccess } from '../store/slices/authSlice';
 import Card from '../components/common/Card';
 import Avatar from '../components/common/Avatar';
 import apiClient from '../api/client';
 import MapAddressPicker from '../components/MapAddressPicker';
-import Svg, { Path, Circle, Line } from 'react-native-svg';
 
-
-const EyeIcon = ({ visible, color = '#94a3b8', size = 20 }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-      stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"
-    />
-    <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={1.8} />
-    {!visible && (
-      <Line x1="2" y1="2" x2="22" y2="22" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-    )}
-  </Svg>
-);
 // ─── Validation helpers ───────────────────────────────────────────────────────
 
 const isValidPersonName = (v) => /^[A-Za-z\s]+$/.test(v.trim()) && v.trim().length > 0;
@@ -73,30 +60,32 @@ const formatPhoneDisplay = (raw = '') => {
 };
 
 const getRoleBadge = (role) => ({
-  buyer:  { label: 'Buyer',  color: '#10b981' },
-  seller: { label: 'Seller', color: '#6366f1' },
-  driver: { label: 'Driver', color: '#f59e0b' },
+  buyer:       { label: 'Buyer',       color: '#10b981' },
+  seller:      { label: 'Seller',      color: '#6366f1' },
+  driver:      { label: 'Driver',      color: '#f59e0b' },
+  field_admin: { label: 'Field Admin', color: '#0ea5e9' },
 }[role] ?? { label: role, color: '#94a3b8' });
 
-const renderStars = (val) => '★'.repeat(val) + '☆'.repeat(5 - val);
-
 // ─── Role-based menu config ───────────────────────────────────────────────────
+// NOTE: 'field_admin' is a mobile-only role (travels with drivers in the field).
+// It is distinct from the web app's platform-level 'admin' role, which does not
+// exist on mobile. Field admins see the same Vehicle / Availability sections as
+// drivers, but in read-only oversight mode.
 
 const getMenuItems = (role) => {
-  const edit          = { id: 'edit',          icon: '👤', title: 'Edit Profile',      desc: 'Update your name and phone number'         };
-  const password      = { id: 'password',      icon: '🔐', title: 'Change Password',   desc: 'Update your account password'             };
-  const notifications = { id: 'notifications', icon: '🔔', title: 'Notifications',     desc: 'Control alerts and reminders'             };
-  const help          = { id: 'help',          icon: '❓', title: 'Help & Support',    desc: 'Get support or contact us'                };
-  const terms         = { id: 'terms',         icon: '📄', title: 'Terms & Privacy',   desc: 'Privacy policy and terms of service'      };
-  const danger        = { id: 'danger',        icon: '⚠️', title: 'Danger Zone',       desc: 'Delete your account permanently' };
+  const edit          = { id: 'edit',          icon: 'person-outline',           title: 'Edit Profile',      desc: 'Update your name and phone number'    };
+  const password      = { id: 'password',      icon: 'lock-closed-outline',      title: 'Change Password',   desc: 'Update your account password'         };
+  const notifications = { id: 'notifications', icon: 'notifications-outline',    title: 'Notifications',     desc: 'Control alerts and reminders'         };
+  const help          = { id: 'help',          icon: 'help-circle-outline',      title: 'Help & Support',    desc: 'Get support or contact us'            };
+  const terms         = { id: 'terms',         icon: 'document-text-outline',    title: 'Terms & Privacy',   desc: 'Privacy policy and terms of service'  };
+  const danger         = { id: 'danger',        icon: 'warning-outline',          title: 'Danger Zone',       desc: 'Delete your account permanently'      };
+  const reviews        = { id: 'reviews',       icon: 'star-outline',             title: 'My Reviews',        desc: 'Reviews you have submitted'           };
 
   if (role === 'buyer') return [
     edit,
     password,
-    { id: 'address',  icon: '📍', title: 'Delivery Address',  desc: 'Your saved delivery location'              },
-    { id: 'payments', icon: '💳', title: 'Payment Methods',   desc: 'Cards and wallet preferences'              },
-    { id: 'wishlist', icon: '❤️', title: 'Wishlist',          desc: 'Items you saved for later'                 },
-    { id: 'reviews',  icon: '⭐', title: 'My Reviews',        desc: 'Reviews you have submitted'                },
+    { id: 'address',  icon: 'location-outline', title: 'Delivery Addresses', desc: 'Manage your saved delivery locations' },
+    reviews,
     notifications,
     help,
     terms,
@@ -106,25 +95,36 @@ const getMenuItems = (role) => {
   if (role === 'seller') return [
     edit,
     password,
-    { id: 'business', icon: '🏪', title: 'Business Info',     desc: 'Update your business name and address'     },
-    { id: 'reviews',  icon: '⭐', title: 'Product Reviews',   desc: 'Customer feedback on your products'        },
+    { id: 'business', icon: 'storefront-outline', title: 'Business Info',   desc: 'Update your business name and address' },
+    { id: 'reviews',  icon: 'star-outline',       title: 'Product Reviews', desc: 'Customer feedback on your products'    },
     notifications,
     help,
     terms,
     danger,
   ];
 
-  // driver
-  return [
-    edit,
-    password,
-    { id: 'vehicle',       icon: '🚗', title: 'Vehicle Info',       desc: 'Your registered vehicle details'           },
-    { id: 'availability',  icon: '📅', title: 'Availability',       desc: 'Set your active delivery hours'            },
-    notifications,
-    help,
-    terms,
-    danger,
-  ];
+  if (role === 'driver' || role === 'field_admin') {
+    const isFieldAdmin = role === 'field_admin';
+    return [
+      edit,
+      password,
+      {
+        id: 'vehicle', icon: 'car-sport-outline', title: 'Vehicle Info',
+        desc: isFieldAdmin ? 'Assigned vehicle details (view only)' : 'Your registered vehicle details',
+      },
+      {
+        id: 'availability', icon: 'calendar-outline', title: 'Availability',
+        desc: isFieldAdmin ? 'Driver availability overview (view only)' : 'Set your active delivery hours',
+      },
+      notifications,
+      help,
+      terms,
+      danger,
+    ];
+  }
+
+  // fallback
+  return [edit, password, notifications, help, terms, danger];
 };
 
 // ─── Shared field components ──────────────────────────────────────────────────
@@ -181,7 +181,7 @@ const OutlineBtn = ({ label, onPress, theme }) => (
   </TouchableOpacity>
 );
 
-const ToggleRow = ({ label, sub, value, onChange, theme }) => (
+const ToggleRow = ({ label, sub, value, onChange, theme, disabled }) => (
   <Card style={sh.toggleCard}>
     <View style={sh.toggleRow}>
       <View style={{ flex: 1, marginRight: 12 }}>
@@ -191,11 +191,26 @@ const ToggleRow = ({ label, sub, value, onChange, theme }) => (
       <Switch
         value={value}
         onValueChange={onChange}
+        disabled={disabled}
         thumbColor="#fff"
         trackColor={{ false: theme.colors.border, true: theme.colors.primary.main }}
       />
     </View>
   </Card>
+);
+
+const StarRow = ({ rating, size = 16, editable = false, onChange }) => (
+  <View style={{ flexDirection: 'row', gap: 3 }}>
+    {[1, 2, 3, 4, 5].map((s) => {
+      const filled = rating >= s;
+      const star = (
+        <Ionicons name={filled ? 'star' : 'star-outline'} size={size} color="#fbbf24" />
+      );
+      return editable ? (
+        <TouchableOpacity key={s} onPress={() => onChange(s)}>{star}</TouchableOpacity>
+      ) : <View key={s}>{star}</View>;
+    })}
+  </View>
 );
 
 // ─── SECTION: Edit Profile ────────────────────────────────────────────────────
@@ -336,7 +351,7 @@ const PasswordSection = ({ theme }) => {
                 autoCapitalize="none"
               />
               <TouchableOpacity onPress={() => setVisible((p) => ({ ...p, [vis]: !p[vis] }))} style={sh.eyeBtnInside}>
-                <EyeIcon visible={visible[vis]} color={theme.colors.text.secondary} />
+                <Ionicons name={visible[vis] ? 'eye-off-outline' : 'eye-outline'} size={20} color={theme.colors.text.secondary} />
               </TouchableOpacity>
             </View>
             {key === 'newPw' && fields.newPw.length > 0 && (
@@ -359,140 +374,167 @@ const PasswordSection = ({ theme }) => {
   );
 };
 
-// ─── SECTION: Delivery Address (buyer) ───────────────────────────────────────
+// ─── SECTION: Saved Address Manager (buyer delivery addresses / seller locations) ──
+// Mirrors the web app's multi-address model: a list of saved addresses with
+// label, address, city, coordinates, and a single default. Backed by
+// /profile/addresses (list/create), /profile/addresses/:id (update/delete),
+// and /profile/addresses/:id/default (set default).
 
-const AddressSection = ({ user, theme, dispatch, token }) => {
-  const [location, setLocation] = useState({
-    address: user?.address ?? '',
-    city: user?.city ?? '',
-    lat: user?.lat ?? null,
-    lng: user?.lng ?? null,
-  });
-  const [saving, setSaving] = useState(false);
+const AddressListManager = ({ theme, addLabel = '+ Add address' }) => {
+  const [addresses,  setAddresses]  = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [editingId,  setEditingId]  = useState(null); // null | 'new' | id
+  const [label,      setLabel]      = useState('');
+  const [location,   setLocation]   = useState({ address: '', city: '', lat: null, lng: null });
+  const [saving,     setSaving]     = useState(false);
 
-  const handleSave = async () => {
-  if (!location.address.trim()) { Alert.alert('Required', 'Please select your delivery address.'); return; }
-  setSaving(true);
-  try {
-    const { data } = await apiClient.patch('/profile/address', {
-      address: location.address,
-      city: location.city,
-      latitude: location.lat,
-      longitude: location.lng,
-    });
-    dispatch(loginSuccess({ user: { ...user, ...data.user }, token }));
-    Alert.alert('Done ✓', 'Delivery address updated.');
-  } catch (err) {
-    Alert.alert('Error', err?.response?.data?.message ?? 'Failed to update address');
-  } finally { setSaving(false); }
-};
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await apiClient.get('/profile/addresses');
+        setAddresses(data.addresses ?? []);
+      } catch { /* show empty */ } finally { setLoading(false); }
+    })();
+  }, []);
 
-  return (
-    <View style={sh.group}>
-      <MapAddressPicker
-        initialLat={location.lat}
-        initialLng={location.lng}
-        onChange={setLocation}
-        theme={theme}
-      />
-      <PrimaryBtn label="Save address" onPress={handleSave} disabled={saving} theme={theme} />
-    </View>
-  );
-};
-
-// ─── SECTION: Payment Methods (buyer) ────────────────────────────────────────
-
-const PaymentsSection = ({ theme }) => {
-  const [payments,       setPayments]       = useState([{ label: 'Primary card', details: 'Visa •••• 4242' }]);
-  const [paymentLabel,   setPaymentLabel]   = useState('');
-  const [paymentDetails, setPaymentDetails] = useState('');
-  const [showAddForm,    setShowAddForm]    = useState(false);
-  const [saving,         setSaving]         = useState(false);
-
-  const handleAdd = () => {
-    if (!paymentLabel.trim() || !paymentDetails.trim()) {
-      Alert.alert('Required', 'Please enter a label and details for the payment method.');
-      return;
-    }
-    setPayments((prev) => [{ label: paymentLabel.trim(), details: paymentDetails.trim() }, ...prev]);
-    setPaymentLabel('');
-    setPaymentDetails('');
-    setShowAddForm(false);
-    Alert.alert('Done ✓', 'Payment method added.');
+  const openAdd = () => {
+    setEditingId('new');
+    setLabel('');
+    setLocation({ address: '', city: '', lat: null, lng: null });
   };
 
-  const handleRemove = (item) => {
-    Alert.alert('Remove', `Remove "${item.label}"?`, [
+  const openEdit = (a) => {
+    setEditingId(a.id);
+    setLabel(a.label ?? '');
+    setLocation({ address: a.address ?? '', city: a.city ?? '', lat: a.lat ?? null, lng: a.lng ?? null });
+  };
+
+  const cancel = () => setEditingId(null);
+
+  const handleSave = async () => {
+    if (!location.address.trim()) { Alert.alert('Required', 'Please select an address.'); return; }
+    setSaving(true);
+    try {
+      const payload = {
+        label: label.trim() || 'Address',
+        address: location.address,
+        city: location.city,
+        latitude: location.lat,
+        longitude: location.lng,
+      };
+      if (editingId === 'new') {
+        const { data } = await apiClient.post('/profile/addresses', payload);
+        setAddresses((prev) => [
+          ...prev,
+          data?.address ?? { id: `tmp-${Date.now()}`, ...payload, lat: payload.latitude, lng: payload.longitude, isDefault: prev.length === 0 },
+        ]);
+        Alert.alert('Done ✓', 'Address added.');
+      } else {
+        await apiClient.patch(`/profile/addresses/${editingId}`, payload);
+        setAddresses((prev) => prev.map((a) => a.id === editingId
+          ? { ...a, label: payload.label, address: payload.address, city: payload.city, lat: payload.latitude, lng: payload.longitude }
+          : a));
+        Alert.alert('Done ✓', 'Address updated.');
+      }
+      setEditingId(null);
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message ?? 'Failed to save address');
+    } finally { setSaving(false); }
+  };
+
+  const handleDelete = (a) => {
+    Alert.alert('Remove address', `Remove "${a.label}"?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => setPayments((prev) => prev.filter((p) => p !== item)) },
+      {
+        text: 'Remove', style: 'destructive', onPress: async () => {
+          try {
+            await apiClient.delete(`/profile/addresses/${a.id}`);
+            setAddresses((prev) => prev.filter((x) => x.id !== a.id));
+          } catch (err) {
+            Alert.alert('Error', err?.response?.data?.message ?? 'Failed to remove address');
+          }
+        },
+      },
     ]);
   };
 
+  const handleSetDefault = async (a) => {
+    try {
+      await apiClient.patch(`/profile/addresses/${a.id}/default`);
+      setAddresses((prev) => prev.map((x) => ({ ...x, isDefault: x.id === a.id })));
+    } catch {
+      Alert.alert('Error', 'Failed to set default address');
+    }
+  };
+
+  if (loading) return <View style={sh.centered}><ActivityIndicator color="#10b981" /></View>;
+
   return (
     <View style={sh.group}>
-      {payments.map((p, i) => (
-        <Card key={`${p.label}-${i}`} style={sh.infoCard}>
+      {addresses.length === 0 && editingId === null && (
+        <Card style={sh.emptyCard}>
+          <Ionicons name="location-outline" size={36} color="#94a3b8" />
+          <Text style={{ color: '#94a3b8', textAlign: 'center', marginTop: 8 }}>No addresses saved yet.</Text>
+        </Card>
+      )}
+
+      {addresses.map((a) => (
+        <Card key={a.id} style={sh.infoCard}>
           <View style={sh.cardRow}>
             <View style={{ flex: 1 }}>
-              <Text style={[sh.cardTitle, { color: theme.colors.text.primary }]}>{p.label}</Text>
-              <Text style={[sh.cardText, { color: theme.colors.text.secondary }]}>{p.details}</Text>
+              <View style={sh.addrLabelRow}>
+                <Text style={[sh.cardTitle, { color: theme.colors.text.primary }]}>{a.label}</Text>
+                {a.isDefault && (
+                  <View style={sh.defaultPill}><Text style={sh.defaultPillTxt}>Default</Text></View>
+                )}
+              </View>
+              <Text style={[sh.cardText, { color: theme.colors.text.secondary }]}>
+                {a.address}{a.city ? `, ${a.city}` : ''}
+              </Text>
             </View>
-            <TouchableOpacity onPress={() => handleRemove(p)}>
+          </View>
+          <View style={sh.addrActionsRow}>
+            {!a.isDefault && (
+              <TouchableOpacity onPress={() => handleSetDefault(a)}>
+                <Text style={sh.linkTxt}>Set default</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={() => openEdit(a)}>
+              <Text style={sh.linkTxt}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleDelete(a)}>
               <Text style={sh.deleteTxt}>Remove</Text>
             </TouchableOpacity>
           </View>
         </Card>
       ))}
 
-      {showAddForm ? (
+      {editingId !== null ? (
         <Card style={sh.formCard}>
-          <Lbl text="Payment label" theme={theme} />
-          <Fld value={paymentLabel} onChange={setPaymentLabel} placeholder="e.g. Business card" theme={theme} />
-          <Lbl text="Card details" theme={theme} />
-          <Fld value={paymentDetails} onChange={setPaymentDetails} placeholder="e.g. Mastercard •••• 2020" theme={theme} />
-          <PrimaryBtn label="Save payment method" onPress={handleAdd} disabled={saving} theme={theme} />
+          <Lbl text="Label" theme={theme} />
+          <Fld value={label} onChange={setLabel} placeholder="Home, Work, Store, etc." theme={theme} />
+          <Lbl text="Full address" theme={theme} />
+          <MapAddressPicker
+            initialLat={location.lat}
+            initialLng={location.lng}
+            onChange={setLocation}
+            theme={theme}
+          />
+          <PrimaryBtn label={editingId === 'new' ? 'Add address' : 'Save changes'} onPress={handleSave} disabled={saving} theme={theme} />
+          <OutlineBtn label="Cancel" onPress={cancel} theme={theme} />
         </Card>
       ) : (
-        <OutlineBtn label="Add payment method" onPress={() => setShowAddForm(true)} theme={theme} />
+        <OutlineBtn label={addLabel} onPress={openAdd} theme={theme} />
       )}
     </View>
   );
 };
-// ─── SECTION: Wishlist (buyer) ────────────────────────────────────────────────
 
-const WishlistSection = ({ theme }) => {
-  const [items, setItems] = useState([
-    { id: 'wl-1', name: 'Organic Apples',  details: 'Fresh farm produce · $3.99' },
-    { id: 'wl-2', name: 'Coconut Water',   details: 'Cold pressed · $2.50'       },
-  ]);
+// ─── SECTION: Delivery Addresses (buyer) ─────────────────────────────────────
 
-  const handleRemove = (id) => setItems((prev) => prev.filter((i) => i.id !== id));
-
-  if (!items.length) return (
-    <Card style={sh.emptyCard}>
-      <Text style={{ fontSize: 36, textAlign: 'center' }}>❤️</Text>
-      <Text style={{ color: '#94a3b8', textAlign: 'center', marginTop: 8 }}>Your wishlist is empty.</Text>
-    </Card>
-  );
-
-  return (
-    <View style={sh.group}>
-      {items.map((item) => (
-        <Card key={item.id} style={sh.infoCard}>
-          <View style={sh.cardRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={[sh.cardTitle, { color: theme.colors.text.primary }]}>{item.name}</Text>
-              <Text style={[sh.cardText, { color: theme.colors.text.secondary }]}>{item.details}</Text>
-            </View>
-            <TouchableOpacity onPress={() => handleRemove(item.id)}>
-              <Text style={sh.deleteTxt}>Remove</Text>
-            </TouchableOpacity>
-          </View>
-        </Card>
-      ))}
-    </View>
-  );
-};
+const AddressSection = ({ theme }) => (
+  <AddressListManager theme={theme} addLabel="+ Add address" />
+);
 
 // ─── SECTION: Business Info (seller) ─────────────────────────────────────────
 
@@ -567,6 +609,12 @@ const BusinessSection = ({ user, theme, dispatch, token }) => {
 
       <PrimaryBtn label="Save business info" onPress={handleSave} disabled={saving} theme={theme} />
 
+      {/* Additional saved locations */}
+      <View>
+        <Text style={[sh.sectionLabel, { color: theme.colors.text.primary }]}>Other Locations</Text>
+        <AddressListManager theme={theme} addLabel="+ Add location" />
+      </View>
+
       {/* Your Products */}
       <View>
         <Text style={[sh.sectionLabel, { color: theme.colors.text.primary }]}>Your Products</Text>
@@ -617,9 +665,9 @@ const BusinessSection = ({ user, theme, dispatch, token }) => {
   );
 };
 
-// ─── SECTION: Vehicle Info (driver) ──────────────────────────────────────────
+// ─── SECTION: Vehicle Info (driver / field admin read-only) ─────────────────
 
-const VehicleSection = ({ user, theme }) => {
+const VehicleSection = ({ user, theme, readOnly = false }) => {
   const [vehicleType,  setVehicleType]  = useState(user?.vehicleType  ?? '');
   const [plateNumber,  setPlateNumber]  = useState(user?.plateNumber  ?? '');
   const [vehicleModel, setVehicleModel] = useState(user?.vehicleModel ?? '');
@@ -642,22 +690,28 @@ const VehicleSection = ({ user, theme }) => {
 
   return (
     <View style={sh.group}>
+      {readOnly && (
+        <View style={sh.readOnlyBanner}>
+          <Ionicons name="eye-outline" size={16} color="#94a3b8" />
+          <Text style={sh.readOnlyBannerTxt}>View only — field admins cannot edit vehicle details.</Text>
+        </View>
+      )}
       <Card style={sh.formCard}>
         <Lbl text="Vehicle type"  theme={theme} />
-        <Fld value={vehicleType}  onChange={setVehicleType}  placeholder="e.g. Motorbike, Van" theme={theme} />
+        <Fld value={vehicleType}  onChange={setVehicleType}  placeholder="e.g. Motorbike, Van" theme={theme} editable={!readOnly} />
         <Lbl text="Plate number"  theme={theme} />
-        <Fld value={plateNumber}  onChange={setPlateNumber}  placeholder="e.g. CAB-1234"       theme={theme} autoCapitalize="characters" />
+        <Fld value={plateNumber}  onChange={setPlateNumber}  placeholder="e.g. CAB-1234"       theme={theme} autoCapitalize="characters" editable={!readOnly} />
         <Lbl text="Vehicle model" theme={theme} />
-        <Fld value={vehicleModel} onChange={setVehicleModel} placeholder="e.g. Honda CB150"   theme={theme} />
+        <Fld value={vehicleModel} onChange={setVehicleModel} placeholder="e.g. Honda CB150"   theme={theme} editable={!readOnly} />
       </Card>
-      <PrimaryBtn label="Save vehicle info" onPress={handleSave} disabled={saving} theme={theme} />
+      {!readOnly && <PrimaryBtn label="Save vehicle info" onPress={handleSave} disabled={saving} theme={theme} />}
     </View>
   );
 };
 
-// ─── SECTION: Availability (driver) ──────────────────────────────────────────
+// ─── SECTION: Availability (driver / field admin read-only) ─────────────────
 
-const AvailabilitySection = ({ theme }) => {
+const AvailabilitySection = ({ theme, readOnly = false }) => {
   const [isAvailable, setIsAvailable] = useState(true);
   const [mon, setMon] = useState(true);
   const [tue, setTue] = useState(true);
@@ -679,12 +733,19 @@ const AvailabilitySection = ({ theme }) => {
 
   return (
     <View style={sh.group}>
+      {readOnly && (
+        <View style={sh.readOnlyBanner}>
+          <Ionicons name="eye-outline" size={16} color="#94a3b8" />
+          <Text style={sh.readOnlyBannerTxt}>View only — showing driver availability for oversight.</Text>
+        </View>
+      )}
       <ToggleRow
         label="Available for deliveries"
         sub="Turn off to go offline"
         value={isAvailable}
         onChange={() => setIsAvailable((p) => !p)}
         theme={theme}
+        disabled={readOnly}
       />
       <Card style={sh.formCard}>
         <Text style={[sh.cardTitle, { color: theme.colors.text.primary, marginBottom: 8 }]}>Active days</Text>
@@ -694,6 +755,7 @@ const AvailabilitySection = ({ theme }) => {
             <Switch
               value={d.value}
               onValueChange={d.set}
+              disabled={readOnly}
               thumbColor="#fff"
               trackColor={{ false: theme.colors.border, true: theme.colors.primary.main }}
             />
@@ -760,7 +822,7 @@ const ReviewsSection = ({ role, theme }) => {
 
   if (!reviews.length) return (
     <Card style={sh.emptyCard}>
-      <Text style={{ fontSize: 36, textAlign: 'center' }}>⭐</Text>
+      <Ionicons name="star-outline" size={36} color="#94a3b8" />
       <Text style={{ color: '#94a3b8', textAlign: 'center', marginTop: 8 }}>No reviews yet.</Text>
     </Card>
   );
@@ -779,24 +841,34 @@ const ReviewsSection = ({ role, theme }) => {
               </View>
               <View style={{ alignItems: 'flex-end', gap: 4 }}>
                 {canEdit && editId !== r.id && (
-                  <TouchableOpacity onPress={() => { setEditId(r.id); setDraft({ rating: r.rating, comment: r.comment ?? '' }); }}>
-                    <Text style={sh.editTxt}>✏ Edit</Text>
+                  <TouchableOpacity onPress={() => { setEditId(r.id); setDraft({ rating: r.rating, comment: r.comment ?? '' }); }} style={sh.inlineActionRow}>
+                    <Ionicons name="pencil-outline" size={12} color="#10b981" />
+                    <Text style={sh.editTxt}>Edit</Text>
                   </TouchableOpacity>
                 )}
-                {canEdit && <TouchableOpacity onPress={() => handleDelete(r.id)}><Text style={sh.deleteTxt}>✕ Delete</Text></TouchableOpacity>}
-                {role === 'seller' && !r.isFlagged && <TouchableOpacity onPress={() => handleFlag(r.id)}><Text style={sh.flagTxt}>⚑ Flag</Text></TouchableOpacity>}
-                {r.isFlagged && <Text style={sh.flaggedTxt}>⚑ Flagged</Text>}
+                {canEdit && (
+                  <TouchableOpacity onPress={() => handleDelete(r.id)} style={sh.inlineActionRow}>
+                    <Ionicons name="close-outline" size={12} color="#ef4444" />
+                    <Text style={sh.deleteTxt}>Delete</Text>
+                  </TouchableOpacity>
+                )}
+                {role === 'seller' && !r.isFlagged && (
+                  <TouchableOpacity onPress={() => handleFlag(r.id)} style={sh.inlineActionRow}>
+                    <Ionicons name="flag-outline" size={12} color="#94a3b8" />
+                    <Text style={sh.flagTxt}>Flag</Text>
+                  </TouchableOpacity>
+                )}
+                {r.isFlagged && (
+                  <View style={sh.inlineActionRow}>
+                    <Ionicons name="flag" size={12} color="#f59e0b" />
+                    <Text style={sh.flaggedTxt}>Flagged</Text>
+                  </View>
+                )}
               </View>
             </View>
             {editId === r.id ? (
               <View style={{ marginTop: 10, gap: 8 }}>
-                <View style={sh.starRow}>
-                  {[1,2,3,4,5].map((s) => (
-                    <TouchableOpacity key={s} onPress={() => setDraft((p) => ({ ...p, rating: s }))}>
-                      <Text style={[sh.starTxt, draft.rating >= s && sh.starActive]}>★</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                <StarRow rating={draft.rating} size={22} editable onChange={(s) => setDraft((p) => ({ ...p, rating: s }))} />
                 <TextInput
                   style={[sh.input, { color: '#f1f5f9', borderColor: '#334155', height: 70, textAlignVertical: 'top' }]}
                   value={draft.comment}
@@ -816,7 +888,7 @@ const ReviewsSection = ({ role, theme }) => {
               </View>
             ) : (
               <View style={{ marginTop: 8 }}>
-                <Text style={{ color: '#fbbf24', fontSize: 16 }}>{renderStars(r.rating)}</Text>
+                <StarRow rating={r.rating} size={16} />
                 {r.comment ? <Text style={sh.reviewComment}>"{r.comment}"</Text> : null}
               </View>
             )}
@@ -828,33 +900,66 @@ const ReviewsSection = ({ role, theme }) => {
 };
 
 // ─── SECTION: Notifications ───────────────────────────────────────────────────
+// Backed by /profile/notification-prefs (GET to load, PATCH to save one key at
+// a time). Keys per role must match the backend's DEFAULT_PREFS in
+// profile.service.ts: buyer -> orderUpdates/lowStock, seller ->
+// newOrders/payouts/lowStock, driver & field_admin -> newRoutes/orderUpdates.
+// Missing keys default to "on" so nothing looks off before the fetch resolves.
 
 const NotificationsSection = ({ theme, role }) => {
-  const [orderUpdates, setOrderUpdates] = useState(true);
-  const [promotions,   setPromotions]   = useState(false);
-  const [payouts,      setPayouts]      = useState(true);
-  const [newRoutes,    setNewRoutes]    = useState(true);
-  const [stock,        setStock]        = useState(true);
+  const [prefs, setPrefs]     = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await apiClient.get('/profile/notification-prefs');
+        setPrefs(data.prefs ?? {});
+      } catch { /* fall back to empty — toggles default to "on" below */ }
+      finally { setLoading(false); }
+    })();
+  }, []);
+
+  const toggle = async (key) => {
+    const previous = prefs;
+    const next     = { ...prefs, [key]: !prefs[key] };
+    setPrefs(next); // optimistic update
+
+    try {
+      await apiClient.patch('/profile/notification-prefs', { prefs: { [key]: next[key] } });
+    } catch {
+      setPrefs(previous); // revert on failure
+      Alert.alert('Error', 'Failed to update notification preference');
+    }
+  };
 
   const toggles =
     role === 'buyer' ? [
-      { label: 'Order updates',     sub: 'Delivery and pickup alerts',      val: orderUpdates, set: () => setOrderUpdates((p) => !p) },
-      { label: 'Promotions',        sub: 'Deals and offers from sellers',   val: promotions,   set: () => setPromotions((p) => !p)   },
-      { label: 'Low stock alerts',  sub: 'When your favourite items run low', val: stock,      set: () => setStock((p) => !p)        },
+      { key: 'orderUpdates', label: 'Order updates',    sub: 'Delivery and pickup alerts'        },
+      { key: 'lowStock',     label: 'Low stock alerts', sub: 'When your favourite items run low' },
     ] :
     role === 'seller' ? [
-      { label: 'New orders',        sub: 'When a customer places an order', val: orderUpdates, set: () => setOrderUpdates((p) => !p) },
-      { label: 'Payout alerts',     sub: 'When earnings are transferred',   val: payouts,      set: () => setPayouts((p) => !p)      },
-      { label: 'Low stock alerts',  sub: 'When your product stock runs low',val: stock,   set: () => setStock((p) => !p)        },
-    ] : /* driver */ [
-      { label: 'New delivery jobs', sub: 'Available routes near you',       val: newRoutes,    set: () => setNewRoutes((p) => !p)    },
-      { label: 'Order updates',     sub: 'Status changes on active orders', val: orderUpdates, set: () => setOrderUpdates((p) => !p) },
+      { key: 'newOrders', label: 'New orders',       sub: 'When a customer places an order'  },
+      { key: 'payouts',   label: 'Payout alerts',    sub: 'When earnings are transferred'    },
+      { key: 'lowStock',  label: 'Low stock alerts', sub: 'When your product stock runs low' },
+    ] : /* driver / field_admin */ [
+      { key: 'newRoutes',    label: 'New delivery jobs', sub: 'Available routes near you'      },
+      { key: 'orderUpdates', label: 'Order updates',     sub: 'Status changes on active orders' },
     ];
+
+  if (loading) return <View style={sh.centered}><ActivityIndicator color="#10b981" /></View>;
 
   return (
     <View style={sh.group}>
       {toggles.map((t) => (
-        <ToggleRow key={t.label} label={t.label} sub={t.sub} value={t.val} onChange={t.set} theme={theme} />
+        <ToggleRow
+          key={t.key}
+          label={t.label}
+          sub={t.sub}
+          value={prefs[t.key] ?? true}
+          onChange={() => toggle(t.key)}
+          theme={theme}
+        />
       ))}
     </View>
   );
@@ -885,22 +990,8 @@ const HelpSection = ({ theme }) => {
 // ─── SECTION: Terms & Privacy ─────────────────────────────────────────────────
 
 const TermsSection = ({ theme, role }) => {
-  const [visible,     setVisible]     = useState(true);
-  const [dataSharing, setDataSharing] = useState(false);
-
-  const privacyToggles = [
-    role === 'buyer'
-      ? { label: 'Profile visibility', sub: 'Allow vendors to see your profile',  val: visible, set: () => setVisible((p) => !p) }
-      : { label: 'Store visibility',   sub: 'Allow customers to find your store', val: visible, set: () => setVisible((p) => !p) },
-    { label: 'Share data for recommendations', sub: 'Help us improve your experience', val: dataSharing, set: () => setDataSharing((p) => !p) },
-  ];
-
   return (
     <View style={sh.group}>
-      {(role === 'buyer' || role === 'seller') && privacyToggles.map((t) => (
-        <ToggleRow key={t.label} label={t.label} sub={t.sub} value={t.val} onChange={t.set} theme={theme} />
-      ))}
-
       {[
         { title: 'Privacy & terms',  body: 'Your data is protected and used only to improve your FreshRoute experience.' },
         { title: 'Data use',         body: 'We use your profile details to personalize products, delivery, and support — and never share them without your consent.' },
@@ -979,16 +1070,16 @@ const DangerZoneSection = ({ role, dispatch, theme }) => {
 // ─── Detail view ──────────────────────────────────────────────────────────────
 
 const DetailView = ({ section, user, theme, dispatch, token, role, onBack }) => {
+  const isFieldAdmin = role === 'field_admin';
+
   const renderContent = () => {
     switch (section.id) {
       case 'edit':          return <EditSection         user={user} theme={theme} dispatch={dispatch} token={token} role={role} />;
       case 'password':      return <PasswordSection     theme={theme} />;
-      case 'address':       return <AddressSection      user={user} theme={theme} dispatch={dispatch} token={token} />;
-      case 'payments':      return <PaymentsSection     theme={theme} />;
-      case 'wishlist':      return <WishlistSection     theme={theme} />;
+      case 'address':       return <AddressSection      theme={theme} />;
       case 'business':      return <BusinessSection     user={user} theme={theme} dispatch={dispatch} token={token} />;
-      case 'vehicle':       return <VehicleSection      user={user} theme={theme} />;
-      case 'availability':  return <AvailabilitySection theme={theme} />;
+      case 'vehicle':       return <VehicleSection      user={user} theme={theme} readOnly={isFieldAdmin} />;
+      case 'availability':  return <AvailabilitySection theme={theme} readOnly={isFieldAdmin} />;
       case 'reviews':       return <ReviewsSection      role={role} theme={theme} />;
       case 'notifications': return <NotificationsSection theme={theme} role={role} />;
       case 'help':          return <HelpSection         theme={theme} />;
@@ -1001,13 +1092,13 @@ const DetailView = ({ section, user, theme, dispatch, token, role, onBack }) => 
   return (
     <View style={{ flex: 1 }}>
       <TouchableOpacity onPress={onBack} style={ms.backBtn} activeOpacity={0.7}>
-        <Text style={[ms.backArrow, { color: theme.colors.text.primary }]}>←</Text>
+        <Ionicons name="chevron-back" size={22} color={theme.colors.text.primary} />
         <Text style={[ms.backLabel, { color: theme.colors.text.secondary }]}>Back to Profile</Text>
       </TouchableOpacity>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={ms.detailScroll}>
         <Card style={ms.heroCard}>
           <View style={[ms.iconBadge, { backgroundColor: `${theme.colors.primary.main}20` }]}>
-            <Text style={{ fontSize: 28 }}>{section.icon}</Text>
+            <Ionicons name={section.icon} size={28} color={theme.colors.primary.main} />
           </View>
           <Text style={[ms.heroTitle, { color: theme.colors.text.primary }]}>{section.title}</Text>
           <Text style={[ms.heroSub,   { color: theme.colors.text.secondary }]}>{section.desc}</Text>
@@ -1083,7 +1174,7 @@ const ProfileScreen = () => {
         <Card style={ms.themeCard}>
           <View style={ms.themeRow}>
             <View style={ms.themeInfo}>
-              <Text style={{ fontSize: 28, marginRight: 16 }}>{isDarkMode ? '🌙' : '☀️'}</Text>
+              <Ionicons name={isDarkMode ? 'moon' : 'sunny'} size={26} color={isDarkMode ? '#facc15' : '#f59e0b'} style={{ marginRight: 16 }} />
               <View>
                 <Text style={[ms.themeTitle, { color: theme.colors.text.primary }]}>{isDarkMode ? 'Dark Mode' : 'Light Mode'}</Text>
                 <Text style={[ms.themeSub,   { color: theme.colors.text.secondary }]}>Toggle app appearance</Text>
@@ -1105,14 +1196,14 @@ const ProfileScreen = () => {
               <Card style={ms.menuItem}>
                 <View style={ms.menuItemContent}>
                   <View style={[ms.menuIconBox, { backgroundColor: `${theme.colors.primary.main}15` }]}>
-                    <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+                    <Ionicons name={item.icon} size={20} color={theme.colors.primary.main} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[ms.menuTitle, { color: theme.colors.text.primary }]}>{item.title}</Text>
                     <Text style={[ms.menuSub,   { color: theme.colors.text.secondary }]}>{item.desc}</Text>
                   </View>
                 </View>
-                <Text style={{ fontSize: 20, color: theme.colors.text.tertiary }}>→</Text>
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
               </Card>
             </TouchableOpacity>
           ))}
@@ -1181,12 +1272,10 @@ const sh = StyleSheet.create({
   reviewProduct: { fontSize: 15, fontWeight: '600', color: '#f1f5f9' },
   reviewMeta:    { fontSize: 11, color: '#64748b', fontFamily: 'monospace' },
   reviewComment: { fontSize: 13, color: '#cbd5e1', marginTop: 4, fontStyle: 'italic' },
+  inlineActionRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   editTxt:       { color: '#10b981', fontSize: 12, fontWeight: '600' },
   flagTxt:       { color: '#94a3b8', fontSize: 12 },
   flaggedTxt:    { color: '#f59e0b', fontSize: 12 },
-  starRow:       { flexDirection: 'row', gap: 4 },
-  starTxt:       { fontSize: 22, color: '#475569' },
-  starActive:    { color: '#fbbf24' },
   smallBtn:      { flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
 
   emptyCard: { alignItems: 'center', paddingVertical: 32 },
@@ -1198,6 +1287,15 @@ const sh = StyleSheet.create({
   earningsValue:{ fontSize: 15, fontWeight: '700' },
   earningsLabel:{ fontSize: 11, marginTop: 2 },
   centered:  { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
+
+  addrLabelRow:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  defaultPill:     { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: 'rgba(16,185,129,0.12)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)' },
+  defaultPillTxt:  { fontSize: 10, fontWeight: '700', color: '#10b981' },
+  addrActionsRow:  { flexDirection: 'row', gap: 16, marginTop: 8 },
+  linkTxt:         { color: '#38bdf8', fontSize: 13, fontWeight: '600' },
+
+  readOnlyBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, backgroundColor: 'rgba(148,163,184,0.1)', borderWidth: 1, borderColor: 'rgba(148,163,184,0.2)' },
+  readOnlyBannerTxt: { fontSize: 12, color: '#94a3b8', flex: 1 },
 });
 
 // ─── Main screen styles ───────────────────────────────────────────────────────
@@ -1233,7 +1331,6 @@ const ms = StyleSheet.create({
   version:   { textAlign: 'center', fontSize: 12, marginVertical: 24 },
 
   backBtn:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 12, gap: 8 },
-  backArrow:   { fontSize: 22, fontWeight: '700' },
   backLabel:   { fontSize: 14 },
   detailScroll:{ paddingHorizontal: 20, paddingBottom: 60 },
   heroCard:    { alignItems: 'center', marginBottom: 16 },

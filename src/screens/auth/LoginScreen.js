@@ -71,25 +71,28 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleLogin = async () => {
-  if (!validate()) return;
-  setLoading(true);
-  setApiError('');
-  try {
-    const { data } = await apiClient.post('/auth/login', { email: email.trim(), password });
-    await AsyncStorageService.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
-    await AsyncStorageService.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
-    dispatch(loginSuccess({ user: data.user, token: data.token }));
-    // Navigation handled automatically by AppNavigator based on auth state
-  } catch (err) {
-    if (isPendingApprovalError(err)) {
-      navigation.navigate('PendingApproval');
-    } else {
-      setApiError(err?.response?.data?.message ?? 'Invalid email or password');
+    if (!validate()) return;
+    setLoading(true);
+    setApiError('');
+    try {
+      const { data } = await apiClient.post('/auth/login', { email: email.trim(), password });
+      // 🔧 merge seller's business profile (businessName, businessAddress, lat/lng)
+      // straight into user, since backend sends it as a separate `profile` object
+      const mergedUser = { ...data.user, ...(data.profile ?? {}) };
+      await AsyncStorageService.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
+      await AsyncStorageService.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(mergedUser));
+      dispatch(loginSuccess({ user: mergedUser, token: data.token }));
+      // Navigation handled automatically by AppNavigator based on auth state
+    } catch (err) {
+      if (isPendingApprovalError(err)) {
+        navigation.navigate('PendingApproval');
+      } else {
+        setApiError(err?.response?.data?.message ?? 'Invalid email or password');
+      }
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const s = styles(theme);
 
