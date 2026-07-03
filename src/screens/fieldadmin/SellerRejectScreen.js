@@ -15,14 +15,25 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
+import FieldAdminFlowStepper from '../../components/common/FieldAdminFlowStepper';
+import {
+  confirmLeaveFlow,
+  FLOW_STEPS,
+  formatRejectedQtyLabel,
+  withFlowUpdate,
+} from '../../utils/fieldAdminQualityFlow';
 
 const SellerRejectScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
+  const flow = route?.params?.flow ?? null;
+  const isFlowMode = Boolean(flow);
   const [reason, setReason] = useState('');
   const [selectedReason, setSelectedReason] = useState('');
   const [orders, setOrders] = useState([]);
-  const [selectedOrderId, setSelectedOrderId] = useState(route?.params?.order?.id ?? null);
+  const [selectedOrderId, setSelectedOrderId] = useState(flow?.orderId ?? route?.params?.order?.id ?? null);
   const [selectedItemId, setSelectedItemId] = useState(route?.params?.item?.id ?? null);
+  const [currentItemIndex, setCurrentItemIndex] = useState(0);
+  const [inspectionIds, setInspectionIds] = useState(flow?.inspectionIds ?? []);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isOrderPickerVisible, setIsOrderPickerVisible] = useState(false);
@@ -30,6 +41,9 @@ const SellerRejectScreen = ({ navigation, route }) => {
   const [orderSearch, setOrderSearch] = useState('');
   const [itemSearch, setItemSearch] = useState('');
   useEffect(() => {
+    if (isFlowMode) {
+      return;
+    }
     const loadOrders = async () => {
       try {
         setLoading(true);
@@ -47,7 +61,28 @@ const SellerRejectScreen = ({ navigation, route }) => {
       }
     };
     loadOrders();
-  }, []);
+  }, [isFlowMode, selectedOrderId]);
+
+  const flowCurrentItem = isFlowMode ? flow.rejectedItems[currentItemIndex] ?? null : null;
+
+  const flowOrder = useMemo(() => {
+    if (!isFlowMode || !flow?.order) return null;
+    return {
+      id: flow.order.id,
+      orderId: flow.order.orderId,
+      customer: flow.order.customer,
+      routeNumber: '-',
+    };
+  }, [flow, isFlowMode]);
+
+  const flowItem = useMemo(() => {
+    if (!flowCurrentItem) return null;
+    return {
+      id: flowCurrentItem.itemId,
+      name: flowCurrentItem.name,
+      quantity: formatRejectedQtyLabel(flowCurrentItem),
+    };
+  }, [flowCurrentItem]);
 
   const selectedOrder = useMemo(
     () => orders.find((entry) => entry.id === selectedOrderId) || null,
@@ -55,6 +90,7 @@ const SellerRejectScreen = ({ navigation, route }) => {
   );
 
   useEffect(() => {
+    if (isFlowMode) return;
     const availableItems = selectedOrder?.items ?? [];
     if (!availableItems.length) {
       setSelectedItemId(null);
@@ -67,6 +103,7 @@ const SellerRejectScreen = ({ navigation, route }) => {
   }, [selectedOrder, selectedItemId]);
 
   const item = useMemo(() => {
+    if (isFlowMode) return flowItem;
     const found = (selectedOrder?.items ?? []).find((entry) => entry.id === selectedItemId);
     if (!found) return null;
     return {
@@ -74,9 +111,10 @@ const SellerRejectScreen = ({ navigation, route }) => {
       name: found.name,
       quantity: `${found.quantity} ${found.unit}`,
     };
-  }, [selectedOrder, selectedItemId]);
+  }, [isFlowMode, flowItem, selectedOrder, selectedItemId]);
 
   const order = useMemo(() => {
+    if (isFlowMode) return flowOrder;
     if (!selectedOrder) return null;
     return {
       id: selectedOrder.id,
@@ -84,7 +122,7 @@ const SellerRejectScreen = ({ navigation, route }) => {
       customer: selectedOrder.customer,
       routeNumber: selectedOrder.route?.routeNumber ?? '-',
     };
-  }, [selectedOrder]);
+  }, [isFlowMode, flowOrder, selectedOrder]);
 
   const filteredOrders = useMemo(() => {
     const query = orderSearch.trim().toLowerCase();
@@ -120,19 +158,50 @@ const SellerRejectScreen = ({ navigation, route }) => {
       alert('Please provide a rejection reason');
       return;
     }
+
+    const rejectionReason = selectedReason || 'Other';
+    const rejectionDetails = selectedReason === 'Other' || !selectedReason ? reason.trim() : reason.trim();
+    const notes = [flow?.qualityNotes, rejectionReason, rejectionDetails].filter(Boolean).join(' | ');
+
     setSubmitting(true);
+
+    const flowItemData = isFlowMode ? flowCurrentItem : null;
+    const isFullReject = flowItemData ? flowItemData.quality === 'rejected' : true;
+    const approvedQuantity = flowItemData
+      ? flowItemData.approvedQuantity
+      : 0;
+
     fieldAdminApi
       .submitQualityReview({
         orderItemId: item.id,
-        rejected: true,
-        approvedQuantity: 0,
-        notes: selectedReason || reason,
+        rejected: isFullReject,
+        approvedQuantity,
+        notes,
+        rejectionReason,
+        rejectionDetails: rejectionDetails || undefined,
       })
-      .then(() => {
-        Alert.alert('Success', 'Rejection submitted.');
-        setReason('');
-        setSelectedReason('');
-        return fieldAdminApi.getOrdersByTab('scheduled');
+      .then((result) => {
+        if (!isFlowMode) {
+          Alert.alert('Success', 'Rejection submitted.');
+          setReason('');
+          setSelectedReason('');
+          return fieldAdminApi.getOrdersByTab('scheduled');
+        }
+
+        const nextInspectionIds = [...inspectionIds, result?.id].filter(Boolean);
+        const isLastItem = currentItemIndex >= flow.rejectedItems.length - 1;
+
+        if (!isLastItem) {
+          setInspectionIds(nextInspectionIds);
+          setCurrentItemIndex((prev) => prev + 1);
+          setReason('');
+          setSelectedReason('');
+          return null;
+        }
+
+        const updatedFlow = withFlowUpdate(flow, { inspectionIds: nextInspectionIds });
+        navigation.navigate('DamageReport', { flow: updatedFlow, step: FLOW_STEPS.DAMAGE });
+        return null;
       })
       .then((refreshedOrders) => {
         if (refreshedOrders) {
@@ -141,6 +210,14 @@ const SellerRejectScreen = ({ navigation, route }) => {
       })
       .catch(() => Alert.alert('Error', 'Failed to submit rejection.'))
       .finally(() => setSubmitting(false));
+  };
+
+  const handleBackPress = () => {
+    if (isFlowMode) {
+      confirmLeaveFlow(() => navigation.goBack());
+      return;
+    }
+    navigation.goBack();
   };
 
   return (
@@ -165,7 +242,7 @@ const SellerRejectScreen = ({ navigation, route }) => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={handleBackPress}>
             <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
@@ -174,6 +251,13 @@ const SellerRejectScreen = ({ navigation, route }) => {
           <View style={{ width: 60 }} />
         </View>
 
+        {isFlowMode ? <FieldAdminFlowStepper currentStep={FLOW_STEPS.REJECT} /> : null}
+        {isFlowMode && flow.rejectedItems.length > 1 ? (
+          <Text style={[styles.flowProgress, { color: theme.colors.text.secondary }]}>
+            Item {currentItemIndex + 1} of {flow.rejectedItems.length}
+          </Text>
+        ) : null}
+
         {loading ? <ActivityIndicator color={theme.colors.primary.main} style={{ marginBottom: 16 }} /> : null}
         {!loading && !order ? (
           <Text style={{ color: theme.colors.text.secondary, marginBottom: 16 }}>
@@ -181,7 +265,7 @@ const SellerRejectScreen = ({ navigation, route }) => {
           </Text>
         ) : null}
 
-        {order ? (
+        {order && !isFlowMode ? (
           <>
             <TouchableOpacity
               style={[
@@ -306,17 +390,19 @@ const SellerRejectScreen = ({ navigation, route }) => {
         {/* Actions */}
         <View style={styles.actionsContainer}>
           <Button
-            title={submitting ? 'Submitting...' : 'Submit Rejection'}
+            title={submitting ? 'Submitting...' : isFlowMode && currentItemIndex < flow.rejectedItems.length - 1 ? 'Submit & Next Item' : 'Submit Rejection'}
             onPress={handleReject}
             disabled={submitting}
             style={styles.rejectButton}
           />
+          {!isFlowMode ? (
           <Button
             title="Cancel"
-            onPress={() => navigation.goBack()}
+            onPress={handleBackPress}
             variant="outline"
             style={styles.cancelButton}
           />
+          ) : null}
         </View>
         </>
         ) : null}
@@ -536,6 +622,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
+  },
+  flowProgress: {
+    fontSize: 13,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   openPickerButton: {
     marginBottom: 12,

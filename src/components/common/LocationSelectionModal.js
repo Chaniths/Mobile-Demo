@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import AppIcon from './AppIcon';
 import * as Location from 'expo-location';
 import MapView from 'react-native-maps';
 import Button from './Button';
@@ -223,7 +224,7 @@ const LocationSelectionModal = ({ visible, onClose, onSelectLocation }) => {
             ]}
           >
             <View style={styles.searchIconContainer}>
-              <Text style={styles.searchIcon}>📍</Text>
+              <AppIcon name="location" size={20} color={theme.colors.text.tertiary} />
             </View>
             <TextInput
               style={[styles.searchInput, { color: theme.colors.text.primary }]}
@@ -234,7 +235,7 @@ const LocationSelectionModal = ({ visible, onClose, onSelectLocation }) => {
               onFocus={handleSearchAddress}
             />
             <TouchableOpacity onPress={handleSearchAddress} style={styles.searchButton}>
-              <Text style={styles.searchButtonIcon}>🔍</Text>
+              <AppIcon name="search" size={20} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
             </TouchableOpacity>
           </View>
         </View>
@@ -326,7 +327,7 @@ const LocationSelectionModal = ({ visible, onClose, onSelectLocation }) => {
               ]}
             >
               <View style={styles.addressIconContainer}>
-                <Text style={styles.addressIcon}>📍</Text>
+                <AppIcon name="location" size={20} color={theme.colors.text.tertiary} />
               </View>
               <TextInput
                 style={[styles.addressInput, { color: theme.colors.text.primary }]}
@@ -337,7 +338,7 @@ const LocationSelectionModal = ({ visible, onClose, onSelectLocation }) => {
                 editable={true}
               />
               <TouchableOpacity onPress={handleSearchAddress} style={styles.addressSearchButton}>
-                <Text style={styles.addressSearchIcon}>🔍</Text>
+                <AppIcon name="search" size={20} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
               </TouchableOpacity>
             </View>
 

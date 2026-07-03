@@ -15,6 +15,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
+import AppIcon from '../../components/common/AppIcon';
 
 const AssessmentScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -29,9 +30,9 @@ const AssessmentScreen = ({ navigation, route }) => {
   const [candidateSearch, setCandidateSearch] = useState('');
 
   const assessmentTypes = [
-    { id: 'driver', label: 'Driver Assessment', icon: '🚚', color: '#3b82f6' },
-    { id: 'buyer', label: 'Buyer Assessment', icon: '👤', color: '#22c55e' },
-    { id: 'seller', label: 'Seller Assessment', icon: '🏪', color: '#f59e0b' },
+    { id: 'driver', label: 'Driver Assessment', icon: 'truck', color: '#3b82f6' },
+    { id: 'buyer', label: 'Buyer Assessment', icon: 'profile', color: '#22c55e' },
+    { id: 'seller', label: 'Seller Assessment', icon: 'store', color: '#f59e0b' },
   ];
 
   useEffect(() => {
@@ -156,7 +157,7 @@ const AssessmentScreen = ({ navigation, route }) => {
               ]}
               onPress={() => setSelectedType(type.id)}
             >
-              <Text style={styles.typeIcon}>{type.icon}</Text>
+              <AppIcon name={type.icon} size={24} color={type.color} />
               <Text
                 style={[
                   styles.typeLabel,

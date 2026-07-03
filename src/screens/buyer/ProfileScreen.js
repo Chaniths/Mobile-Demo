@@ -13,6 +13,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { logout } from '../../store/slices/authSlice';
 import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
+import AppIcon from '../../components/common/AppIcon';
 
 const ProfileScreen = ({ navigation }) => {
   const { theme, isDarkMode, toggleTheme } = useTheme();
@@ -29,21 +30,21 @@ const ProfileScreen = ({ navigation }) => {
   const displayPhone = authUser?.phone || 'No phone';
 
   const fieldAdminMenuItems = [
-    { id: '1', icon: '👤', title: 'Edit Profile' },
-    { id: '2', icon: '🔔', title: 'Notifications' },
-    { id: '3', icon: '❓', title: 'Help & Support' },
-    { id: '4', icon: '📄', title: 'Terms & Privacy' },
+    { id: '1', icon: 'profile', title: 'Edit Profile' },
+    { id: '2', icon: 'notifications', title: 'Notifications' },
+    { id: '3', icon: 'help', title: 'Help & Support' },
+    { id: '4', icon: 'document', title: 'Terms & Privacy' },
   ];
 
   const defaultMenuItems = [
-    { id: '1', icon: '👤', title: 'Edit Profile', screen: 'EditProfile' },
-    { id: '2', icon: '📍', title: 'Addresses', screen: 'Addresses' },
-    { id: '3', icon: '💳', title: 'Payment Methods', screen: 'PaymentMethods' },
-    { id: '4', icon: '🔔', title: 'Notifications', screen: 'Notifications' },
-    { id: '5', icon: '❤️', title: 'Wishlist', screen: 'Wishlist' },
-    { id: '6', icon: '⭐', title: 'My Reviews', screen: 'MyReviews' },
-    { id: '7', icon: '❓', title: 'Help & Support', screen: 'Help' },
-    { id: '8', icon: '📄', title: 'Terms & Privacy', screen: 'Terms' },
+    { id: '1', icon: 'profile', title: 'Edit Profile', screen: 'EditProfile' },
+    { id: '2', icon: 'location', title: 'Addresses', screen: 'Addresses' },
+    { id: '3', icon: 'card', title: 'Payment Methods', screen: 'PaymentMethods' },
+    { id: '4', icon: 'notifications', title: 'Notifications', screen: 'Notifications' },
+    { id: '5', icon: 'heart', title: 'Wishlist', screen: 'Wishlist' },
+    { id: '6', icon: 'star', title: 'My Reviews', screen: 'MyReviews' },
+    { id: '7', icon: 'help', title: 'Help & Support', screen: 'Help' },
+    { id: '8', icon: 'document', title: 'Terms & Privacy', screen: 'Terms' },
   ];
 
   const menuItems = isFieldAdmin ? fieldAdminMenuItems : defaultMenuItems;
@@ -98,7 +99,7 @@ const ProfileScreen = ({ navigation }) => {
         <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.themeCard}>
           <View style={styles.themeRow}>
             <View style={styles.themeInfo}>
-              <Text style={styles.themeIcon}>{isDarkMode ? '🌙' : '☀️'}</Text>
+              <AppIcon name={isDarkMode ? 'moon' : 'sun'} size={24} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
               <View>
                 <Text style={[styles.themeTitle, { color: theme.colors.text.primary }]}>
                   {isDarkMode ? 'Dark Mode' : 'Light Mode'}
@@ -135,7 +136,7 @@ const ProfileScreen = ({ navigation }) => {
             >
               <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.menuItem}>
                 <View style={styles.menuItemContent}>
-                  <Text style={styles.menuIcon}>{item.icon}</Text>
+                  <AppIcon name={item.icon} size={22} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
                   <Text style={[styles.menuTitle, { color: theme.colors.text.primary }]}>
                     {item.title}
                   </Text>

@@ -6,6 +6,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { DRIVER_DELIVERIES, HUB_COORDS, findDeliveryById } from './deliveriesData';
+import AppIcon from '../../components/common/AppIcon';
 
 const DeliveryDetailScreen = ({ route, navigation }) => {
   const { theme } = useTheme();
@@ -81,13 +82,13 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
 
               <Marker coordinate={HUB_COORDS}>
                 <View style={[styles.hubMarker, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-                  <Text style={styles.hubEmoji}>🏬</Text>
+                  <AppIcon name="store" size={18} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
                 </View>
               </Marker>
 
               <Marker coordinate={delivery.coords}>
                 <View style={[styles.stopMarker, { borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-                  <Text style={[styles.stopEmoji]}>📦</Text>
+                  <AppIcon name="orders" size={16} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
                 </View>
               </Marker>
             </MapView>
@@ -141,19 +142,19 @@ const DeliveryDetailScreen = ({ route, navigation }) => {
             Delivery details
           </Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoIcon}>📍</Text>
+            <AppIcon name="location" size={18} color={theme.colors.text.tertiary} />
             <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
               {delivery.address}
             </Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoIcon}>👤</Text>
+            <AppIcon name="profile" size={18} color={theme.colors.text.tertiary} />
             <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
               {delivery.customer}
             </Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoIcon}>⏰</Text>
+            <AppIcon name="time" size={18} color={theme.colors.text.tertiary} />
             <Text style={[styles.infoText, { color: theme.colors.text.secondary }]}>
               Preferred delivery window: {delivery.time}
             </Text>

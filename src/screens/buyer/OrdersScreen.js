@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useSelector } from 'react-redux';
 import Card from '../../components/common/Card';
 import EmptyState from '../../components/common/EmptyState';
+import AppIcon from '../../components/common/AppIcon';
 
 const mockOrders = [
   {
@@ -176,7 +177,7 @@ const OrdersScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <EmptyState
-            icon={<Text style={styles.emptyIcon}>📦</Text>}
+            icon={<AppIcon name="orders" size={64} color={theme.colors.text.tertiary} />}
             title="No orders found"
             message="You haven't placed any orders yet"
             actionLabel="Browse Products"

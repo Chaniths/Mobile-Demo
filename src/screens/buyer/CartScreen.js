@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
+import AppIcon from '../../components/common/AppIcon';
 import { useDispatch, useSelector } from 'react-redux';
 import { changeItemQuantity } from '../../store/slices/cartSlice';
 
@@ -30,7 +31,7 @@ const CartScreen = ({ navigation }) => {
   const renderCartItem = ({ item }) => (
     <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.cartItem}>
       <View style={[styles.itemImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-        <Text style={styles.itemEmoji}>{item.image}</Text>
+        <AppIcon name={item.productImage || item.image} size={32} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
       </View>
       <View style={styles.itemInfo}>
         <Text style={[styles.itemName, { color: theme.colors.text.primary }]}>
@@ -75,7 +76,7 @@ const CartScreen = ({ navigation }) => {
           <View style={{ width: 50 }} />
         </View>
         <EmptyState
-          icon={<Text style={styles.emptyIcon}>🛒</Text>}
+          icon={<AppIcon name="cart" size={64} color={theme.colors.text.tertiary} />}
           title="Your cart is empty"
           message="Add some organic products to get started"
           actionLabel="Browse Products"

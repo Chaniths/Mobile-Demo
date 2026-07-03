@@ -15,6 +15,8 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
+import FieldAdminFlowStepper from '../../components/common/FieldAdminFlowStepper';
+import { buildQualityFlow, FLOW_STEPS } from '../../utils/fieldAdminQualityFlow';
 
 const QualityConfirmScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -188,26 +190,67 @@ const QualityConfirmScreen = ({ navigation, route }) => {
     const submit = async () => {
       try {
         setSubmitting(true);
-        const calls = order.items.map((item) => {
+
+        const rejectedItems = [];
+        const approvedCalls = [];
+
+        order.items.forEach((item) => {
           const qualityData = selectedProducts.find((p) => p.itemId === item.id);
-          return fieldAdminApi.submitQualityReview({
-            orderItemId: item.id,
-            notes,
-            approvedQuantity: qualityData?.approvedQuantity,
-            rejected: qualityData?.quality === 'rejected',
+          if (!qualityData) return;
+
+          if (qualityData.quality === 'approved') {
+            approvedCalls.push(
+              fieldAdminApi.submitQualityReview({
+                orderItemId: item.id,
+                notes,
+                approvedQuantity: qualityData.approvedQuantity,
+                rejected: false,
+              })
+            );
+            return;
+          }
+
+          const totalQuantity = item.quantityValue || 0;
+          const approvedQuantity =
+            qualityData.quality === 'rejected' ? 0 : (qualityData.approvedQuantity ?? 0);
+
+          rejectedItems.push({
+            itemId: item.id,
+            name: item.name,
+            quality: qualityData.quality,
+            approvedQuantity,
+            totalQuantity,
+            unit: item.quantityUnit,
           });
         });
-        await Promise.all(calls);
-        Alert.alert('Success', 'Quality reviews submitted.');
-        const refreshedOrders = await fieldAdminApi.getOrdersByTab('scheduled');
-        setOrders(refreshedOrders ?? []);
-        const stillExists = (refreshedOrders ?? []).some((entry) => entry.id === order.id);
-        if (!stillExists) {
-          setSelectedOrderId(refreshedOrders?.[0]?.id ?? null);
+
+        if (rejectedItems.length === 0) {
+          await Promise.all(approvedCalls);
+          Alert.alert('Success', 'Quality reviews submitted.');
+          const refreshedOrders = await fieldAdminApi.getOrdersByTab('scheduled');
+          setOrders(refreshedOrders ?? []);
+          const stillExists = (refreshedOrders ?? []).some((entry) => entry.id === order.id);
+          if (!stillExists) {
+            setSelectedOrderId(refreshedOrders?.[0]?.id ?? null);
+          }
+          setSelectedProducts([]);
+          setPartialQuantities({});
+          setNotes('');
+          return;
         }
-        setSelectedProducts([]);
-        setPartialQuantities({});
-        setNotes('');
+
+        if (approvedCalls.length > 0) {
+          await Promise.all(approvedCalls);
+        }
+
+        const flow = buildQualityFlow({
+          order,
+          selectedOrder,
+          rejectedItems,
+          notes,
+        });
+
+        navigation.navigate('SellerReject', { flow, step: FLOW_STEPS.REJECT });
       } catch (error) {
         Alert.alert('Error', 'Failed to submit quality reviews.');
       } finally {
@@ -287,6 +330,8 @@ const QualityConfirmScreen = ({ navigation, route }) => {
           </Text>
           <View style={{ width: 60 }} />
         </View>
+
+        <FieldAdminFlowStepper currentStep={FLOW_STEPS.QUALITY} />
 
         {!order && !loading ? (
           <Text style={{ color: theme.colors.text.secondary, marginBottom: 16 }}>
@@ -506,10 +551,7 @@ const QualityConfirmScreen = ({ navigation, route }) => {
                             : theme.colors.card || 'transparent',
                       },
                     ]}
-                    onPress={() => {
-                      handleQualityCheck(item.id, 'rejected', item);
-                      navigation.navigate('SellerReject', { item, order });
-                    }}
+                    onPress={() => handleQualityCheck(item.id, 'rejected', item)}
                     activeOpacity={0.7}
                   >
                     <Text

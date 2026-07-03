@@ -6,56 +6,56 @@ export const PRODUCT_CATALOG = [
   {
     id: 'catalog-1',
     name: 'Organic Apples',
-    image: '🍎',
+    image: 'food-apple',
     category: 'Fruits',
     description: 'Fresh organic apples from local farms',
   },
   {
     id: 'catalog-2',
     name: 'Fresh Spinach',
-    image: '🥬',
+    image: 'food-leaf',
     category: 'Leafy greens',
     description: 'Organic spinach bunches',
   },
   {
     id: 'catalog-3',
     name: 'Raw Honey',
-    image: '🍯',
+    image: 'food-honey',
     category: 'Pantry',
     description: 'Pure raw honey from local beekeepers',
   },
   {
     id: 'catalog-4',
     name: 'Tomatoes',
-    image: '🍅',
+    image: 'food-tomato',
     category: 'Vegetables',
     description: 'Fresh organic tomatoes',
   },
   {
     id: 'catalog-5',
     name: 'Carrots',
-    image: '🥕',
+    image: 'food-carrot',
     category: 'Vegetables',
     description: 'Organic carrots',
   },
   {
     id: 'catalog-6',
     name: 'Bananas',
-    image: '🍌',
+    image: 'food-banana',
     category: 'Fruits',
     description: 'Fresh organic bananas',
   },
   {
     id: 'catalog-7',
     name: 'Organic Milk',
-    image: '🥛',
+    image: 'food-dairy',
     category: 'Dairy',
     description: 'Fresh organic milk',
   },
   {
     id: 'catalog-8',
     name: 'Organic Eggs',
-    image: '🥚',
+    image: 'food-egg',
     category: 'Dairy',
     description: 'Farm fresh organic eggs',
   },
@@ -69,7 +69,7 @@ export const SELLER_PRODUCTS = [
     // Product Type ID (references catalog)
     catalogId: 'catalog-1',
     productTypeName: 'Organic Apples',
-    productTypeImage: '🍎',
+    productTypeImage: 'food-apple',
     productTypeCategory: 'Fruits',
     // Size variants for this product
     sizeVariants: [
@@ -111,7 +111,7 @@ export const SELLER_PRODUCTS = [
   {
     catalogId: 'catalog-2',
     productTypeName: 'Fresh Spinach',
-    productTypeImage: '🥬',
+    productTypeImage: 'food-leaf',
     productTypeCategory: 'Leafy greens',
     sizeVariants: [
       {
@@ -141,7 +141,7 @@ export const SELLER_PRODUCTS = [
   {
     catalogId: 'catalog-3',
     productTypeName: 'Raw Honey',
-    productTypeImage: '🍯',
+    productTypeImage: 'food-honey',
     productTypeCategory: 'Pantry',
     sizeVariants: [
       {

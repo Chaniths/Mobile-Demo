@@ -16,18 +16,19 @@ import { addUser } from '../../utils/demoUsers';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
+import AppIcon from '../../components/common/AppIcon';
 
 const availableRoles = [
   {
     id: 'buyer',
     title: 'Buyer',
-    icon: '🛒',
+    icon: 'buyer',
     description: 'Browse and purchase products.',
   },
   {
     id: 'seller',
     title: 'Seller',
-    icon: '🏪',
+    icon: 'seller',
     description: 'List and manage your products.',
   },
 ];
@@ -154,7 +155,7 @@ const RegisterScreen = ({ navigation }) => {
                   >
                     <View style={styles.roleContent}>
                       <View style={[styles.iconContainer, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-                        <Text style={styles.roleIcon}>{role.icon}</Text>
+                        <AppIcon name={role.icon} size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
                       </View>
                       <View style={styles.roleInfo}>
                         <Text style={[styles.roleTitle, { color: theme.colors.text.primary }]}>
@@ -166,7 +167,7 @@ const RegisterScreen = ({ navigation }) => {
                       </View>
                       {selectedRole === role.id && (
                         <View style={[styles.checkmark, { backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-                          <Text style={styles.checkmarkText}>✓</Text>
+                          <AppIcon name="check" size={16} color="#ffffff" />
                         </View>
                       )}
                     </View>
@@ -229,9 +230,11 @@ const RegisterScreen = ({ navigation }) => {
                 secureTextEntry={!showPassword}
                 error={errors.confirmPassword}
                 rightIcon={
-                  <Text style={{ color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }}>
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
-                  </Text>
+                  <AppIcon
+                    name={showPassword ? 'eye' : 'eyeOff'}
+                    size={22}
+                    color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}
+                  />
                 }
                 onRightIconPress={() => setShowPassword(!showPassword)}
               />

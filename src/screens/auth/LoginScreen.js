@@ -18,6 +18,7 @@ import { STORAGE_KEYS } from '../../utils/constants';
 import { loginByRole } from '../../api/authApi';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import AppIcon from '../../components/common/AppIcon';
 import Card from '../../components/common/Card';
 
 const LoginScreen = ({ navigation }) => {
@@ -171,9 +172,11 @@ const LoginScreen = ({ navigation }) => {
               secureTextEntry={!showPassword}
               error={errors.password}
               rightIcon={
-                <Text style={{ color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }}>
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
-                </Text>
+                <AppIcon
+                  name={showPassword ? 'eye' : 'eyeOff'}
+                  size={22}
+                  color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}
+                />
               }
               onRightIconPress={() => setShowPassword(!showPassword)}
             />

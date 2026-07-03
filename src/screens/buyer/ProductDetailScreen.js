@@ -7,6 +7,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { useDispatch } from 'react-redux';
 import { addItem } from '../../store/slices/cartSlice';
+import AppIcon from '../../components/common/AppIcon';
 
 const ProductDetailScreen = ({ route, navigation }) => {
   const { productId } = route.params || {};
@@ -94,7 +95,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
           {product.name}
         </Text>
         <TouchableOpacity onPress={() => navigation.navigate('CartTab')}>
-          <Text style={styles.cartIcon}>🛒</Text>
+          <AppIcon name="cart" size={24} color={theme.colors.primary.main} />
         </TouchableOpacity>
       </View>
 
@@ -111,14 +112,20 @@ const ProductDetailScreen = ({ route, navigation }) => {
               { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light },
             ]}
           >
-            <Text style={styles.heroEmoji}>{product.image}</Text>
+            <AppIcon name={product.image} size={64} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
           </View>
           <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
             {product.name}
           </Text>
-          <Text style={[styles.metaText, { color: theme.colors.text.secondary }]}>
-            {product.unit} • ⭐ {product.rating}
-          </Text>
+          <View style={styles.metaRow}>
+            <Text style={[styles.metaText, { color: theme.colors.text.secondary }]}>
+              {product.unit} •{' '}
+            </Text>
+            <AppIcon name="star" size={14} color="#f59e0b" />
+            <Text style={[styles.metaText, { color: theme.colors.text.secondary }]}>
+              {' '}{product.rating}
+            </Text>
+          </View>
         </Card>
 
         {/* Sellers list */}
@@ -153,14 +160,17 @@ const ProductDetailScreen = ({ route, navigation }) => {
                       >
                         {seller.name}
                       </Text>
-                      <Text
-                        style={[
-                          styles.sellerMeta,
-                          { color: theme.colors.text.secondary },
-                        ]}
-                      >
-                        ⭐ {seller.rating} • {seller.distanceKm} km away
-                      </Text>
+                      <View style={styles.sellerRatingRow}>
+                        <AppIcon name="star" size={13} color="#f59e0b" />
+                        <Text
+                          style={[
+                            styles.sellerMeta,
+                            { color: theme.colors.text.secondary },
+                          ]}
+                        >
+                          {' '}{seller.rating} • {seller.distanceKm} km away
+                        </Text>
+                      </View>
                     </View>
                     <View style={styles.priceBlock}>
                       <Text
@@ -363,6 +373,14 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 13,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sellerRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   section: {
     marginTop: 8,

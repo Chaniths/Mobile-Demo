@@ -12,6 +12,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { PRODUCT_CATALOG, isProductInCatalog } from '../../utils/sellerProducts';
+import AppIcon from '../../components/common/AppIcon';
 
 const ProductCatalogScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -65,7 +66,7 @@ const ProductCatalogScreen = ({ navigation }) => {
       <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.productCard}>
         <View style={styles.productContent}>
           <View style={[styles.productImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-            <Text style={styles.productEmoji}>{item.image}</Text>
+            <AppIcon name={item.image} size={36} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
           </View>
           <View style={styles.productInfo}>
             <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
@@ -81,9 +82,12 @@ const ProductCatalogScreen = ({ navigation }) => {
             )}
             {isAdded && (
               <View style={[styles.addedBadge, { backgroundColor: `${theme.colors.success}20` }]}>
-                <Text style={[styles.addedBadgeText, { color: theme.colors.success }]}>
-                  ✓ Already added
-                </Text>
+                <View style={styles.addedBadgeContent}>
+                  <AppIcon name="check" size={12} color={theme.colors.success} />
+                  <Text style={[styles.addedBadgeText, { color: theme.colors.success }]}>
+                    Already added
+                  </Text>
+                </View>
               </View>
             )}
           </View>
@@ -147,7 +151,7 @@ const ProductCatalogScreen = ({ navigation }) => {
             },
           ]}
         >
-          <Text style={styles.searchIcon}>🔍</Text>
+          <AppIcon name="search" size={20} color={theme.colors.text.tertiary} />
           <TextInput
             style={[styles.searchInput, { color: theme.colors.text.primary }]}
             placeholder="Search products..."
@@ -376,6 +380,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
     marginTop: 6,
+  },
+  addedBadgeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   addedBadgeText: {
     fontSize: 11,

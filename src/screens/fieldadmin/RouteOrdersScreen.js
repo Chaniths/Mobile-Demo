@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
+import AppIcon from '../../components/common/AppIcon';
 
 const RouteOrdersScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -86,8 +87,9 @@ const RouteOrdersScreen = ({ navigation, route }) => {
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
             Route Orders
           </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('RouteMap')}>
-            <Text style={[styles.mapButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>🗺️ Map</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('RouteMap')} style={styles.mapButtonRow}>
+            <AppIcon name="map" size={16} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
+            <Text style={[styles.mapButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}> Map</Text>
           </TouchableOpacity>
         </View>
 
@@ -146,9 +148,12 @@ const RouteOrdersScreen = ({ navigation, route }) => {
                 <Text style={[styles.orderCustomer, { color: theme.colors.text.primary }]}>
                   {order.customer}
                 </Text>
-                <Text style={[styles.orderAddress, { color: theme.colors.text.secondary }]}>
-                  📍 {order.address}
-                </Text>
+                <View style={styles.addressRow}>
+                  <AppIcon name="location" size={14} color={theme.colors.text.secondary} />
+                  <Text style={[styles.orderAddress, { color: theme.colors.text.secondary }]}>
+                    {order.address}
+                  </Text>
+                </View>
                 <Text style={[styles.orderItems, { color: theme.colors.text.secondary }]}>
                   Items: {order.items.join(', ')}
                 </Text>
@@ -248,6 +253,8 @@ const styles = StyleSheet.create({
   backButton: { fontSize: 16, fontWeight: '600' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
   mapButton: { fontSize: 16, fontWeight: '600' },
+  mapButtonRow: { flexDirection: 'row', alignItems: 'center' },
+  addressRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   routeCard: { padding: 16, marginBottom: 24 },
   routeHeader: {
     flexDirection: 'row',

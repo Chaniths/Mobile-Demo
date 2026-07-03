@@ -5,6 +5,7 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import AppIcon from '../../components/common/AppIcon';
 
 // Mock coordinates for hub and deliveries (for UI demo)
 const HUB_COORDS = { latitude: 13.0707, longitude: 80.2507 };
@@ -109,7 +110,7 @@ const RouteScreen = () => {
 
           <Marker coordinate={HUB_COORDS}>
             <View style={[styles.hubMarker, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-              <Text style={styles.hubEmoji}>🏬</Text>
+              <AppIcon name="store" size={18} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
             </View>
           </Marker>
 
@@ -171,7 +172,7 @@ const RouteScreen = () => {
             </View>
           </View>
           <View style={styles.addressRow}>
-            <Text style={styles.addressIcon}>📍</Text>
+            <AppIcon name="location" size={16} color={theme.colors.text.tertiary} />
             <Text style={[styles.addressText, { color: theme.colors.text.secondary }]}>
               {activeStop.address}
             </Text>

@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import fieldAdminApi from '../../api/fieldAdminApi';
+import AppIcon from '../../components/common/AppIcon';
 
 const HistoryScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -88,14 +89,14 @@ const HistoryScreen = ({ navigation }) => {
 
   const summaryStats = useMemo(
     () => [
-      { id: 'a', label: 'Assessments', value: assessments.length, color: theme.colors.warning, icon: '⭐' },
-      { id: 't', label: 'Truck Runs', value: trucks.length, color: theme.colors.success, icon: '🚚' },
+      { id: 'a', label: 'Assessments', value: assessments.length, color: theme.colors.warning, icon: 'star' },
+      { id: 't', label: 'Truck Runs', value: trucks.length, color: theme.colors.success, icon: 'truck' },
       {
         id: 'd',
         label: 'Drivers Worked',
         value: new Set(drivers.map((driver) => driver.name)).size,
         color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
-        icon: '👤',
+        icon: 'profile',
       },
     ],
     [assessments, trucks, drivers, theme]
@@ -229,7 +230,7 @@ const HistoryScreen = ({ navigation }) => {
         {summaryStats.map((stat) => (
           <Card variant={theme.isDarkMode ? "glass" : "default"} key={stat.id} style={styles.summaryCard}>
             <View style={[styles.summaryIconWrap, { backgroundColor: `${stat.color}20` }]}>
-              <Text style={styles.summaryIcon}>{stat.icon}</Text>
+              <AppIcon name={stat.icon} size={20} color={stat.color} />
             </View>
             <Text style={[styles.summaryValue, { color: theme.colors.text.primary }]}>{stat.value}</Text>
             <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]} numberOfLines={1}>

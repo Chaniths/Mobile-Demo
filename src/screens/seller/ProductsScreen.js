@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
+import AppIcon from '../../components/common/AppIcon';
 import { SELLER_PRODUCTS, getProductStatus, getTotalStockForProduct } from '../../utils/sellerProducts';
 
 const ProductsScreen = ({ navigation }) => {
@@ -63,7 +64,7 @@ const ProductsScreen = ({ navigation }) => {
           style={styles.productContent}
         >
           <View style={[styles.productImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-            <Text style={styles.productEmoji}>{item.productTypeImage}</Text>
+            <AppIcon name={item.productTypeImage} size={36} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
           </View>
           <View style={styles.productInfo}>
             <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
@@ -153,7 +154,7 @@ const ProductsScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <EmptyState
-            icon={<Text style={styles.emptyIcon}>📦</Text>}
+            icon={<AppIcon name="orders" size={64} color={theme.colors.text.tertiary} />}
             title="No products yet"
             message="Browse the catalog to add products, or request a new product type"
             actionLabel="Browse Catalog"

@@ -15,6 +15,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
+import AppIcon from '../../components/common/AppIcon';
 
 const DeliveryPickupScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -258,15 +259,22 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
             ]}
             onPress={() => setActionType('delivery')}
           >
-            <Text
-              style={[
-                styles.actionButtonText,
-                actionType === 'delivery' && { color: '#fff' },
-                !actionType && { color: theme.colors.text.primary },
-              ]}
-            >
-              ✓ Mark Delivered
-            </Text>
+            <View style={styles.actionButtonContent}>
+              <AppIcon
+                name="check"
+                size={18}
+                color={actionType === 'delivery' ? '#fff' : theme.colors.text.primary}
+              />
+              <Text
+                style={[
+                  styles.actionButtonText,
+                  actionType === 'delivery' && { color: '#fff' },
+                  !actionType && { color: theme.colors.text.primary },
+                ]}
+              >
+                Mark Delivered
+              </Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -281,15 +289,22 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
             ]}
             onPress={() => setActionType('pickup')}
           >
-            <Text
-              style={[
-                styles.actionButtonText,
-                actionType === 'pickup' && { color: '#fff' },
-                !actionType && { color: theme.colors.text.primary },
-              ]}
-            >
-              📦 Mark Picked Up
-            </Text>
+            <View style={styles.actionButtonContent}>
+              <AppIcon
+                name="orders"
+                size={18}
+                color={actionType === 'pickup' ? '#fff' : theme.colors.text.primary}
+              />
+              <Text
+                style={[
+                  styles.actionButtonText,
+                  actionType === 'pickup' && { color: '#fff' },
+                  !actionType && { color: theme.colors.text.primary },
+                ]}
+              >
+                Mark Picked Up
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -520,6 +535,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButtonText: { fontSize: 15, fontWeight: '600' },
+  actionButtonContent: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   signatureCard: { padding: 16, marginBottom: 24 },
   notesCard: { padding: 16, marginBottom: 24 },
   input: { fontSize: 14, minHeight: 50, textAlignVertical: 'top' },

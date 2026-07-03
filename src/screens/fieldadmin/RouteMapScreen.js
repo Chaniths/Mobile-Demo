@@ -11,6 +11,7 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import AppIcon from '../../components/common/AppIcon';
 
 const HUB_COORDS = { latitude: 13.0707, longitude: 80.2507 };
 
@@ -125,7 +126,7 @@ const RouteMapScreen = ({ navigation, route }) => {
 
           <Marker coordinate={HUB_COORDS}>
             <View style={[styles.hubMarker, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-              <Text style={styles.hubEmoji}>🏬</Text>
+              <AppIcon name="store" size={18} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
             </View>
           </Marker>
 
@@ -190,9 +191,12 @@ const RouteMapScreen = ({ navigation, route }) => {
             <Text style={[styles.activeOrderCustomer, { color: theme.colors.text.primary }]}>
               {activeOrder.customer}
             </Text>
-            <Text style={[styles.activeOrderAddress, { color: theme.colors.text.secondary }]}>
-              📍 {activeOrder.address}
-            </Text>
+            <View style={styles.addressRow}>
+              <AppIcon name="location" size={14} color={theme.colors.text.secondary} />
+              <Text style={[styles.activeOrderAddress, { color: theme.colors.text.secondary }]}>
+                {activeOrder.address}
+              </Text>
+            </View>
             <View style={styles.activeOrderActions}>
               <Button
                 title="View Details"
@@ -395,7 +399,8 @@ const styles = StyleSheet.create({
   activeOrderId: { fontSize: 16, fontWeight: '700' },
   activeOrderEta: { fontSize: 14, fontWeight: '700' },
   activeOrderCustomer: { fontSize: 15, fontWeight: '600', marginBottom: 4 },
-  activeOrderAddress: { fontSize: 13, marginBottom: 12 },
+  activeOrderAddress: { fontSize: 13, marginBottom: 12, flex: 1 },
+  addressRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 12 },
   activeOrderActions: { flexDirection: 'row', gap: 12 },
   detailButton: { flex: 1, marginBottom: 0 },
   navButton: { flex: 1, marginBottom: 0 },

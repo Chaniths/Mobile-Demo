@@ -15,21 +15,35 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
+import FieldAdminFlowStepper from '../../components/common/FieldAdminFlowStepper';
+import {
+  buildAffectedItemsSummary,
+  confirmLeaveFlow,
+  FLOW_STEPS,
+  withFlowUpdate,
+} from '../../utils/fieldAdminQualityFlow';
 
 const DamageReportScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
+  const flow = route?.params?.flow ?? null;
+  const isFlowMode = Boolean(flow);
   const [damageType, setDamageType] = useState('');
   const [severity, setSeverity] = useState('');
   const [description, setDescription] = useState('');
-  const [affectedItems, setAffectedItems] = useState('');
+  const [affectedItems, setAffectedItems] = useState(
+    isFlowMode ? buildAffectedItemsSummary(flow.rejectedItems) : ''
+  );
   const [orders, setOrders] = useState([]);
-  const [selectedOrderId, setSelectedOrderId] = useState(route?.params?.order?.id ?? null);
+  const [selectedOrderId, setSelectedOrderId] = useState(
+    flow?.orderId ?? route?.params?.order?.id ?? null
+  );
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [orderSearch, setOrderSearch] = useState('');
 
   useEffect(() => {
+    if (isFlowMode) return undefined;
     const loadOrders = async () => {
       try {
         setLoading(true);
@@ -52,7 +66,18 @@ const DamageReportScreen = ({ navigation, route }) => {
       }
     };
     loadOrders();
-  }, []);
+  }, [isFlowMode]);
+
+  const flowOrder = useMemo(() => {
+    if (!isFlowMode || !flow?.order) return null;
+    return {
+      id: flow.order.id,
+      orderId: flow.order.orderId,
+      customer: flow.order.customer,
+      stopId: flow.order.stopId,
+      status: 'IN_FLOW',
+    };
+  }, [flow, isFlowMode]);
 
   const selectedOrder = useMemo(
     () => orders.find((entry) => entry.id === selectedOrderId) || null,
@@ -60,6 +85,7 @@ const DamageReportScreen = ({ navigation, route }) => {
   );
 
   const order = useMemo(() => {
+    if (isFlowMode) return flowOrder;
     if (!selectedOrder) return null;
     return {
       id: selectedOrder.id,
@@ -68,7 +94,7 @@ const DamageReportScreen = ({ navigation, route }) => {
       stopId: selectedOrder.deliveryStopId ?? null,
       status: selectedOrder.status ?? 'N/A',
     };
-  }, [selectedOrder]);
+  }, [isFlowMode, flowOrder, selectedOrder]);
 
   const filteredOrders = useMemo(() => {
     const query = orderSearch.trim().toLowerCase();
@@ -87,20 +113,42 @@ const DamageReportScreen = ({ navigation, route }) => {
       return;
     }
     setSubmitting(true);
+    const orderItemIds = isFlowMode ? flow.rejectedItems.map((entry) => entry.itemId) : undefined;
+    const inspectionIds = isFlowMode ? flow.inspectionIds : undefined;
+
     fieldAdminApi
       .submitDamageReport({
         stopId: order?.stopId,
+        damageType,
+        severity,
+        affectedItems,
+        orderItemIds,
+        inspectionIds,
         description: `${damageType} | ${severity} | ${description}${affectedItems ? ` | Items: ${affectedItems}` : ''}`,
       })
-      .then(() => {
+      .then((result) => {
+        if (isFlowMode) {
+          const updatedFlow = withFlowUpdate(flow, { damageReportId: result?.id });
+          navigation.navigate('RefundInitiation', { flow: updatedFlow, step: FLOW_STEPS.REFUND });
+          return null;
+        }
         Alert.alert('Success', 'Damage report submitted.');
         setDamageType('');
         setSeverity('');
         setDescription('');
         setAffectedItems('');
+        return null;
       })
       .catch(() => Alert.alert('Error', 'Failed to submit damage report.'))
       .finally(() => setSubmitting(false));
+  };
+
+  const handleBackPress = () => {
+    if (isFlowMode) {
+      confirmLeaveFlow(() => navigation.goBack());
+      return;
+    }
+    navigation.goBack();
   };
 
   return (
@@ -124,7 +172,7 @@ const DamageReportScreen = ({ navigation, route }) => {
       )}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={handleBackPress}>
             <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
@@ -133,8 +181,17 @@ const DamageReportScreen = ({ navigation, route }) => {
           <View style={{ width: 60 }} />
         </View>
 
+        {isFlowMode ? <FieldAdminFlowStepper currentStep={FLOW_STEPS.DAMAGE} /> : null}
+        {isFlowMode && order ? (
+          <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.flowOrderBanner}>
+            <Text style={[styles.flowOrderText, { color: theme.colors.text.secondary }]}>
+              Quality issue workflow — Order {order.orderId}
+            </Text>
+          </Card>
+        ) : null}
+
         {loading ? <ActivityIndicator color={theme.colors.primary.main} style={{ marginBottom: 16 }} /> : null}
-        {order ? (
+        {order && !isFlowMode ? (
           <TouchableOpacity
             style={[
               styles.openPickerButton,
@@ -425,6 +482,8 @@ const styles = StyleSheet.create({
   openPickerText: { fontSize: 14, fontWeight: '600', flex: 1, marginRight: 8 },
   openPickerChevron: { fontSize: 14, fontWeight: '700' },
   orderCard: { padding: 16, marginBottom: 24 },
+  flowOrderBanner: { padding: 12, marginBottom: 16 },
+  flowOrderText: { fontSize: 13, textAlign: 'center' },
   label: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   orderId: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
   detail: { fontSize: 14 },

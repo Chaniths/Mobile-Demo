@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
+import AppIcon from '../../components/common/AppIcon';
 
 // Mock hub, seller, and route stops for demo
 const HUB_COORDS = { latitude: 6.9155, longitude: 79.857 };
@@ -127,7 +128,7 @@ const TruckTrackingScreen = ({ route, navigation }) => {
               {/* Hub */}
               <Marker coordinate={HUB_COORDS}>
                 <View style={[styles.hubMarker, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-                  <Text style={styles.hubEmoji}>🏬</Text>
+                  <AppIcon name="store" size={18} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
                 </View>
               </Marker>
 

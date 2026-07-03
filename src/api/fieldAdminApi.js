@@ -44,12 +44,46 @@ export const getDriverHistory = async () => {
   return response.data;
 };
 
-export const submitQualityReview = async ({ orderItemId, notes, approvedQuantity, rejected }) => {
+export const submitQualityReview = async ({
+  orderItemId,
+  notes,
+  approvedQuantity,
+  rejected,
+  rejectionReason,
+  rejectionDetails,
+}) => {
   const path = rejected ? '/fieldadmin/reject/submit' : '/fieldadmin/quality/confirm';
   const response = await apiClient.post(path, {
     orderItemId,
     notes,
     approvedQuantity,
+    rejectionReason,
+    rejectionDetails,
+  });
+  return response.data;
+};
+
+export const submitDamageReport = async ({
+  description,
+  stopId,
+  images,
+  damageType,
+  severity,
+  affectedItems,
+  orderItemId,
+  orderItemIds,
+  inspectionId,
+  inspectionIds,
+}) => {
+  const response = await apiClient.post('/fieldadmin/report/damage', {
+    description,
+    stopId,
+    images,
+    damageType,
+    severity,
+    affectedItems,
+    orderItemId: orderItemId ?? orderItemIds?.[0],
+    inspectionId: inspectionId ?? inspectionIds?.[0],
   });
   return response.data;
 };
@@ -71,11 +105,6 @@ export const submitAssessment = async ({ type, targetUserId, rating, comment }) 
     seller: '/fieldadmin/assessment/seller',
   };
   const response = await apiClient.post(pathMap[type], { targetUserId, rating, comment });
-  return response.data;
-};
-
-export const submitDamageReport = async ({ description, stopId, images }) => {
-  const response = await apiClient.post('/fieldadmin/report/damage', { description, stopId, images });
   return response.data;
 };
 

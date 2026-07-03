@@ -10,6 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
+import AppIcon from '../../components/common/AppIcon';
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -50,7 +51,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
         )}
         <View style={styles.successContainer}>
           <View style={[styles.successIcon, { backgroundColor: theme.colors.success }]}>
-            <Text style={styles.successIconText}>✓</Text>
+            <AppIcon name="check" size={32} color="#ffffff" />
           </View>
           <Text style={[styles.successTitle, { color: theme.colors.text.primary }]}>
             Check Your Email

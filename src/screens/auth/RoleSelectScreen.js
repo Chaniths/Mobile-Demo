@@ -12,30 +12,31 @@ import { useTheme } from '../../hooks/useTheme';
 import { loginSuccess } from '../../store/slices/authSlice';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
+import AppIcon from '../../components/common/AppIcon';
 
 const roles = [
   {
     id: 'buyer',
     title: 'Buyer',
-    icon: '🛒',
+    icon: 'buyer',
     description: 'Browse and purchase organic products',
   },
   {
     id: 'seller',
     title: 'Seller',
-    icon: '🏪',
+    icon: 'seller',
     description: 'Sell organic products and manage inventory',
   },
   {
     id: 'driver',
     title: 'Driver',
-    icon: '🚚',
+    icon: 'driver',
     description: 'Deliver products and manage routes',
   },
   {
     id: 'fieldadmin',
     title: 'Field Admin',
-    icon: '📋',
+    icon: 'fieldadmin',
     description: 'Quality checks and route assessment',
   },
 ];
@@ -107,7 +108,7 @@ const RoleSelectScreen = ({ navigation }) => {
                 >
                   <View style={styles.roleContent}>
                     <View style={[styles.iconContainer, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-                      <Text style={styles.icon}>{role.icon}</Text>
+                      <AppIcon name={role.icon} size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
                     </View>
                     <View style={styles.roleInfo}>
                       <Text style={[styles.roleTitle, { color: theme.colors.text.primary }]}>
@@ -119,7 +120,7 @@ const RoleSelectScreen = ({ navigation }) => {
                     </View>
                     {selectedRole === role.id && (
                       <View style={[styles.checkmark, { backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-                        <Text style={styles.checkmarkText}>✓</Text>
+                        <AppIcon name="check" size={16} color="#ffffff" />
                       </View>
                     )}
                   </View>

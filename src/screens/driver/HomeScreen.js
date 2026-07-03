@@ -11,15 +11,16 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
 import { DRIVER_DELIVERIES } from './deliveriesData';
+import AppIcon from '../../components/common/AppIcon';
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
 
   const todayStats = [
-    { id: '1', label: 'Deliveries', value: '12', icon: '📦', color: '#3b82f6' },
-    { id: '2', label: 'Completed', value: '8', icon: '✓', color: '#22c55e' },
-    { id: '3', label: 'Remaining', value: '4', icon: '⏰', color: '#f59e0b' },
-    { id: '4', label: 'Earnings', value: '$240', icon: '💰', color: '#8b5cf6' },
+    { id: '1', label: 'Deliveries', value: '12', icon: 'orders', color: '#3b82f6' },
+    { id: '2', label: 'Completed', value: '8', icon: 'check', color: '#22c55e' },
+    { id: '3', label: 'Remaining', value: '4', icon: 'time', color: '#f59e0b' },
+    { id: '4', label: 'Earnings', value: '$240', icon: 'cash', color: '#8b5cf6' },
   ];
 
   const upcomingDeliveries = DRIVER_DELIVERIES;
@@ -95,7 +96,7 @@ const HomeScreen = ({ navigation }) => {
             {todayStats.map((stat) => (
               <Card variant={theme.isDarkMode ? "glass" : "default"} key={stat.id} style={styles.statCard}>
                 <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
-                  <Text style={styles.statIconText}>{stat.icon}</Text>
+                  <AppIcon name={stat.icon} size={22} color={stat.color} />
                 </View>
                 <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
                   {stat.value}
@@ -144,9 +145,7 @@ const HomeScreen = ({ navigation }) => {
                 </Text>
               </View>
               <View style={styles.deliveryDetails}>
-                <Text style={[styles.deliveryIcon, { color: theme.colors.text.tertiary }]}>
-                  📍
-                </Text>
+                <AppIcon name="location" size={16} color={theme.colors.text.tertiary} />
                 <Text style={[styles.address, { color: theme.colors.text.secondary }]}>
                   {delivery.address}
                 </Text>

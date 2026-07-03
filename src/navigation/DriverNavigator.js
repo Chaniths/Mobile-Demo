@@ -1,9 +1,9 @@
 import React from 'react';
-import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
+import { TabBarIcon } from '../components/common/AppIcon';
 
 // Driver Screens
 import HomeScreen from '../screens/driver/HomeScreen';
@@ -65,7 +65,9 @@ const DriverNavigator = () => {
         component={HomeStack}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🏠</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="home" color={color} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
@@ -73,7 +75,9 @@ const DriverNavigator = () => {
         component={RouteScreen}
         options={{
           tabBarLabel: 'Route',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🗺️</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="map" color={color} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
@@ -81,7 +85,9 @@ const DriverNavigator = () => {
         component={OrdersScreen}
         options={{
           tabBarLabel: 'Deliveries',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="orders" color={color} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
@@ -89,7 +95,9 @@ const DriverNavigator = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="profile" color={color} focused={focused} />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -97,4 +105,3 @@ const DriverNavigator = () => {
 };
 
 export default DriverNavigator;
-

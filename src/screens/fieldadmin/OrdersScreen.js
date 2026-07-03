@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import EmptyState from '../../components/common/EmptyState';
+import AppIcon from '../../components/common/AppIcon';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
 
@@ -269,7 +270,7 @@ const OrdersScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <EmptyState
-            icon={<Text style={styles.emptyIcon}>📦</Text>}
+            icon={<AppIcon name="orders" size={64} color={theme.colors.text.tertiary} />}
             title="No orders found"
             message={`No ${activeTab === 'all' ? '' : activeTab.replace('_', ' ')} orders available`}
           />

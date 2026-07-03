@@ -9,15 +9,16 @@ import {
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
+import AppIcon from '../../components/common/AppIcon';
 
 const DashboardScreen = ({ navigation }) => {
   const { theme } = useTheme();
 
   const stats = [
-    { id: '1', label: 'Total Sales', value: '$2,450', icon: '💰', color: '#22c55e' },
-    { id: '2', label: 'Orders', value: '45', icon: '📦', color: '#3b82f6' },
-    { id: '3', label: 'Products', value: '23', icon: '🏪', color: '#f59e0b' },
-    { id: '4', label: 'Rating', value: '4.8', icon: '⭐', color: '#8b5cf6' },
+    { id: '1', label: 'Total Sales', value: '$2,450', icon: 'cash', color: '#22c55e' },
+    { id: '2', label: 'Orders', value: '45', icon: 'orders', color: '#3b82f6' },
+    { id: '3', label: 'Products', value: '23', icon: 'store', color: '#f59e0b' },
+    { id: '4', label: 'Rating', value: '4.8', icon: 'star', color: '#8b5cf6' },
   ];
 
   const recentOrders = [
@@ -27,10 +28,10 @@ const DashboardScreen = ({ navigation }) => {
   ];
 
   const quickActions = [
-    { id: '1', title: 'Request Product', icon: '➕', screen: 'AddProduct' },
-    { id: '2', title: 'Manage Inventory', icon: '📊', screen: 'Products' },
-    { id: '3', title: 'Truck tracking', icon: '🚚', screen: 'TruckTracking' },
-    { id: '4', title: 'View Orders', icon: '📋', screen: 'Orders' },
+    { id: '1', title: 'Request Product', icon: 'add', screen: 'AddProduct' },
+    { id: '2', title: 'Manage Inventory', icon: 'chart', screen: 'Products' },
+    { id: '3', title: 'Truck tracking', icon: 'truck', screen: 'TruckTracking' },
+    { id: '4', title: 'View Orders', icon: 'clipboard', screen: 'Orders' },
   ];
 
   return (
@@ -77,7 +78,7 @@ const DashboardScreen = ({ navigation }) => {
           {stats.map((stat) => (
             <Card variant={theme.isDarkMode ? "glass" : "default"} key={stat.id} style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
-                <Text style={styles.statIconText}>{stat.icon}</Text>
+                <AppIcon name={stat.icon} size={22} color={stat.color} />
               </View>
               <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
                 {stat.value}
@@ -102,7 +103,7 @@ const DashboardScreen = ({ navigation }) => {
                 style={styles.actionCard}
                 onPress={() => navigation.navigate(action.screen)}
               >
-                <Text style={styles.actionIcon}>{action.icon}</Text>
+                <AppIcon name={action.icon} size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
                 <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]}>
                   {action.title}
                 </Text>

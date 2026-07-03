@@ -11,20 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import EmptyState from '../../components/common/EmptyState';
-
-const mockProducts = [
-  { id: '1', name: 'Organic Apples', price: '$4.99', image: '🍎', rating: 4.8, category: 'fruits' },
-  { id: '2', name: 'Fresh Spinach', price: '$2.99', image: '🥬', rating: 4.6, category: 'vegetables' },
-  { id: '3', name: 'Bananas', price: '$3.49', image: '🍌', rating: 4.7, category: 'fruits' },
-  { id: '4', name: 'Carrots', price: '$2.49', image: '🥕', rating: 4.5, category: 'vegetables' },
-  { id: '5', name: 'Raw Honey', price: '$8.99', image: '🍯', rating: 4.9, category: 'dairy' },
-  { id: '6', name: 'Tomatoes', price: '$3.99', image: '🍅', rating: 4.8, category: 'vegetables' },
-  { id: '7', name: 'Organic Milk', price: '$5.99', image: '🥛', rating: 4.8, category: 'dairy' },
-  { id: '8', name: 'Organic Eggs', price: '$1.99', image: '🥚', rating: 4.6, category: 'dairy' },
-  { id: '9', name: 'Organic Wheat', price: '$4.99', image: '🌾', rating: 4.9, category: 'grains' },
-  { id: '10', name: 'Organic Rice', price: '$3.99', image: '🍚', rating: 4.7, category: 'grains' },
-  { id: '11', name: 'Organic Sugar', price: '$2.99', image: '🍬', rating: 4.5, category: 'sugar' },
-];
+import AppIcon from '../../components/common/AppIcon';
 import { products } from '../../utils/catalog';
 
 const ProductBrowseScreen = ({ navigation, route }) => {
@@ -49,7 +36,7 @@ const ProductBrowseScreen = ({ navigation, route }) => {
         onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
       >
         <View style={[styles.productImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-          <Text style={styles.productEmoji}>{item.image}</Text>
+          <AppIcon name={item.image} size={36} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
         </View>
         <View style={styles.productInfo}>
           <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
@@ -59,7 +46,10 @@ const ProductBrowseScreen = ({ navigation, route }) => {
             <Text style={[styles.productPrice, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
               {priceLabel}
             </Text>
-            <Text style={styles.rating}>⭐ {item.rating}</Text>
+            <View style={styles.ratingRow}>
+              <AppIcon name="star" size={13} color="#f59e0b" />
+              <Text style={styles.rating}> {item.rating}</Text>
+            </View>
           </View>
         </View>
         <TouchableOpacity
@@ -98,14 +88,14 @@ const ProductBrowseScreen = ({ navigation, route }) => {
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>Products</Text>
         <TouchableOpacity onPress={() => navigation.navigate('CartTab')}>
-          <Text style={styles.cartIcon}>🛒</Text>
+          <AppIcon name="cart" size={24} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
         </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
       <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.searchCard}>
         <View style={styles.searchContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <AppIcon name="search" size={20} color={theme.colors.text.tertiary} />
           <TextInput
             style={[styles.searchInput, { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary }]}
             placeholder="Search products..."
@@ -125,7 +115,7 @@ const ProductBrowseScreen = ({ navigation, route }) => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <EmptyState
-            icon={<Text style={styles.emptyIcon}>📦</Text>}
+            icon={<AppIcon name="orders" size={64} color={theme.colors.text.tertiary} />}
             title="No products found"
             message="Try adjusting your search or filters"
           />
@@ -271,6 +261,10 @@ const styles = StyleSheet.create({
   },
   rating: {
     fontSize: 13,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   addButton: {
     width: 36,

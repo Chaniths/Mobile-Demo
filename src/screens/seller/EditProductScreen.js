@@ -6,6 +6,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import LocationSelectionModal from '../../components/common/LocationSelectionModal';
+import AppIcon from '../../components/common/AppIcon';
 
 const EditProductScreen = ({ route, navigation }) => {
   const { theme } = useTheme();
@@ -156,7 +157,7 @@ const EditProductScreen = ({ route, navigation }) => {
               >
                 {pickupLocation ? pickupLocation.address : 'Select pickup location'}
               </Text>
-              <Text style={styles.locationIcon}>📍</Text>
+              <AppIcon name="location" size={20} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
             </TouchableOpacity>
           </View>
 

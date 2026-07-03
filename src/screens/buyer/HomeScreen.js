@@ -10,25 +10,26 @@ import {
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
+import AppIcon from '../../components/common/AppIcon';
 
 const categories = [
-  { id: 'fruits', name: 'Fruits', icon: '🍎' },
-  { id: 'vegetables', name: 'Vegetables', icon: '🥬' },
-  { id: 'dairy', name: 'Dairy', icon: '🥛' },
-  { id: 'grains', name: 'Grains', icon: '🌾' },
+  { id: 'fruits', name: 'Fruits', icon: 'food-apple' },
+  { id: 'vegetables', name: 'Vegetables', icon: 'food-leaf' },
+  { id: 'dairy', name: 'Dairy', icon: 'food-dairy' },
+  { id: 'grains', name: 'Grains', icon: 'food-grain' },
 ];
 
 const featuredProducts = [
-  { id: '1', name: 'Organic Apples', price: '$4.99', image: '🍎', rating: 4.8 },
-  { id: '2', name: 'Fresh Spinach', price: '$2.99', image: '🥬', rating: 4.6 },
-  { id: '3', name: 'Raw Honey', price: '$8.99', image: '🍯', rating: 4.9 },
-  { id: '4', name: 'Organic Bananas', price: '$3.99', image: '🍌', rating: 4.7 },
-  { id: '5', name: 'Fresh Carrots', price: '$2.99', image: '🥕', rating: 4.5 },
-  { id: '6', name: 'Organic Milk', price: '$5.99', image: '🥛', rating: 4.8 },
-  { id: '7', name: 'Organic Eggs', price: '$1.99', image: '🥚', rating: 4.6 },
-  { id: '8', name: 'Organic Wheat', price: '$4.99', image: '🌾', rating: 4.9 },
-  { id: '9', name: 'Organic Rice', price: '$3.99', image: '🍚', rating: 4.7 },
-  { id: '10', name: 'Organic Sugar', price: '$2.99', image: '🍬', rating: 4.5 },
+  { id: '1', name: 'Organic Apples', price: '$4.99', image: 'food-apple', rating: 4.8 },
+  { id: '2', name: 'Fresh Spinach', price: '$2.99', image: 'food-leaf', rating: 4.6 },
+  { id: '3', name: 'Raw Honey', price: '$8.99', image: 'food-honey', rating: 4.9 },
+  { id: '4', name: 'Organic Bananas', price: '$3.99', image: 'food-banana', rating: 4.7 },
+  { id: '5', name: 'Fresh Carrots', price: '$2.99', image: 'food-carrot', rating: 4.5 },
+  { id: '6', name: 'Organic Milk', price: '$5.99', image: 'food-dairy', rating: 4.8 },
+  { id: '7', name: 'Organic Eggs', price: '$1.99', image: 'food-egg', rating: 4.6 },
+  { id: '8', name: 'Organic Wheat', price: '$4.99', image: 'food-grain', rating: 4.9 },
+  { id: '9', name: 'Organic Rice', price: '$3.99', image: 'food-rice', rating: 4.7 },
+  { id: '10', name: 'Organic Sugar', price: '$2.99', image: 'food-sugar', rating: 4.5 },
 ];
 
 const HomeScreen = ({ navigation }) => {
@@ -40,7 +41,7 @@ const HomeScreen = ({ navigation }) => {
       style={styles.categoryPillWrapper}
     >
       <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.categoryPill}>
-        <Text style={styles.categoryIcon}>{item.icon}</Text>
+        <AppIcon name={item.icon} size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
         <Text style={[styles.categoryName, { color: theme.colors.text.primary }]}>
           {item.name}
         </Text>
@@ -54,7 +55,7 @@ const HomeScreen = ({ navigation }) => {
     >
       <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.productCard}>
         <View style={[styles.productImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-          <Text style={styles.productEmoji}>{item.image}</Text>
+          <AppIcon name={item.image} size={36} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
         </View>
         <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
           {item.name}
@@ -64,7 +65,8 @@ const HomeScreen = ({ navigation }) => {
             {item.price}
           </Text>
           <View style={styles.rating}>
-            <Text style={styles.ratingText}>⭐ {item.rating}</Text>
+            <AppIcon name="star" size={13} color="#f59e0b" />
+            <Text style={styles.ratingText}> {item.rating}</Text>
           </View>
         </View>
       </Card>
@@ -116,7 +118,7 @@ const HomeScreen = ({ navigation }) => {
             style={styles.searchBar}
             onPress={() => navigation.navigate('ProductBrowse')}
           >
-          <Text style={styles.searchIcon}>🔍</Text>
+          <AppIcon name="search" size={20} color={theme.colors.text.tertiary} />
             <Text style={[styles.searchPlaceholder, { color: theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary }]}>
               Search for organic products...
             </Text>
@@ -167,19 +169,19 @@ const HomeScreen = ({ navigation }) => {
           </Text>
           <View style={styles.actionsGrid}>
             <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard} onPress={() => navigation.navigate('OrdersTab')}>
-              <Text style={styles.actionIcon}>📦</Text>
+              <AppIcon name="orders" size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
               <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
                 My Orders
               </Text>
             </Card>
             <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard} onPress={() => navigation.navigate('CartTab')}>
-              <Text style={styles.actionIcon}>🛒</Text>
+              <AppIcon name="cart" size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
               <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
                 Cart
               </Text>
             </Card>
             <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard} onPress={() => navigation.navigate('Analytics')}>
-              <Text style={styles.actionIcon}>📊</Text>
+              <AppIcon name="analytics" size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
               <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
                 Analytics
               </Text>
@@ -189,7 +191,7 @@ const HomeScreen = ({ navigation }) => {
               style={styles.actionCard}
               onPress={() => navigation.navigate('TrackOrder')}
             >
-              <Text style={styles.actionIcon}>📍</Text>
+              <AppIcon name="track" size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
               <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
                 Track Order
               </Text>

@@ -5,6 +5,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { DRIVER_DELIVERIES } from './deliveriesData';
+import AppIcon from '../../components/common/AppIcon';
 
 const AllDeliveriesScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -75,7 +76,7 @@ const AllDeliveriesScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.addressRow}>
-              <Text style={styles.addressIcon}>📍</Text>
+              <AppIcon name="location" size={16} color={theme.colors.text.tertiary} />
               <Text style={[styles.address, { color: theme.colors.text.secondary }]}>
                 {delivery.address}
               </Text>

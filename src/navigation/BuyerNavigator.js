@@ -1,9 +1,9 @@
 import React from 'react';
-import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
+import { TabBarIcon } from '../components/common/AppIcon';
 
 // Buyer Screens
 import HomeScreen from '../screens/buyer/HomeScreen';
@@ -82,7 +82,9 @@ const BuyerTabs = () => {
         component={HomeStack}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🏠</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="home" color={color} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
@@ -90,7 +92,9 @@ const BuyerTabs = () => {
         component={BrowseStack}
         options={{
           tabBarLabel: 'Browse',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🔍</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="search" color={color} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
@@ -98,7 +102,9 @@ const BuyerTabs = () => {
         component={CartStack}
         options={{
           tabBarLabel: 'Cart',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🛒</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="cart" color={color} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
@@ -106,7 +112,9 @@ const BuyerTabs = () => {
         component={OrdersScreen}
         options={{
           tabBarLabel: 'My Orders',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="orders" color={color} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
@@ -114,7 +122,9 @@ const BuyerTabs = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="profile" color={color} focused={focused} />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -129,4 +139,3 @@ const BuyerNavigator = () => (
 );
 
 export default BuyerNavigator;
-

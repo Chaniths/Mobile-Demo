@@ -1,8 +1,8 @@
 import React from 'react';
-import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useTheme } from '../hooks/useTheme';
+import { TabBarIcon } from '../components/common/AppIcon';
 
 // Field Admin Screens
 import HomeScreen from '../screens/fieldadmin/HomeScreen';
@@ -105,7 +105,9 @@ const FieldAdminNavigator = () => {
         component={FieldAdminStack}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🏠</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="home" color={color} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
@@ -113,7 +115,9 @@ const FieldAdminNavigator = () => {
         component={RoutesStack}
         options={{
           tabBarLabel: 'Routes',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>🗺️</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="map" color={color} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
@@ -121,7 +125,9 @@ const FieldAdminNavigator = () => {
         component={OrdersStack}
         options={{
           tabBarLabel: 'Orders',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="orders" color={color} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
@@ -129,7 +135,9 @@ const FieldAdminNavigator = () => {
         component={HistoryScreen}
         options={{
           tabBarLabel: 'History',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📊</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="chart" color={color} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
@@ -137,7 +145,9 @@ const FieldAdminNavigator = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>,
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="profile" color={color} focused={focused} />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -145,4 +155,3 @@ const FieldAdminNavigator = () => {
 };
 
 export default FieldAdminNavigator;
-

@@ -15,6 +15,8 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
+import FieldAdminFlowStepper from '../../components/common/FieldAdminFlowStepper';
+import { confirmLeaveFlow, FLOW_STEPS } from '../../utils/fieldAdminQualityFlow';
 
 const buildRefundDefaults = (selectedOrder) => {
   if (!selectedOrder) {
@@ -41,10 +43,12 @@ const buildRefundDefaults = (selectedOrder) => {
 
 const RefundInitiationScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
+  const flow = route?.params?.flow ?? null;
+  const isFlowMode = Boolean(flow);
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState('');
   const [orders, setOrders] = useState([]);
-  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [selectedOrderId, setSelectedOrderId] = useState(flow?.orderId ?? null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
@@ -58,7 +62,7 @@ const RefundInitiationScreen = ({ navigation, route }) => {
         const normalizedOrders = eligibleOrders ?? [];
         setOrders(normalizedOrders);
 
-        const initialOrderId = route?.params?.order?.id;
+        const initialOrderId = flow?.orderId ?? route?.params?.order?.id;
         const validSelectedOrderId = normalizedOrders.some((entry) => entry.id === initialOrderId)
           ? initialOrderId
           : normalizedOrders[0]?.id ?? null;
@@ -71,7 +75,7 @@ const RefundInitiationScreen = ({ navigation, route }) => {
       }
     };
     loadOrders();
-  }, [route?.params?.order?.id]);
+  }, [route?.params?.order?.id, flow?.orderId]);
 
   const selectedOrder = useMemo(
     () => orders.find((entry) => entry.id === selectedOrderId) || null,
@@ -131,6 +135,19 @@ const RefundInitiationScreen = ({ navigation, route }) => {
         orderItemIds,
       })
       .then(() => {
+        if (isFlowMode) {
+          Alert.alert(
+            'Workflow complete',
+            'Quality issue resolved: rejection logged, damage reported, and refund initiated.',
+            [
+              {
+                text: 'Back to Home',
+                onPress: () => navigation.navigate('Home'),
+              },
+            ]
+          );
+          return null;
+        }
         Alert.alert('Success', 'Refund initiated.');
         return fieldAdminApi.getRefundEligibleOrders();
       })
@@ -144,6 +161,14 @@ const RefundInitiationScreen = ({ navigation, route }) => {
       })
       .catch(() => Alert.alert('Error', 'Failed to initiate refund.'))
       .finally(() => setSubmitting(false));
+  };
+
+  const handleBackPress = () => {
+    if (isFlowMode) {
+      confirmLeaveFlow(() => navigation.goBack());
+      return;
+    }
+    navigation.goBack();
   };
 
   return (
@@ -167,7 +192,7 @@ const RefundInitiationScreen = ({ navigation, route }) => {
       )}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={handleBackPress}>
             <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
@@ -176,8 +201,17 @@ const RefundInitiationScreen = ({ navigation, route }) => {
           <View style={{ width: 60 }} />
         </View>
 
+        {isFlowMode ? <FieldAdminFlowStepper currentStep={FLOW_STEPS.REFUND} /> : null}
+        {isFlowMode && order ? (
+          <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.flowOrderBanner}>
+            <Text style={[styles.flowOrderText, { color: theme.colors.text.secondary }]}>
+              Final step — refund for order {order.orderId}
+            </Text>
+          </Card>
+        ) : null}
+
         {loading ? <ActivityIndicator color={theme.colors.primary.main} style={{ marginBottom: 16 }} /> : null}
-        {order ? (
+        {order && !isFlowMode ? (
           <TouchableOpacity
             style={[
               styles.openPickerButton,
@@ -430,6 +464,8 @@ const styles = StyleSheet.create({
   openPickerText: { fontSize: 14, fontWeight: '600', flex: 1, marginRight: 8 },
   openPickerChevron: { fontSize: 14, fontWeight: '700' },
   orderCard: { padding: 16, marginBottom: 24 },
+  flowOrderBanner: { padding: 12, marginBottom: 16 },
+  flowOrderText: { fontSize: 13, textAlign: 'center' },
   label: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   orderId: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
   divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 12 },

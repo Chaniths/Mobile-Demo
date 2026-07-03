@@ -13,6 +13,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
 import fieldAdminApi from '../../api/fieldAdminApi';
+import AppIcon from '../../components/common/AppIcon';
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -62,10 +63,10 @@ const HomeScreen = ({ navigation }) => {
 
   const todayStats = useMemo(
     () => [
-      { id: '1', label: 'Orders Assigned', value: String(overview?.assignedOrders ?? 0), icon: '📦', color: '#3b82f6' },
-      { id: '2', label: 'Assessments', value: String(overview?.assessments ?? 0), icon: '✓', color: '#22c55e' },
-      { id: '3', label: 'In Transit', value: String(inTransitCount), icon: '🚚', color: '#f59e0b' },
-      { id: '4', label: 'Routes Today', value: String(overview?.routesToday ?? 0), icon: '🗺️', color: '#8b5cf6' },
+      { id: '1', label: 'Orders Assigned', value: String(overview?.assignedOrders ?? 0), icon: 'orders', color: '#3b82f6' },
+      { id: '2', label: 'Assessments', value: String(overview?.assessments ?? 0), icon: 'check', color: '#22c55e' },
+      { id: '3', label: 'In Transit', value: String(inTransitCount), icon: 'truck', color: '#f59e0b' },
+      { id: '4', label: 'Routes Today', value: String(overview?.routesToday ?? 0), icon: 'map', color: '#8b5cf6' },
     ],
     [overview, inTransitCount]
   );
@@ -74,24 +75,16 @@ const HomeScreen = ({ navigation }) => {
     {
       id: '1',
       title: 'Confirm Quality',
-      subtitle: 'Approve received items',
-      icon: '✅',
+      subtitle: 'Start here for pickup quality checks',
+      icon: 'check',
       color: '#22c55e',
       screen: 'QualityConfirm',
-    },
-    {
-      id: '2',
-      title: 'Reject Product',
-      subtitle: 'Submit product rejection',
-      icon: '❌',
-      color: '#ef4444',
-      screen: 'SellerReject',
     },
     {
       id: '3',
       title: 'Mark Delivery',
       subtitle: 'Complete order handover',
-      icon: '📦',
+      icon: 'orders',
       color: '#3b82f6',
       screen: 'DeliveryPickup',
     },
@@ -99,50 +92,18 @@ const HomeScreen = ({ navigation }) => {
       id: '4',
       title: 'Assessments',
       subtitle: 'Rate drivers, buyers, sellers',
-      icon: '📋',
+      icon: 'clipboard',
       color: '#8b5cf6',
       screen: 'Assessment',
     },
     {
-      id: '5',
-      title: 'Report Damage',
-      subtitle: 'Log delivery damage',
-      icon: '⚠️',
-      color: '#f59e0b',
-      screen: 'DamageReport',
-    },
-    {
-      id: '6',
-      title: 'Refund Initiation',
-      subtitle: 'Start approved refunds',
-      icon: '💰',
-      color: '#f59e0b',
-      screen: 'RefundInitiation',
-    },
-    // Temporarily hidden based on current product priority:
-    // {
-    //   id: '7',
-    //   title: 'Route Reassessment',
-    //   icon: '🔄',
-    //   color: '#10b981',
-    //   screen: 'RouteReassessment',
-    // },
-    {
       id: '8',
       title: 'Truck Capacity',
       subtitle: 'Adjust vehicle capacity',
-      icon: '🚚',
+      icon: 'truck',
       color: '#6366f1',
       screen: 'TruckCapacity',
     },
-    // Temporarily hidden based on current product priority:
-    // {
-    //   id: '9',
-    //   title: 'View Assigned Orders',
-    //   icon: '📋',
-    //   color: '#3b82f6',
-    //   screen: 'RouteOrders',
-    // },
   ];
 
   const displayName =
@@ -198,7 +159,7 @@ const HomeScreen = ({ navigation }) => {
             {todayStats.map((stat) => (
               <Card variant={theme.isDarkMode ? "glass" : "default"} key={stat.id} style={styles.statCard}>
                 <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
-                  <Text style={styles.statIconText}>{stat.icon}</Text>
+                  <AppIcon name={stat.icon} size={22} color={stat.color} />
                 </View>
                 <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>
                   {stat.value}
@@ -226,7 +187,7 @@ const HomeScreen = ({ navigation }) => {
                 <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard}>
                   <View style={styles.actionTopRow}>
                     <View style={[styles.actionIconContainer, { backgroundColor: `${action.color}20` }]}>
-                      <Text style={styles.actionIcon}>{action.icon}</Text>
+                      <AppIcon name={action.icon} size={22} color={action.color} />
                     </View>
                     <Text style={[styles.actionArrow, { color: action.color }]}>→</Text>
                   </View>
