@@ -4,9 +4,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useTheme } from '../hooks/useTheme';
 
-// Seller Screens
 import DashboardScreen from '../screens/seller/DashboardScreen';
 import ProductsScreen from '../screens/seller/ProductsScreen';
+<<<<<<< HEAD
 import AddProductScreen from '../screens/seller/AddProductScreen';
 import EditProductScreen from '../screens/seller/EditProductScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen';
@@ -31,6 +31,15 @@ const Stack = createStackNavigator();
 
 // ── Bottom tab navigator ───────────────────────────────────────────────────────
 
+=======
+import OrdersScreen from '../screens/buyer/OrdersScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+
+const Tab = createBottomTabNavigator();
+const RootStack = createStackNavigator();
+
+>>>>>>> c75df1e3d71a01e29e1da79f35c6a98420225705
 const SellerTabs = () => {
   const { theme } = useTheme();
 
@@ -58,10 +67,7 @@ const SellerTabs = () => {
           shadowOffset: { width: 0, height: 4 },
           shadowRadius: 12,
         },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-        },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
       }}
     >
       <Tab.Screen
@@ -114,6 +120,7 @@ const SellerNavigator = () => {
       <Stack.Screen name="Inventory"    component={PlaceholderScreen} />
       <Stack.Screen name="Earnings"     component={PlaceholderScreen} />
       <Stack.Screen name="OrderDetail"  component={PlaceholderScreen} />
+      <Stack.Screen name="Notifications" component={PlaceholderScreen} />
     </Stack.Navigator>
   );
 };

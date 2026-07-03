@@ -40,10 +40,9 @@
       "favicon": "./src/assets/images/favicon.png"
     },
     "plugins": [
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "Allow FreshRoute to use your location for delivery tracking."
+      ["expo-location", 
+        { 
+          "locationAlwaysAndWhenInUsePermission": "Allow FreshRoute to use your location to set your delivery address."
         }
       ],
       [

@@ -12,6 +12,7 @@ import {
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
+<<<<<<< HEAD
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../api/client';
 
@@ -39,6 +40,9 @@ const QUICK_ACTIONS = [
 ];
 
 // ── Component ──────────────────────────────────────────────────────────────────
+=======
+import NotificationBell from '../../components/NotificationBell';
+>>>>>>> c75df1e3d71a01e29e1da79f35c6a98420225705
 
 const DashboardScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -136,15 +140,18 @@ const DashboardScreen = ({ navigation }) => {
               {metrics?.sellerName ?? 'My Store'}
             </Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <Avatar
-              name={metrics?.sellerName ?? 'My Store'}
-              size="medium"
-              source={null}
-              style={null}
-            />
-          </TouchableOpacity>
-        </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+    <NotificationBell />
+    <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+      <Avatar
+        name={metrics?.sellerName ?? 'My Store'}
+        size="medium"
+        source={null}
+        style={null}
+      />
+    </TouchableOpacity>
+  </View>
+</View>
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
