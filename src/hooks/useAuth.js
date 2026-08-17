@@ -8,6 +8,7 @@ import {
 } from '../store/slices/authSlice';
 import AsyncStorageService from '../services/storage/AsyncStorageService';
 import { STORAGE_KEYS } from '../utils/constants';
+import { setAuthToken } from '../api/interceptors';
 
 /**
  * Custom hook for authentication
@@ -57,6 +58,7 @@ export const useAuth = () => {
       // Clear stored data
       await AsyncStorageService.removeItem(STORAGE_KEYS.AUTH_TOKEN);
       await AsyncStorageService.removeItem(STORAGE_KEYS.USER_DATA);
+      setAuthToken(null);
 
       // TODO: Make API call to logout endpoint if needed
       
@@ -77,6 +79,7 @@ export const useAuth = () => {
       const storedUser = await AsyncStorageService.getItem(STORAGE_KEYS.USER_DATA);
 
       if (storedToken && storedUser) {
+        setAuthToken(storedToken);
         dispatch(loginSuccess({ token: storedToken, user: storedUser }));
         return true;
       }

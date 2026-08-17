@@ -8,15 +8,35 @@ const statusTabMap = {
   delivered: '/fieldadmin/order/delivered',
 };
 
+const unwrap = (payload) => {
+  if (payload == null) return payload;
+  if (Array.isArray(payload)) return payload;
+  if (
+    payload.data !== undefined &&
+    payload.assignedOrders === undefined &&
+    payload.token === undefined &&
+    payload.batch === undefined &&
+    payload.route === undefined
+  ) {
+    return payload.data;
+  }
+  return payload;
+};
+
+const unwrapList = (payload) => {
+  const value = unwrap(payload);
+  return Array.isArray(value) ? value : [];
+};
+
 export const getDashboardOverview = async () => {
   const response = await apiClient.get('/fieldadmin/order/overview');
-  return response.data;
+  return unwrap(response.data);
 };
 
 export const getOrdersByTab = async (tab = 'all') => {
   const path = statusTabMap[tab] ?? statusTabMap.all;
   const response = await apiClient.get(path);
-  return response.data;
+  return unwrapList(response.data);
 };
 
 export const getAssignedTasks = async () => {
@@ -26,6 +46,21 @@ export const getAssignedTasks = async () => {
 
 export const getRoutes = async () => {
   const response = await apiClient.get('/fieldadmin/route/all');
+  return unwrapList(response.data);
+};
+
+export const getRouteHandoffs = async () => {
+  const response = await apiClient.get('/fieldadmin/route/handoff');
+  return unwrapList(response.data);
+};
+
+export const getRouteHandoff = async (routeId) => {
+  const response = await apiClient.get(`/fieldadmin/route/${routeId}/handoff`);
+  return response.data;
+};
+
+export const markStopComplete = async ({ stopId, notes }) => {
+  const response = await apiClient.post(`/fieldadmin/stops/${stopId}/complete`, { notes });
   return response.data;
 };
 
@@ -130,7 +165,7 @@ export const initiateRefund = async ({ orderId, amount, reason, orderItemIds }) 
 
 export const getRefundEligibleOrders = async () => {
   const response = await apiClient.get('/fieldadmin/payment/refunds/eligible-orders');
-  return response.data;
+  return unwrapList(response.data);
 };
 
 export const updateTruckCapacity = async ({ driverId, vehicleCapacity }) => {
@@ -156,11 +191,14 @@ export default {
   getOrdersByTab,
   getAssignedTasks,
   getRoutes,
+  getRouteHandoffs,
+  getRouteHandoff,
   getAllHistory,
   getTruckHistory,
   getDriverHistory,
   submitQualityReview,
   markDeliveryComplete,
+  markStopComplete,
   getAssessmentCandidates,
   submitAssessment,
   submitDamageReport,

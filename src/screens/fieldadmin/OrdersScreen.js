@@ -178,30 +178,6 @@ const OrdersScreen = ({ navigation }) => {
           variant="outline"
           style={styles.actionButton}
         />
-        {item.status === 'ASSIGNED' || item.status === 'BATCHED' || item.status === 'IN_TRANSIT' ? (
-          <Button
-            title="View on Map"
-            onPress={() => {
-              // Only navigate if order has coordinates
-              if (item.coords) {
-                navigation.navigate('RouteMap', {
-                  route: {
-                    routeId: item.route,
-                    driver: item.driver,
-                    stops: 1,
-                    distance: '0 km',
-                    orders: [item],
-                  },
-                });
-              } else {
-                // Show alert if no coordinates
-                alert('This order does not have location coordinates yet.');
-              }
-            }}
-            style={styles.actionButton}
-            disabled={!item.coords}
-          />
-        ) : null}
       </View>
     </Card>
   );

@@ -19,41 +19,50 @@ import AppIcon from '../../components/common/AppIcon';
 
 const DeliveryPickupScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
-  const [actionType, setActionType] = useState(null); // 'delivery' or 'pickup'
+  const initialOrder = route?.params?.order ?? null;
+  const [actionType, setActionType] = useState(
+    initialOrder?.currentPhase === 'DROPOFF' ? 'delivery' : 'pickup'
+  );
   const [signature, setSignature] = useState('');
   const [notes, setNotes] = useState('');
-  const [orders, setOrders] = useState([]);
-  const [selectedOrderId, setSelectedOrderId] = useState(route?.params?.order?.id ?? null);
-  const [loading, setLoading] = useState(false);
+  const [orders, setOrders] = useState(initialOrder ? [initialOrder] : []);
+  const [selectedOrderId, setSelectedOrderId] = useState(initialOrder?.id ?? null);
+  const [loading, setLoading] = useState(!initialOrder);
   const [submitting, setSubmitting] = useState(false);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [orderSearch, setOrderSearch] = useState('');
   const [quickSearch, setQuickSearch] = useState('');
 
   useEffect(() => {
+    if (initialOrder) return undefined;
     const loadOrders = async () => {
       try {
         setLoading(true);
-        const [inTransitOrders, assignedOrders] = await Promise.all([
-          fieldAdminApi.getOrdersByTab('in_transit'),
-          fieldAdminApi.getOrdersByTab('scheduled'),
-        ]);
-        const mergedOrders = [...(inTransitOrders ?? []), ...(assignedOrders ?? [])];
-        const dedupedOrders = mergedOrders.filter(
-          (order, index, array) => array.findIndex((entry) => entry.id === order.id) === index
+        const handoffs = await fieldAdminApi.getRouteHandoffs();
+        const flattened = (handoffs ?? []).flatMap((handoff) =>
+          (handoff.orders ?? []).map((order) => ({
+            id: order.id,
+            orderNumber: order.orderNumber,
+            customer: order.customer ?? 'Customer',
+            address: order.dropoff?.address ?? '-',
+            currentPhase: order.currentPhase,
+            pickup: order.pickup,
+            dropoff: order.dropoff,
+            items: order.items,
+          }))
         );
-        setOrders(dedupedOrders);
-        if (!selectedOrderId && dedupedOrders.length) {
-          setSelectedOrderId(dedupedOrders[0].id);
+        setOrders(flattened);
+        if (!selectedOrderId && flattened.length) {
+          setSelectedOrderId(flattened[0].id);
         }
       } catch (error) {
-        Alert.alert('Error', 'Failed to load delivery orders.');
+        Alert.alert('Error', 'Failed to load route orders.');
       } finally {
         setLoading(false);
       }
     };
     loadOrders();
-  }, []);
+  }, [initialOrder, selectedOrderId]);
 
   const selectedOrder = useMemo(
     () => orders.find((entry) => entry.id === selectedOrderId) || null,
@@ -62,15 +71,32 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
 
   const order = useMemo(() => {
     if (!selectedOrder) return null;
+    const isPickupPhase = selectedOrder.currentPhase === 'PICKUP';
+    const pickupStopId = selectedOrder.pickup?.nextAction?.stopId ?? null;
+    const deliveryStopId = selectedOrder.dropoff?.id ?? null;
     return {
       id: selectedOrder.id,
       orderId: selectedOrder.orderNumber ?? selectedOrder.id,
       customer: selectedOrder.customer ?? 'Customer',
-      address: selectedOrder.address ?? '-',
-      stopId: selectedOrder.deliveryStopId,
-      routeNumber: selectedOrder.route?.routeNumber ?? '-',
+      address: isPickupPhase
+        ? selectedOrder.pickup?.sellerStops?.[0]?.address ?? selectedOrder.address
+        : selectedOrder.dropoff?.address ?? selectedOrder.address,
+      currentPhase: selectedOrder.currentPhase,
+      stopId: isPickupPhase ? pickupStopId : deliveryStopId,
+      canComplete: isPickupPhase
+        ? Boolean(selectedOrder.pickup?.nextAction?.canComplete)
+        : Boolean(selectedOrder.dropoff?.canComplete),
+      blockedReason: isPickupPhase
+        ? selectedOrder.pickup?.nextAction?.blockedReason ?? selectedOrder.pickup?.sellerStops?.[0]?.blockedReason
+        : selectedOrder.dropoff?.blockedReason,
+      items: selectedOrder.items ?? [],
     };
   }, [selectedOrder]);
+
+  useEffect(() => {
+    if (!order) return;
+    setActionType(order.currentPhase === 'DROPOFF' ? 'delivery' : 'pickup');
+  }, [order?.id, order?.currentPhase]);
 
   const filteredOrders = useMemo(() => {
     const query = orderSearch.trim().toLowerCase();
@@ -99,38 +125,36 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
       alert('Please select an action');
       return;
     }
+    if (order?.currentPhase === 'PICKUP' && actionType === 'delivery') {
+      Alert.alert('Pickup required', 'Complete pickup before marking delivery.');
+      return;
+    }
+    if (order?.currentPhase === 'DROPOFF' && actionType === 'pickup') {
+      Alert.alert('Already picked up', 'This order is in the dropoff phase.');
+      return;
+    }
     if (!order?.stopId) {
-      Alert.alert('Unavailable', 'No delivery stop linked to this order.');
+      Alert.alert('Unavailable', 'No stop linked for this action.');
+      return;
+    }
+    if (!order?.canComplete) {
+      Alert.alert('Not ready', order.blockedReason ?? 'This action is not available yet.');
       return;
     }
     const submit = async () => {
       try {
         setSubmitting(true);
-        await fieldAdminApi.markDeliveryComplete({
+        await fieldAdminApi.markStopComplete({
           stopId: order.stopId,
           notes: [actionType === 'pickup' ? 'Pickup confirmed' : 'Delivery confirmed', signature, notes]
             .filter(Boolean)
             .join(' | '),
         });
         Alert.alert('Success', `${actionType === 'delivery' ? 'Delivery' : 'Pickup'} marked complete.`);
-        const [refreshedInTransitOrders, refreshedAssignedOrders] = await Promise.all([
-          fieldAdminApi.getOrdersByTab('in_transit'),
-          fieldAdminApi.getOrdersByTab('scheduled'),
-        ]);
-        const refreshedMerged = [...(refreshedInTransitOrders ?? []), ...(refreshedAssignedOrders ?? [])];
-        const refreshedOrders = refreshedMerged.filter(
-          (entry, index, array) => array.findIndex((item) => item.id === entry.id) === index
-        );
-        setOrders(refreshedOrders);
-        const stillExists = refreshedOrders.some((entry) => entry.id === order.id);
-        if (!stillExists) {
-          setSelectedOrderId(refreshedOrders?.[0]?.id ?? null);
-        }
-        setSignature('');
-        setNotes('');
-        setActionType(null);
+        navigation.goBack();
       } catch (error) {
-        Alert.alert('Error', 'Failed to update delivery status.');
+        const message = error?.response?.data?.message ?? 'Failed to update status.';
+        Alert.alert('Error', message);
       } finally {
         setSubmitting(false);
       }
@@ -253,11 +277,19 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
                 backgroundColor: theme.colors.success,
                 borderColor: theme.colors.success,
               },
-              !actionType && {
+              (order?.currentPhase === 'PICKUP' || !actionType) && {
                 borderColor: theme.colors.border.light,
+                opacity: order?.currentPhase === 'PICKUP' ? 0.45 : 1,
               },
             ]}
-            onPress={() => setActionType('delivery')}
+            onPress={() => {
+              if (order?.currentPhase === 'PICKUP') {
+                Alert.alert('Pickup required', 'Complete pickup before you can mark delivery.');
+                return;
+              }
+              setActionType('delivery');
+            }}
+            disabled={order?.currentPhase === 'PICKUP'}
           >
             <View style={styles.actionButtonContent}>
               <AppIcon
@@ -283,11 +315,19 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
                 backgroundColor: theme.colors.primary.main,
                 borderColor: theme.colors.primary.main,
               },
-              !actionType && {
+              (order?.currentPhase === 'DROPOFF' || !actionType) && {
                 borderColor: theme.colors.border.light,
+                opacity: order?.currentPhase === 'DROPOFF' ? 0.45 : 1,
               },
             ]}
-            onPress={() => setActionType('pickup')}
+            onPress={() => {
+              if (order?.currentPhase === 'DROPOFF') {
+                Alert.alert('Dropoff phase', 'This order is ready for delivery confirmation.');
+                return;
+              }
+              setActionType('pickup');
+            }}
+            disabled={order?.currentPhase === 'DROPOFF'}
           >
             <View style={styles.actionButtonContent}>
               <AppIcon
@@ -307,6 +347,12 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
             </View>
           </TouchableOpacity>
         </View>
+
+        {actionType && order?.blockedReason ? (
+          <Text style={[styles.blockedText, { color: theme.colors.warning ?? '#b45309' }]}>
+            {order.blockedReason}
+          </Text>
+        ) : null}
 
         {actionType && (
           <>
@@ -341,7 +387,7 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
             <Button
               title={submitting ? 'Submitting...' : `Confirm ${actionType === 'delivery' ? 'Delivery' : 'Pickup'}`}
               onPress={handleMarkAction}
-              disabled={submitting || !order}
+              disabled={submitting || !order || !order.canComplete}
               style={styles.submitButton}
             />
           </>
@@ -540,6 +586,7 @@ const styles = StyleSheet.create({
   notesCard: { padding: 16, marginBottom: 24 },
   input: { fontSize: 14, minHeight: 50, textAlignVertical: 'top' },
   submitButton: { marginTop: 8 },
+  blockedText: { fontSize: 13, marginBottom: 12, fontWeight: '600' },
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',

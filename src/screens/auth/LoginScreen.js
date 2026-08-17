@@ -16,6 +16,7 @@ import { findUserByCredentials } from '../../utils/demoUsers';
 import AsyncStorageService from '../../services/storage/AsyncStorageService';
 import { STORAGE_KEYS } from '../../utils/constants';
 import { loginByRole } from '../../api/authApi';
+import { setAuthToken } from '../../api/interceptors';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import AppIcon from '../../components/common/AppIcon';
@@ -67,6 +68,7 @@ const LoginScreen = ({ navigation }) => {
         };
         await AsyncStorageService.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
         await AsyncStorageService.setItem(STORAGE_KEYS.USER_DATA, authPayload.user);
+        setAuthToken(data.token);
         dispatch(loginSuccess(authPayload));
         return;
       } catch {
@@ -90,6 +92,7 @@ const LoginScreen = ({ navigation }) => {
         };
         await AsyncStorageService.setItem(STORAGE_KEYS.AUTH_TOKEN, authPayload.token);
         await AsyncStorageService.setItem(STORAGE_KEYS.USER_DATA, authPayload.user);
+        setAuthToken(authPayload.token);
         dispatch(loginSuccess(authPayload));
       }
     } catch (error) {

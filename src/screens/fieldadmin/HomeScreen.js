@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,9 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
 import fieldAdminApi from '../../api/fieldAdminApi';
 import AppIcon from '../../components/common/AppIcon';
@@ -23,50 +23,75 @@ const HomeScreen = ({ navigation }) => {
   const [latestAggregationRun, setLatestAggregationRun] = useState(null);
   const [inTransitCount, setInTransitCount] = useState(0);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [overviewData, inTransitOrders, scheduledOrders] = await Promise.all([
-          fieldAdminApi.getDashboardOverview(),
-          fieldAdminApi.getOrdersByTab('in_transit'),
-          fieldAdminApi.getOrdersByTab('scheduled'),
-        ]);
-        setOverview(overviewData);
-        setInTransitCount(inTransitOrders?.length ?? 0);
-        const mergedOrders = [...(inTransitOrders ?? []), ...(scheduledOrders ?? [])];
-        const dedupedOrders = mergedOrders.filter(
-          (order, index, array) => array.findIndex((entry) => entry.id === order.id) === index
-        );
-        const mappedPending = dedupedOrders
-          .filter((order) => order.status !== 'DELIVERED')
-          .slice(0, 6)
-          .map((order) => ({
-            id: order.id,
-            type: 'DELIVERY',
-            orderId: order.orderNumber ? `#${order.orderNumber}` : '#TASK',
-            customer: order.customer || null,
-            address: order.address || null,
-            route: order.route?.routeNumber || null,
-            items: order.totalAmount ? `Total: ${order.totalAmount}` : null,
-            priority: order.status === 'IN_TRANSIT' ? 'high' : 'normal',
-            status: order.status,
-          }));
-        setPendingTasks(mappedPending);
-        const runs = await fieldAdminApi.getAggregationRuns(1);
-        setLatestAggregationRun(runs?.[0] ?? null);
-      } catch (error) {
-        console.error('Failed to load field admin dashboard:', error?.message || error);
-      }
-    };
-    loadData();
-  }, []);
+  const [loadError, setLoadError] = useState('');
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+
+      const loadData = async () => {
+        setLoadError('');
+        try {
+          const overviewData = await fieldAdminApi.getDashboardOverview();
+          if (!cancelled) setOverview(overviewData);
+        } catch (error) {
+          console.error('Failed to load field admin overview:', error?.message || error);
+          if (!cancelled) setLoadError(error?.response?.data?.message || error?.message || 'Failed to load dashboard');
+        }
+
+        try {
+          const [inTransitOrders, scheduledOrders] = await Promise.all([
+            fieldAdminApi.getOrdersByTab('in_transit'),
+            fieldAdminApi.getOrdersByTab('scheduled'),
+          ]);
+          if (cancelled) return;
+          const inTransit = Array.isArray(inTransitOrders) ? inTransitOrders : [];
+          const scheduled = Array.isArray(scheduledOrders) ? scheduledOrders : [];
+          setInTransitCount(inTransit.length);
+          const mergedOrders = [...inTransit, ...scheduled];
+          const dedupedOrders = mergedOrders.filter(
+            (order, index, array) => array.findIndex((entry) => entry.id === order.id) === index
+          );
+          const mappedPending = dedupedOrders
+            .filter((order) => order.status !== 'DELIVERED')
+            .slice(0, 6)
+            .map((order) => ({
+              id: order.id,
+              type: 'DELIVERY',
+              orderId: order.orderNumber ? `#${order.orderNumber}` : '#TASK',
+              customer: order.customer || null,
+              address: order.address || null,
+              route: order.route?.routeNumber || null,
+              items: order.totalAmount ? `Total: ${order.totalAmount}` : null,
+              priority: order.status === 'IN_TRANSIT' ? 'high' : 'normal',
+              status: order.status,
+            }));
+          setPendingTasks(mappedPending);
+        } catch (error) {
+          console.error('Failed to load field admin orders:', error?.message || error);
+        }
+
+        try {
+          const runs = await fieldAdminApi.getAggregationRuns(1);
+          if (!cancelled) setLatestAggregationRun(Array.isArray(runs) ? runs[0] ?? null : runs ?? null);
+        } catch (error) {
+          console.error('Failed to load aggregation runs:', error?.message || error);
+        }
+      };
+
+      loadData();
+      return () => {
+        cancelled = true;
+      };
+    }, [])
+  );
 
   const todayStats = useMemo(
     () => [
       { id: '1', label: 'Orders Assigned', value: String(overview?.assignedOrders ?? 0), icon: 'orders', color: '#3b82f6' },
       { id: '2', label: 'Assessments', value: String(overview?.assessments ?? 0), icon: 'check', color: '#22c55e' },
       { id: '3', label: 'In Transit', value: String(inTransitCount), icon: 'truck', color: '#f59e0b' },
-      { id: '4', label: 'Routes Today', value: String(overview?.routesToday ?? 0), icon: 'map', color: '#8b5cf6' },
+      { id: '4', label: 'Routes Today', value: String(overview?.routesToday ?? 0), icon: 'clipboard', color: '#8b5cf6' },
     ],
     [overview, inTransitCount]
   );
@@ -144,6 +169,11 @@ const HomeScreen = ({ navigation }) => {
             <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
               {displayName}
             </Text>
+            {!!loadError && (
+              <Text style={[styles.greeting, { color: theme.colors.error || '#f87171', marginTop: 6 }]}>
+                {loadError}
+              </Text>
+            )}
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
             <Avatar name="Admin" size="medium" />
@@ -296,15 +326,6 @@ const HomeScreen = ({ navigation }) => {
               </Text>
             )}
           </Card>
-        </View>
-
-        {/* Navigation Buttons */}
-        <View style={styles.navSection}>
-          <Button
-            title="View Route Map"
-            onPress={() => navigation.navigate('RouteMap')}
-            style={styles.navButton}
-          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -524,13 +545,6 @@ const styles = StyleSheet.create({
   },
   taskDetail: {
     fontSize: 13,
-  },
-  navSection: {
-    gap: 12,
-    marginBottom: 20,
-  },
-  navButton: {
-    marginBottom: 0,
   },
   // Light mode arch strips with green colors
   lightModeArchStrip1: {

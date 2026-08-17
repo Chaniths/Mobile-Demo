@@ -59,17 +59,69 @@ const RefundInitiationScreen = ({ navigation, route }) => {
       try {
         setLoading(true);
         const eligibleOrders = await fieldAdminApi.getRefundEligibleOrders();
-        const normalizedOrders = eligibleOrders ?? [];
-        setOrders(normalizedOrders);
+        const normalizedOrders = Array.isArray(eligibleOrders) ? eligibleOrders : [];
+
+        const flowOrder = flow?.order
+          ? {
+              id: flow.orderId ?? flow.order.id,
+              orderNumber: flow.order.orderId ?? flow.order.id,
+              customer: flow.order.customer ?? 'Customer',
+              totalAmount: 0,
+              status: 'BATCHED',
+              refundableAmount: 0,
+              items: (flow.rejectedItems ?? []).map((item) => ({
+                id: item.itemId,
+                name: item.name,
+                unit: item.unit,
+                quantity: item.totalQuantity,
+                unitPrice: 0,
+                rejectedQuantity: Math.max(0, (item.totalQuantity ?? 0) - (item.approvedQuantity ?? 0)),
+                refundedQuantity: 0,
+                refundableQuantity: Math.max(0, (item.totalQuantity ?? 0) - (item.approvedQuantity ?? 0)),
+                refundableAmount: 0,
+              })),
+            }
+          : null;
+
+        const merged = [...normalizedOrders];
+        if (flowOrder && !merged.some((entry) => entry.id === flowOrder.id)) {
+          merged.unshift(flowOrder);
+        }
+
+        setOrders(merged);
 
         const initialOrderId = flow?.orderId ?? route?.params?.order?.id;
-        const validSelectedOrderId = normalizedOrders.some((entry) => entry.id === initialOrderId)
+        const validSelectedOrderId = merged.some((entry) => entry.id === initialOrderId)
           ? initialOrderId
-          : normalizedOrders[0]?.id ?? null;
+          : merged[0]?.id ?? null;
 
         setSelectedOrderId(validSelectedOrderId);
       } catch {
-        Alert.alert('Error', 'Failed to load orders for refund.');
+        if (flow?.order) {
+          const fallbackOrder = {
+            id: flow.orderId ?? flow.order.id,
+            orderNumber: flow.order.orderId ?? flow.order.id,
+            customer: flow.order.customer ?? 'Customer',
+            totalAmount: 0,
+            status: 'BATCHED',
+            refundableAmount: 0,
+            items: (flow.rejectedItems ?? []).map((item) => ({
+              id: item.itemId,
+              name: item.name,
+              unit: item.unit,
+              quantity: item.totalQuantity,
+              unitPrice: 0,
+              rejectedQuantity: Math.max(0, (item.totalQuantity ?? 0) - (item.approvedQuantity ?? 0)),
+              refundedQuantity: 0,
+              refundableQuantity: Math.max(0, (item.totalQuantity ?? 0) - (item.approvedQuantity ?? 0)),
+              refundableAmount: 0,
+            })),
+          };
+          setOrders([fallbackOrder]);
+          setSelectedOrderId(fallbackOrder.id);
+        } else {
+          Alert.alert('Error', 'Failed to load orders for refund.');
+        }
       } finally {
         setLoading(false);
       }
@@ -110,7 +162,7 @@ const RefundInitiationScreen = ({ navigation, route }) => {
   }, [orders, orderSearch]);
 
   const handleInitiateRefund = () => {
-    if (!reason.trim() || !amount.trim()) {
+    if (!reason.trim()) {
       alert('Please fill all required fields');
       return;
     }
@@ -118,10 +170,12 @@ const RefundInitiationScreen = ({ navigation, route }) => {
       Alert.alert('Error', 'No order selected for refund.');
       return;
     }
-    const requestedAmount = Number(amount);
-    if (requestedAmount <= 0 || requestedAmount > order.refundableAmount) {
-      Alert.alert('Error', `Refund amount must be between 0 and Rs. ${order.refundableAmount.toFixed(2)}.`);
-      return;
+    const requestedAmount = Number(amount || 0);
+    if (order.refundableAmount > 0) {
+      if (!amount.trim() || requestedAmount <= 0 || requestedAmount > order.refundableAmount) {
+        Alert.alert('Error', `Refund amount must be between 0 and Rs. ${order.refundableAmount.toFixed(2)}.`);
+        return;
+      }
     }
 
     const orderItemIds = order.items?.map((item) => item.id) ?? [];
