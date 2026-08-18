@@ -100,7 +100,11 @@ export const NotificationProvider = ({ children }) => {
       fetchNotifications, markAsRead, markAllAsRead,
       clearAll, deleteNotification, deleteAll, addNotification,
     }),
-    [notifications, unreadCount, loading, fetchNotifications, markAsRead, markAllAsRead]
+    [
+      notifications, unreadCount, loading,
+      fetchNotifications, markAsRead, markAllAsRead,
+      clearAll, deleteNotification, deleteAll, addNotification,
+    ]
   );
 
   return (

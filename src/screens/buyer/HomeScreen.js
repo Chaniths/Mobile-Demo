@@ -7,33 +7,46 @@ import {
   TouchableOpacity,
   FlatList,
 } from 'react-native';
+import { useSelector } from 'react-redux';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
 import NotificationBell from '../../components/NotificationBell';
 
 const categories = [
-  { id: 'fruits', name: 'Fruits', icon: '🍎' },
+  { id: 'fruits',     name: 'Fruits',     icon: '🍎' },
   { id: 'vegetables', name: 'Vegetables', icon: '🥬' },
-  { id: 'dairy', name: 'Dairy', icon: '🥛' },
-  { id: 'grains', name: 'Grains', icon: '🌾' },
+  { id: 'dairy',      name: 'Dairy',      icon: '🥛' },
+  { id: 'grains',     name: 'Grains',     icon: '🌾' },
 ];
 
 const featuredProducts = [
-  { id: '1', name: 'Organic Apples', price: '$4.99', image: '🍎', rating: 4.8 },
-  { id: '2', name: 'Fresh Spinach', price: '$2.99', image: '🥬', rating: 4.6 },
-  { id: '3', name: 'Raw Honey', price: '$8.99', image: '🍯', rating: 4.9 },
-  { id: '4', name: 'Organic Bananas', price: '$3.99', image: '🍌', rating: 4.7 },
-  { id: '5', name: 'Fresh Carrots', price: '$2.99', image: '🥕', rating: 4.5 },
-  { id: '6', name: 'Organic Milk', price: '$5.99', image: '🥛', rating: 4.8 },
-  { id: '7', name: 'Organic Eggs', price: '$1.99', image: '🥚', rating: 4.6 },
-  { id: '8', name: 'Organic Wheat', price: '$4.99', image: '🌾', rating: 4.9 },
-  { id: '9', name: 'Organic Rice', price: '$3.99', image: '🍚', rating: 4.7 },
-  { id: '10', name: 'Organic Sugar', price: '$2.99', image: '🍬', rating: 4.5 },
+  { id: '1',  name: 'Organic Apples',   price: '$4.99', image: '🍎', rating: 4.8 },
+  { id: '2',  name: 'Fresh Spinach',    price: '$2.99', image: '🥬', rating: 4.6 },
+  { id: '3',  name: 'Raw Honey',        price: '$8.99', image: '🍯', rating: 4.9 },
+  { id: '4',  name: 'Organic Bananas',  price: '$3.99', image: '🍌', rating: 4.7 },
+  { id: '5',  name: 'Fresh Carrots',    price: '$2.99', image: '🥕', rating: 4.5 },
+  { id: '6',  name: 'Organic Milk',     price: '$5.99', image: '🥛', rating: 4.8 },
+  { id: '7',  name: 'Organic Eggs',     price: '$1.99', image: '🥚', rating: 4.6 },
+  { id: '8',  name: 'Organic Wheat',    price: '$4.99', image: '🌾', rating: 4.9 },
+  { id: '9',  name: 'Organic Rice',     price: '$3.99', image: '🍚', rating: 4.7 },
+  { id: '10', name: 'Organic Sugar',    price: '$2.99', image: '🍬', rating: 4.5 },
 ];
+
+// Returns "Good Morning / Afternoon / Evening" based on the hour
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good Morning';
+  if (h < 17) return 'Good Afternoon';
+  return 'Good Evening';
+};
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
+
+  // ── Pull real user from Redux auth state ──────────────────────────────────
+  const user = useSelector((state) => state.auth.user);
+  const displayName = user?.name ?? user?.ownerName ?? 'Guest';
 
   const renderCategory = ({ item }) => (
     <TouchableOpacity
@@ -74,7 +87,7 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         style={styles.scrollView}
@@ -83,16 +96,17 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.header}>
           <View>
             <Text style={[styles.greeting, { color: theme.colors.text.secondary }]}>
-              Good Morning
+              {getGreeting()}
             </Text>
             <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
-              John Doe
+              {displayName}
             </Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <NotificationBell />
+            {/* Avatar now uses the real user's name so initials are correct */}
             <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-              <Avatar name="John Doe" size="medium" />
+              <Avatar name={displayName} size="medium" />
             </TouchableOpacity>
           </View>
         </View>
@@ -153,30 +167,19 @@ const HomeScreen = ({ navigation }) => {
           <View style={styles.actionsGrid}>
             <Card style={styles.actionCard} onPress={() => navigation.navigate('OrdersTab')}>
               <Text style={styles.actionIcon}>📦</Text>
-              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
-                My Orders
-              </Text>
+              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>My Orders</Text>
             </Card>
             <Card style={styles.actionCard} onPress={() => navigation.navigate('CartTab')}>
               <Text style={styles.actionIcon}>🛒</Text>
-              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
-                Cart
-              </Text>
+              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>Cart</Text>
             </Card>
             <Card style={styles.actionCard} onPress={() => navigation.navigate('Analytics')}>
               <Text style={styles.actionIcon}>📊</Text>
-              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
-                Analytics
-              </Text>
+              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>Analytics</Text>
             </Card>
-            <Card
-              style={styles.actionCard}
-              onPress={() => navigation.navigate('TrackOrder')}
-            >
+            <Card style={styles.actionCard} onPress={() => navigation.navigate('TrackOrder')}>
               <Text style={styles.actionIcon}>📍</Text>
-              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
-                Track Order
-              </Text>
+              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>Track Order</Text>
             </Card>
           </View>
         </View>
@@ -186,145 +189,43 @@ const HomeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingTop: 60,
-    paddingBottom: 100,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-  },
-  greeting: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 20,
-    marginBottom: 24,
-    padding: 16,
-    borderRadius: 12,
-  },
-  searchIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  searchPlaceholder: {
-    fontSize: 15,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  seeAll: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  categoriesList: {
-    paddingHorizontal: 16,
-  },
-  categoryIcon: {
-    fontSize: 18,
-    marginRight: 8,
-  },
-  categoryName: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  categoryPillWrapper: {
-    marginRight: 8,
-  },
-  categoryPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-  },
-  productsList: {
-    paddingHorizontal: 16,
-  },
-  productCard: {
-    width: 140,
-    marginHorizontal: 4,
-    marginBottom: 16,
-  },
-  productImage: {
-    height: 120,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  productEmoji: {
-    fontSize: 48,
-  },
-  productName: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  productFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  productPrice: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  rating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    fontSize: 12,
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-  },
-  actionCard: {
-    width: '47%',
-    margin: '1.5%',
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  actionIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  actionText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
+  container:    { flex: 1 },
+  scrollView:   { flex: 1 },
+  scrollContent:{ paddingTop: 60, paddingBottom: 100 },
+
+  header:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20 },
+  greeting:  { fontSize: 14, marginBottom: 4 },
+  userName:  { fontSize: 24, fontWeight: '700' },
+
+  searchBar:         { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 24, padding: 16, borderRadius: 12 },
+  searchIcon:        { fontSize: 20, marginRight: 12 },
+  searchPlaceholder: { fontSize: 15 },
+
+  section:       { marginBottom: 24 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 16 },
+  sectionTitle:  { fontSize: 20, fontWeight: '700', paddingHorizontal: 20, marginBottom: 16 },
+  seeAll:        { fontSize: 14, fontWeight: '600' },
+
+  categoriesList:    { paddingHorizontal: 16 },
+  categoryPillWrapper:{ marginRight: 8 },
+  categoryPill:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999 },
+  categoryIcon:      { fontSize: 18, marginRight: 8 },
+  categoryName:      { fontSize: 14, fontWeight: '600' },
+
+  productsList: { paddingHorizontal: 16 },
+  productCard:  { width: 140, marginHorizontal: 4, marginBottom: 16 },
+  productImage: { height: 120, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  productEmoji: { fontSize: 48 },
+  productName:  { fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  productFooter:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  productPrice: { fontSize: 16, fontWeight: '700' },
+  rating:       { flexDirection: 'row', alignItems: 'center' },
+  ratingText:   { fontSize: 12 },
+
+  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16 },
+  actionCard:  { width: '47%', margin: '1.5%', alignItems: 'center', paddingVertical: 20 },
+  actionIcon:  { fontSize: 32, marginBottom: 8 },
+  actionText:  { fontSize: 13, fontWeight: '600' },
 });
 
 export default HomeScreen;
-

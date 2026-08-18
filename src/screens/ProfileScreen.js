@@ -116,6 +116,7 @@ const getMenuItems = (role) => {
         id: 'availability', icon: 'calendar-outline', title: 'Availability',
         desc: isFieldAdmin ? 'Driver availability overview (view only)' : 'Set your active delivery hours',
       },
+      { id: 'reviews', icon: 'star-outline', title: 'My Reviews', desc: 'Reviews buyers left about your deliveries' },
       notifications,
       help,
       terms,
@@ -768,7 +769,7 @@ const AvailabilitySection = ({ theme, readOnly = false }) => {
 
 // ─── SECTION: Reviews ─────────────────────────────────────────────────────────
 
-const ReviewsSection = ({ role, theme }) => {
+const ReviewsSection = ({ role, theme, user }) => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editId,  setEditId]  = useState(null);
@@ -780,13 +781,22 @@ const ReviewsSection = ({ role, theme }) => {
         if (role === 'buyer') {
           const { data } = await apiClient.get('/rating/my');
           setReviews(data);
-        } else {
+        } else if (role === 'seller') {
           const { data } = await apiClient.get('/rating/my-seller-ratings');
           setReviews(data.ratings ?? []);
+        } else if (role === 'driver' || role === 'field_admin') {
+          // no "my ratings" endpoint for drivers yet — hits the public
+          // /rating/driver/:driverId route directly using the driver's own id.
+          // TODO confirm this is the right field on `user`.
+          const driverId = user?.driverId ?? user?.driver?.id;
+          if (!driverId) { setReviews([]); return; }
+          const { data } = await apiClient.get(`/rating/driver/${driverId}`);
+          setReviews(data ?? []); // this endpoint returns a raw array, not { ratings: [...] }
         }
       } catch { /* show empty */ } finally { setLoading(false); }
     })();
-  }, [role]);
+  }, [role, user?.driverId]);
+
 
   const handleDelete = async (id) => {
     try {
@@ -837,7 +847,7 @@ const ReviewsSection = ({ role, theme }) => {
               <View style={{ flex: 1 }}>
                 <Text style={sh.reviewProduct}>{r.product?.name ?? r.productName ?? 'Product'}</Text>
                 {r.order?.orderNumber && <Text style={sh.reviewMeta}>#{r.order.orderNumber}</Text>}
-                {role === 'seller' && r.buyer?.user?.name && <Text style={sh.reviewMeta}>by {r.buyer.user.name}</Text>}
+                {(role === 'seller' || role === 'driver' || role === 'field_admin') && r.buyer?.user?.name && (<Text style={sh.reviewMeta}>by {r.buyer.user.name}</Text>)}
               </View>
               <View style={{ alignItems: 'flex-end', gap: 4 }}>
                 {canEdit && editId !== r.id && (
@@ -852,7 +862,7 @@ const ReviewsSection = ({ role, theme }) => {
                     <Text style={sh.deleteTxt}>Delete</Text>
                   </TouchableOpacity>
                 )}
-                {role === 'seller' && !r.isFlagged && (
+                {(role === 'seller' || role === 'driver' || role === 'field_admin') && !r.isFlagged && (
                   <TouchableOpacity onPress={() => handleFlag(r.id)} style={sh.inlineActionRow}>
                     <Ionicons name="flag-outline" size={12} color="#94a3b8" />
                     <Text style={sh.flagTxt}>Flag</Text>
@@ -1080,7 +1090,7 @@ const DetailView = ({ section, user, theme, dispatch, token, role, onBack }) => 
       case 'business':      return <BusinessSection     user={user} theme={theme} dispatch={dispatch} token={token} />;
       case 'vehicle':       return <VehicleSection      user={user} theme={theme} readOnly={isFieldAdmin} />;
       case 'availability':  return <AvailabilitySection theme={theme} readOnly={isFieldAdmin} />;
-      case 'reviews':       return <ReviewsSection      role={role} theme={theme} />;
+      case 'reviews':       return <ReviewsSection      role={role} theme={theme} user={user} />;
       case 'notifications': return <NotificationsSection theme={theme} role={role} />;
       case 'help':          return <HelpSection         theme={theme} />;
       case 'terms':         return <TermsSection        theme={theme} role={role} />;

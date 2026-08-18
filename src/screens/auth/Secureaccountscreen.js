@@ -1,20 +1,34 @@
 // SecureAccountScreen.js
 // Lets a user prove who they are (via Google) so they can undo an unauthorized password change.
 //
-// TODO: Google Sign-In is a UI-only placeholder for now — wire up the real flow once
-// a library is chosen (e.g. @react-native-google-signin/google-signin or expo-auth-session).
-// handleGoogleResponse() below is where the real ID token would get sent to the backend.
+// FIX: previously this screen sent the literal string
+// 'TODO_REPLACE_WITH_REAL_GOOGLE_ID_TOKEN' to the backend instead of a real
+// Google ID token — the flow never actually worked. This now uses
+// @react-native-google-signin/google-signin to get a real credential,
+// mirroring what SecureAccountPage.tsx does on web with Google Identity Services.
+//
+// SETUP REQUIRED before this works:
+//   1. npm install @react-native-google-signin/google-signin
+//   2. Get your Web Client ID from Google Cloud Console (OAuth 2.0 Client IDs —
+//      same "Web application" client ID web already uses for VITE_GOOGLE_CLIENT_ID)
+//   3. Replace GOOGLE_WEB_CLIENT_ID below with that value (or load from env/config)
+//   4. Follow the native setup steps in the library's docs (Android SHA-1 fingerprint,
+//      iOS URL scheme) — this step can't be done from JS alone.
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useTheme } from '../../hooks/useTheme';
 import Button from '../../components/common/Button';
 import apiClient from '../../api/client';
+
+// TODO: replace with your real Web Client ID (same one web uses for VITE_GOOGLE_CLIENT_ID)
+const GOOGLE_WEB_CLIENT_ID = 'YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com';
 
 const SecureAccountScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -26,7 +40,15 @@ const SecureAccountScreen = ({ navigation, route }) => {
   const [status, setStatus] = useState(email ? 'idle' : 'error');
   const [message, setMessage] = useState(email ? '' : 'Invalid link. No email address found.');
 
-  // Called once the real Google sign-in flow returns an ID token.
+  // Configure Google Sign-In once when the screen mounts.
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      offlineAccess: false,
+    });
+  }, []);
+
+  // Sends the real Google ID token to the backend to verify and revert the password change.
   const handleGoogleResponse = async (googleIdToken) => {
     setStatus('verifying');
     try {
@@ -38,9 +60,24 @@ const SecureAccountScreen = ({ navigation, route }) => {
     }
   };
 
-  // TODO: replace with real Google Sign-In call (e.g. GoogleSignin.signIn())
-  const handleGooglePress = () => {
-    handleGoogleResponse('TODO_REPLACE_WITH_REAL_GOOGLE_ID_TOKEN');
+  // Opens the real Google account picker and gets back a real ID token.
+  const handleGooglePress = async () => {
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const userInfo = await GoogleSignin.signIn();
+      // idToken lives at userInfo.data.idToken on recent library versions —
+      // fall back to userInfo.idToken for older versions.
+      const idToken = userInfo?.data?.idToken ?? userInfo?.idToken;
+      if (!idToken) throw new Error('No ID token returned from Google');
+      await handleGoogleResponse(idToken);
+    } catch (err) {
+      // User cancelled the picker, or something else went wrong before we
+      // even reached the backend — show it the same way as a backend failure.
+      if (err?.code !== 'SIGN_IN_CANCELLED') {
+        setStatus('error');
+        setMessage(err?.message ?? 'Google sign-in failed');
+      }
+    }
   };
 
   return (

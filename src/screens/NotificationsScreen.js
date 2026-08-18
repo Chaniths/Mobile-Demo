@@ -57,6 +57,7 @@ function getMeta(type, theme) {
     PRODUCT_SUBMITTED:   { emoji: '📋', label: 'Product Review',color: theme.colors.primary.main },
     PRODUCT_REVIEWED:    { emoji: '🏷️', label: 'Product Update',color: theme.colors.success },
     CART_REMINDER:       { emoji: '🛒', label: 'Ready to pay',  color: theme.colors.warning },
+    ITEM_ADDED_TO_CART:  { emoji: '🛒', label: 'Cart',          color: theme.colors.primary.main },
   };
   return map[type] ?? { emoji: '🔔', label: 'System', color: theme.colors.text.tertiary };
 }
