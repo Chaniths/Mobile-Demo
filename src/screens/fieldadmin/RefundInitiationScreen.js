@@ -16,7 +16,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
 import FieldAdminFlowStepper from '../../components/common/FieldAdminFlowStepper';
-import { confirmLeaveFlow, FLOW_STEPS } from '../../utils/fieldAdminQualityFlow';
+import { confirmLeaveFlow, FLOW_STEPS, buildFlowRefundOrder, mergeEligibleOrdersWithFlow } from '../../utils/fieldAdminQualityFlow';
 
 const buildRefundDefaults = (selectedOrder) => {
   if (!selectedOrder) {
@@ -56,37 +56,11 @@ const RefundInitiationScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     const loadOrders = async () => {
+      const flowOrder = buildFlowRefundOrder(flow);
       try {
         setLoading(true);
         const eligibleOrders = await fieldAdminApi.getRefundEligibleOrders();
-        const normalizedOrders = Array.isArray(eligibleOrders) ? eligibleOrders : [];
-
-        const flowOrder = flow?.order
-          ? {
-              id: flow.orderId ?? flow.order.id,
-              orderNumber: flow.order.orderId ?? flow.order.id,
-              customer: flow.order.customer ?? 'Customer',
-              totalAmount: 0,
-              status: 'BATCHED',
-              refundableAmount: 0,
-              items: (flow.rejectedItems ?? []).map((item) => ({
-                id: item.itemId,
-                name: item.name,
-                unit: item.unit,
-                quantity: item.totalQuantity,
-                unitPrice: 0,
-                rejectedQuantity: Math.max(0, (item.totalQuantity ?? 0) - (item.approvedQuantity ?? 0)),
-                refundedQuantity: 0,
-                refundableQuantity: Math.max(0, (item.totalQuantity ?? 0) - (item.approvedQuantity ?? 0)),
-                refundableAmount: 0,
-              })),
-            }
-          : null;
-
-        const merged = [...normalizedOrders];
-        if (flowOrder && !merged.some((entry) => entry.id === flowOrder.id)) {
-          merged.unshift(flowOrder);
-        }
+        const merged = mergeEligibleOrdersWithFlow(eligibleOrders, flow);
 
         setOrders(merged);
 
@@ -97,28 +71,9 @@ const RefundInitiationScreen = ({ navigation, route }) => {
 
         setSelectedOrderId(validSelectedOrderId);
       } catch {
-        if (flow?.order) {
-          const fallbackOrder = {
-            id: flow.orderId ?? flow.order.id,
-            orderNumber: flow.order.orderId ?? flow.order.id,
-            customer: flow.order.customer ?? 'Customer',
-            totalAmount: 0,
-            status: 'BATCHED',
-            refundableAmount: 0,
-            items: (flow.rejectedItems ?? []).map((item) => ({
-              id: item.itemId,
-              name: item.name,
-              unit: item.unit,
-              quantity: item.totalQuantity,
-              unitPrice: 0,
-              rejectedQuantity: Math.max(0, (item.totalQuantity ?? 0) - (item.approvedQuantity ?? 0)),
-              refundedQuantity: 0,
-              refundableQuantity: Math.max(0, (item.totalQuantity ?? 0) - (item.approvedQuantity ?? 0)),
-              refundableAmount: 0,
-            })),
-          };
-          setOrders([fallbackOrder]);
-          setSelectedOrderId(fallbackOrder.id);
+        if (flowOrder) {
+          setOrders([flowOrder]);
+          setSelectedOrderId(flowOrder.id);
         } else {
           Alert.alert('Error', 'Failed to load orders for refund.');
         }
@@ -136,12 +91,22 @@ const RefundInitiationScreen = ({ navigation, route }) => {
 
   const order = useMemo(() => {
     if (!selectedOrder) return null;
+    const itemRefundTotal = Number(
+      (selectedOrder.items ?? [])
+        .filter((item) => item.refundableQuantity > 0)
+        .reduce((sum, item) => sum + Number(item.refundableAmount ?? 0), 0)
+        .toFixed(2)
+    );
+    const refundableAmount =
+      Number(selectedOrder.refundableAmount ?? 0) > 0
+        ? Number(selectedOrder.refundableAmount)
+        : itemRefundTotal;
     return {
       id: selectedOrder.id,
       orderId: selectedOrder.orderNumber ?? selectedOrder.id,
       customer: selectedOrder.customer ?? 'Customer',
       totalAmount: `Rs. ${Number(selectedOrder.totalAmount ?? 0).toFixed(2)}`,
-      refundableAmount: Number(selectedOrder.refundableAmount ?? 0),
+      refundableAmount,
       status: selectedOrder.status ?? 'N/A',
       items: (selectedOrder.items ?? []).filter((item) => item.refundableQuantity > 0),
     };

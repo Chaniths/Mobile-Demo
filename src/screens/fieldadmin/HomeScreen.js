@@ -20,7 +20,6 @@ const HomeScreen = ({ navigation }) => {
   const authUser = useSelector((state) => state.auth.user);
   const [overview, setOverview] = useState(null);
   const [pendingTasks, setPendingTasks] = useState([]);
-  const [latestAggregationRun, setLatestAggregationRun] = useState(null);
   const [inTransitCount, setInTransitCount] = useState(0);
 
   const [loadError, setLoadError] = useState('');
@@ -63,19 +62,11 @@ const HomeScreen = ({ navigation }) => {
               address: order.address || null,
               route: order.route?.routeNumber || null,
               items: order.totalAmount ? `Total: ${order.totalAmount}` : null,
-              priority: order.status === 'IN_TRANSIT' ? 'high' : 'normal',
               status: order.status,
             }));
           setPendingTasks(mappedPending);
         } catch (error) {
           console.error('Failed to load field admin orders:', error?.message || error);
-        }
-
-        try {
-          const runs = await fieldAdminApi.getAggregationRuns(1);
-          if (!cancelled) setLatestAggregationRun(Array.isArray(runs) ? runs[0] ?? null : runs ?? null);
-        } catch (error) {
-          console.error('Failed to load aggregation runs:', error?.message || error);
         }
       };
 
@@ -268,26 +259,6 @@ const HomeScreen = ({ navigation }) => {
                     {task.orderId}
                   </Text>
                 </View>
-                <View
-                  style={[
-                    styles.priorityBadge,
-                    {
-                      backgroundColor:
-                        task.priority === 'high' ? `${theme.colors.error}20` : `${theme.colors.info}20`,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.priorityText,
-                      {
-                        color: task.priority === 'high' ? theme.colors.error : theme.colors.info,
-                      },
-                    ]}
-                  >
-                    {task.priority}
-                  </Text>
-                </View>
               </View>
               <Text style={[styles.taskDetail, { color: theme.colors.text.secondary }]}>
                 {task.customer || task.driver}
@@ -297,35 +268,6 @@ const HomeScreen = ({ navigation }) => {
               </Text>
             </Card>
           ))}
-        </View>
-
-        {/* Aggregation Run Observability */}
-        <View style={styles.tasksSection}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-            Latest Aggregation Run
-          </Text>
-          <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.taskCard}>
-            {latestAggregationRun ? (
-              <>
-                <Text style={[styles.taskOrderId, { color: theme.colors.text.primary }]}>
-                  Run #{latestAggregationRun.id.slice(0, 8)}
-                </Text>
-                <Text style={[styles.taskDetail, { color: theme.colors.text.secondary }]}>
-                  Status: {latestAggregationRun.status}
-                </Text>
-                <Text style={[styles.taskDetail, { color: theme.colors.text.secondary }]}>
-                  Eligible: {latestAggregationRun.totalEligible} • Rejected: {latestAggregationRun.totalRejected}
-                </Text>
-                <Text style={[styles.taskDetail, { color: theme.colors.text.secondary }]}>
-                  Batches: {latestAggregationRun.batchesCreatedCount} • Clusters: {latestAggregationRun.totalClusters}
-                </Text>
-              </>
-            ) : (
-              <Text style={[styles.taskDetail, { color: theme.colors.text.secondary }]}>
-                No aggregation run history yet.
-              </Text>
-            )}
-          </Card>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -532,16 +474,6 @@ const styles = StyleSheet.create({
   taskOrderId: {
     fontSize: 16,
     fontWeight: '700',
-  },
-  priorityBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  priorityText: {
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'capitalize',
   },
   taskDetail: {
     fontSize: 13,

@@ -12,7 +12,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { useTheme } from '../../hooks/useTheme';
 import { loginFailure, loginStart, loginSuccess } from '../../store/slices/authSlice';
-import { findUserByCredentials } from '../../utils/demoUsers';
 import AsyncStorageService from '../../services/storage/AsyncStorageService';
 import { STORAGE_KEYS } from '../../utils/constants';
 import { loginByRole } from '../../api/authApi';
@@ -48,56 +47,30 @@ const LoginScreen = ({ navigation }) => {
     dispatch(loginStart());
 
     try {
-      // Try live backend Field Admin login first.
-      // This lets seeded DB users log in even if they do not exist in demoUsers.
-      try {
-        const data = await loginByRole({ email, password });
-        const serverUser = data.user ?? data.fieldAdmin ?? {};
-        const normalizedRole = serverUser.role
-          ? serverUser.role.toLowerCase().replace(/_/g, '')
-          : 'fieldadmin';
-        const authPayload = {
-          user: {
-            id: serverUser.id,
-            name: serverUser.name,
-            email: serverUser.email,
-            role: normalizedRole,
-            status: serverUser.status,
-          },
-          token: data.token,
-        };
-        await AsyncStorageService.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
-        await AsyncStorageService.setItem(STORAGE_KEYS.USER_DATA, authPayload.user);
-        setAuthToken(data.token);
-        dispatch(loginSuccess(authPayload));
-        return;
-      } catch {
-        // Fall through to demo auth (buyer/seller/driver demo accounts).
-      }
-
-      const user = findUserByCredentials(email, password);
-
-      if (!user) {
-        const message = 'Invalid email or password';
-        setAuthError(message);
-        dispatch(loginFailure(message));
-        setLoading(false);
-        return;
-      }
-
-      {
-        const authPayload = {
-          user,
-          token: `demo_token_${user.role}`,
-        };
-        await AsyncStorageService.setItem(STORAGE_KEYS.AUTH_TOKEN, authPayload.token);
-        await AsyncStorageService.setItem(STORAGE_KEYS.USER_DATA, authPayload.user);
-        setAuthToken(authPayload.token);
-        dispatch(loginSuccess(authPayload));
-      }
+      const data = await loginByRole({ email, password });
+      const serverUser = data.user ?? data.fieldAdmin ?? {};
+      const normalizedRole = serverUser.role
+        ? serverUser.role.toLowerCase().replace(/_/g, '')
+        : 'fieldadmin';
+      const authPayload = {
+        user: {
+          id: serverUser.id,
+          name: serverUser.name,
+          email: serverUser.email,
+          role: normalizedRole,
+          status: serverUser.status,
+        },
+        token: data.token,
+      };
+      await AsyncStorageService.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
+      await AsyncStorageService.setItem(STORAGE_KEYS.USER_DATA, authPayload.user);
+      setAuthToken(data.token);
+      dispatch(loginSuccess(authPayload));
     } catch (error) {
-      const message =
-        error?.response?.data?.message || error?.message || 'Login failed';
+      const timedOut = error?.code === 'ECONNABORTED' || String(error?.message ?? '').includes('timeout');
+      const message = timedOut
+        ? 'Cannot reach the server. Check that the backend is running, then try again.'
+        : (error?.response?.data?.message || error?.message || 'Login failed');
       setAuthError(message);
       dispatch(loginFailure(message));
     } finally {

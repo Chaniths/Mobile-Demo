@@ -64,6 +64,11 @@ export const markStopComplete = async ({ stopId, notes }) => {
   return response.data;
 };
 
+export const confirmOrderFulfillment = async ({ orderId, action, notes }) => {
+  const response = await apiClient.post(`/fieldadmin/order/${orderId}/fulfill`, { action, notes });
+  return response.data;
+};
+
 export const getAllHistory = async () => {
   const response = await apiClient.get('/fieldadmin/history/all');
   return response.data;
@@ -95,7 +100,7 @@ export const submitQualityReview = async ({
     rejectionReason,
     rejectionDetails,
   });
-  return response.data;
+  return unwrap(response.data);
 };
 
 export const submitDamageReport = async ({
@@ -120,7 +125,7 @@ export const submitDamageReport = async ({
     orderItemId: orderItemId ?? orderItemIds?.[0],
     inspectionId: inspectionId ?? inspectionIds?.[0],
   });
-  return response.data;
+  return unwrap(response.data);
 };
 
 export const markDeliveryComplete = async ({ stopId, notes }) => {
@@ -199,6 +204,7 @@ export default {
   submitQualityReview,
   markDeliveryComplete,
   markStopComplete,
+  confirmOrderFulfillment,
   getAssessmentCandidates,
   submitAssessment,
   submitDamageReport,

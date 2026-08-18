@@ -20,7 +20,7 @@ const mapHandoffOrder = (order, handoff) => ({
   orderId: `#${order.orderNumber}`,
   orderNumber: order.orderNumber,
   customer: order.customer ?? 'Customer',
-  address: order.dropoff?.address ?? '-',
+  address: order.dropoff?.address || order.pickup?.sellerStops?.[0]?.address || order.address || order.deliveryAddress || '-',
   currentPhase: order.currentPhase,
   items: order.items?.map(
     (item) => `${item.product?.name ?? 'Item'} x${item.quantity}${item.isInspected ? '' : ' (inspect)'}`

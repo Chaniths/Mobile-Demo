@@ -16,7 +16,45 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
 import FieldAdminFlowStepper from '../../components/common/FieldAdminFlowStepper';
-import { buildQualityFlow, FLOW_STEPS } from '../../utils/fieldAdminQualityFlow';
+import { buildQualityFlow, FLOW_STEPS, itemNeedsInspection, pendingQualityOrders } from '../../utils/fieldAdminQualityFlow';
+
+const mergeOrdersById = (...orderLists) => {
+  const merged = new Map();
+  orderLists.flat().forEach((order) => {
+    if (order?.id && !merged.has(order.id)) {
+      merged.set(order.id, order);
+    }
+  });
+  return Array.from(merged.values());
+};
+
+const flattenHandoffsToQualityOrders = (handoffs) =>
+  mergeOrdersById(
+    (handoffs ?? []).flatMap((handoff) =>
+      (handoff.orders ?? []).map((order) => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status ?? null,
+        fulfillmentPhase: order.fulfillmentPhase ?? null,
+        customer: order.customer ?? 'Customer',
+        placedAt: order.placedAt ?? null,
+        totalAmount: Number(order.totalAmount ?? 0),
+        deliveryStopId: order.deliveryStopId ?? null,
+        route: {
+          routeNumber: handoff.route?.routeNumber ?? handoff.batch?.batchNumber ?? '-',
+        },
+        items: (order.items ?? []).map((item) => ({
+          id: item.orderItemId ?? item.id,
+          name: item.product?.name ?? item.name ?? 'Item',
+          unit: item.product?.unit ?? item.unit ?? '',
+          quantity: Number(item.quantity ?? 0),
+          unitPrice: Number(item.unitPrice ?? 0),
+          inspectionStatus: item.inspectionStatus ?? null,
+          inspections: item.inspectionStatus ? [{ result: item.inspectionStatus }] : [],
+        })),
+      }))
+    )
+  );
 
 const QualityConfirmScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -34,13 +72,15 @@ const QualityConfirmScreen = ({ navigation, route }) => {
     const loadOrders = async () => {
       try {
         setLoading(true);
-        const scheduledOrders = await fieldAdminApi.getOrdersByTab('scheduled');
-        const fallbackOrders = scheduledOrders?.length ? scheduledOrders : await fieldAdminApi.getOrdersByTab('all');
-        const normalized = fallbackOrders ?? [];
-        setOrders(normalized);
-        if (!selectedOrderId && normalized.length > 0) {
-          setSelectedOrderId(normalized[0].id);
-        }
+        const handoffs = await fieldAdminApi.getRouteHandoffs();
+        const pendingOrders = pendingQualityOrders(
+          flattenHandoffsToQualityOrders(handoffs)
+        );
+        setOrders(pendingOrders);
+        setSelectedOrderId((currentId) => {
+          if (currentId && pendingOrders.some((entry) => entry.id === currentId)) return currentId;
+          return pendingOrders[0]?.id ?? null;
+        });
       } catch (error) {
         Alert.alert('Error', 'Failed to load quality-check orders.');
       } finally {
@@ -63,13 +103,15 @@ const QualityConfirmScreen = ({ navigation, route }) => {
       customer: selectedOrder.customer ?? 'Customer',
       routeNumber: selectedOrder.route?.routeNumber ?? '-',
       date: selectedOrder.placedAt ? new Date(selectedOrder.placedAt).toLocaleDateString() : '-',
-      items: (selectedOrder.items ?? []).map((item) => ({
+      items: (selectedOrder.items ?? []).filter(itemNeedsInspection).map((item) => ({
         id: item.id,
         name: item.name,
         quantity: `${item.quantity} ${item.unit}`,
         quantityValue: item.quantity,
         quantityUnit: item.unit,
+        unitPrice: Number(item.unitPrice ?? 0),
       })),
+      totalAmount: Number(selectedOrder.totalAmount ?? 0),
     };
   }, [selectedOrder]);
 
@@ -221,17 +263,21 @@ const QualityConfirmScreen = ({ navigation, route }) => {
             approvedQuantity,
             totalQuantity,
             unit: item.quantityUnit,
+            unitPrice: Number(item.unitPrice ?? 0),
           });
         });
 
         if (rejectedItems.length === 0) {
           await Promise.all(approvedCalls);
           Alert.alert('Success', 'Quality reviews submitted.');
-          const refreshedOrders = await fieldAdminApi.getOrdersByTab('scheduled');
-          setOrders(refreshedOrders ?? []);
-          const stillExists = (refreshedOrders ?? []).some((entry) => entry.id === order.id);
+          const handoffs = await fieldAdminApi.getRouteHandoffs();
+          const refreshedOrders = pendingQualityOrders(
+            flattenHandoffsToQualityOrders(handoffs)
+          );
+          setOrders(refreshedOrders);
+          const stillExists = refreshedOrders.some((entry) => entry.id === order.id);
           if (!stillExists) {
-            setSelectedOrderId(refreshedOrders?.[0]?.id ?? null);
+            setSelectedOrderId(refreshedOrders[0]?.id ?? null);
           }
           setSelectedProducts([]);
           setPartialQuantities({});
@@ -335,7 +381,7 @@ const QualityConfirmScreen = ({ navigation, route }) => {
 
         {!order && !loading ? (
           <Text style={{ color: theme.colors.text.secondary, marginBottom: 16 }}>
-            No assigned orders available for quality checks.
+            No orders pending quality inspection.
           </Text>
         ) : null}
         {loading ? <ActivityIndicator color={theme.colors.primary.main} style={{ marginBottom: 16 }} /> : null}
@@ -665,7 +711,7 @@ const QualityConfirmScreen = ({ navigation, route }) => {
             ]}
           >
             <View style={styles.modalHandle} />
-            <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select Assigned Order</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.text.primary }]}>Select Uninspected Order</Text>
             <TextInput
               style={[
                 styles.modalSearchInput,
