@@ -1,8 +1,9 @@
 import React from 'react';
-import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
+import { TabBarIcon } from '../components/common/AppIcon';
 
 import HomeScreen from '../screens/buyer/HomeScreen';
 import ProductBrowseScreen from '../screens/buyer/ProductBrowseScreen';
@@ -44,6 +45,8 @@ const CartStack = () => (
 
 const BuyerTabs = () => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -54,11 +57,13 @@ const BuyerTabs = () => {
           backgroundColor: theme.colors.card,
           borderTopColor: theme.colors.border,
           borderTopWidth: 0,
-          height: 60,
-          paddingBottom: 8,
+          height: 55 + insets.bottom,
+          paddingBottom: 0 + insets.bottom,
           paddingTop: 8,
           position: 'absolute',
-          left: 16, right: 16, bottom: 16,
+          left: 16,
+          right: 16,
+          bottom: 0,
           borderRadius: 24,
           elevation: 8,
           shadowColor: '#000',
@@ -69,20 +74,55 @@ const BuyerTabs = () => {
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
       }}
     >
-      <Tab.Screen name="HomeTab" component={HomeStack}
-        options={{ tabBarLabel: 'Home', tabBarIcon: () => <Text style={{ fontSize: 24 }}>🏠</Text> }}
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeStack}
+        options={{
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="home" color={color} focused={focused} />
+          ),
+        }}
       />
-      <Tab.Screen name="BrowseTab" component={BrowseStack}
-        options={{ tabBarLabel: 'Browse', tabBarIcon: () => <Text style={{ fontSize: 24 }}>🔍</Text> }}
+      <Tab.Screen
+        name="BrowseTab"
+        component={BrowseStack}
+        options={{
+          tabBarLabel: 'Browse',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="search" color={color} focused={focused} />
+          ),
+        }}
       />
-      <Tab.Screen name="CartTab" component={CartStack}
-        options={{ tabBarLabel: 'Cart', tabBarIcon: () => <Text style={{ fontSize: 24 }}>🛒</Text> }}
+      <Tab.Screen
+        name="CartTab"
+        component={CartStack}
+        options={{
+          tabBarLabel: 'Cart',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="cart" color={color} focused={focused} />
+          ),
+        }}
       />
-      <Tab.Screen name="OrdersTab" component={OrdersScreen}
-        options={{ tabBarLabel: 'My Orders', tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text> }}
+      <Tab.Screen
+        name="OrdersTab"
+        component={OrdersScreen}
+        options={{
+          tabBarLabel: 'My Orders',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="orders" color={color} focused={focused} />
+          ),
+        }}
       />
-      <Tab.Screen name="Profile" component={ProfileScreen} // ✅ direct, no stack needed
-        options={{ tabBarLabel: 'Profile', tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text> }}
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="profile" color={color} focused={focused} />
+          ),
+        }}
       />
     </Tab.Navigator>
   );

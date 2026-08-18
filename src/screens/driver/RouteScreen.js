@@ -5,6 +5,7 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import AppIcon from '../../components/common/AppIcon';
 
 // Mock coordinates for hub and deliveries (for UI demo)
 const HUB_COORDS = { latitude: 13.0707, longitude: 80.2507 };
@@ -54,6 +55,23 @@ const RouteScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode ? (
+        <>
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
+        </>
+      )}
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -86,13 +104,13 @@ const RouteScreen = () => {
         >
           <Polyline
             coordinates={polylineCoords}
-            strokeColor={theme.colors.primary.main}
+            strokeColor={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}
             strokeWidth={4}
           />
 
           <Marker coordinate={HUB_COORDS}>
-            <View style={[styles.hubMarker, { backgroundColor: theme.colors.primary.light }]}>
-              <Text style={styles.hubEmoji}>🏬</Text>
+            <View style={[styles.hubMarker, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
+              <AppIcon name="store" size={18} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
             </View>
           </Marker>
 
@@ -105,9 +123,9 @@ const RouteScreen = () => {
                     styles.stopMarker,
                     {
                       backgroundColor: isActive
-                        ? theme.colors.primary.main
+                        ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main)
                         : theme.colors.card,
-                      borderColor: theme.colors.primary.main,
+                      borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                     },
                   ]}
                 >
@@ -125,16 +143,16 @@ const RouteScreen = () => {
           })}
         </MapView>
 
-        <View style={[styles.mapOverlay, { backgroundColor: theme.colors.card }]}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.mapOverlay}>
           <Text style={[styles.overlayText, { color: theme.colors.text.primary }]}>
             Next stop in {activeStop.etaMinutes} min • {activeStop.distanceKm} km
           </Text>
-        </View>
+        </Card>
       </View>
 
       {/* Bottom sheet with stops */}
       <View style={styles.bottomSheet}>
-        <Card style={styles.activeStopCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.activeStopCard}>
           <View style={styles.activeStopHeader}>
             <View>
               <Text style={[styles.activeStopLabel, { color: theme.colors.text.secondary }]}>
@@ -145,7 +163,7 @@ const RouteScreen = () => {
               </Text>
             </View>
             <View style={styles.activeStopMeta}>
-              <Text style={[styles.metaPrimary, { color: theme.colors.primary.main }]}>
+              <Text style={[styles.metaPrimary, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                 {activeStop.etaMinutes} min
               </Text>
               <Text style={[styles.metaSecondary, { color: theme.colors.text.secondary }]}>
@@ -154,7 +172,7 @@ const RouteScreen = () => {
             </View>
           </View>
           <View style={styles.addressRow}>
-            <Text style={styles.addressIcon}>📍</Text>
+            <AppIcon name="location" size={16} color={theme.colors.text.tertiary} />
             <Text style={[styles.addressText, { color: theme.colors.text.secondary }]}>
               {activeStop.address}
             </Text>
@@ -183,11 +201,12 @@ const RouteScreen = () => {
                   onPress={() => setActiveStopId(stop.id)}
                 >
                   <Card
+                    variant={theme.isDarkMode ? "glass" : "default"}
                     style={[
                       styles.stopCard,
                       isActive && {
                         borderWidth: 1.5,
-                        borderColor: theme.colors.primary.main,
+                        borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                       },
                     ]}
                   >
@@ -197,7 +216,7 @@ const RouteScreen = () => {
                           styles.stopNumber,
                           {
                             backgroundColor: isActive
-                              ? theme.colors.primary.main
+                              ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main)
                               : theme.colors.card,
                           },
                         ]}
@@ -242,8 +261,63 @@ const RouteScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
+    zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
+  },
+  archStrip2: {
+    position: 'absolute',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
   },
   header: {
+    zIndex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -417,6 +491,23 @@ const styles = StyleSheet.create({
   },
   stopMeta: {
     fontSize: 11,
+  },
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
   },
 });
 

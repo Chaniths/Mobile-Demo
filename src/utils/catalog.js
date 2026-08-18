@@ -4,7 +4,7 @@ export const products = [
   {
     id: '1',
     name: 'Organic Apples',
-    image: '🍎',
+    image: 'food-apple',
     category: 'fruits',
     unit: '1 kg',
     rating: 4.8,
@@ -32,7 +32,7 @@ export const products = [
   {
     id: '2',
     name: 'Fresh Spinach',
-    image: '🥬',
+    image: 'food-leaf',
     category: 'vegetables',
     unit: '250 g bunch',
     rating: 4.6,
@@ -50,7 +50,7 @@ export const products = [
   {
     id: '3',
     name: 'Bananas',
-    image: '🍌',
+    image: 'food-banana',
     category: 'fruits',
     unit: '1 dozen',
     rating: 4.7,
@@ -68,7 +68,7 @@ export const products = [
   {
     id: '4',
     name: 'Carrots',
-    image: '🥕',
+    image: 'food-carrot',
     category: 'vegetables',
     unit: '500 g',
     rating: 4.5,
@@ -86,7 +86,7 @@ export const products = [
   {
     id: '5',
     name: 'Raw Honey',
-    image: '🍯',
+    image: 'food-honey',
     category: 'dairy',
     unit: '500 ml jar',
     rating: 4.9,
@@ -105,7 +105,7 @@ export const products = [
   {
     id: '6',
     name: 'Tomatoes',
-    image: '🍅',
+    image: 'food-tomato',
     category: 'vegetables',
     unit: '1 kg',
     rating: 4.8,
@@ -123,6 +123,3 @@ export const products = [
 ];
 
 export const getProductById = (id) => products.find((p) => p.id === id);
-
-
-

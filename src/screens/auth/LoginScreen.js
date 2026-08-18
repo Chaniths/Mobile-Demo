@@ -6,7 +6,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { useTheme } from '../../hooks/useTheme';
-import { loginSuccess } from '../../store/slices/authSlice';
+import { loginFailure, loginStart, loginSuccess } from '../../store/slices/authSlice';
+import AsyncStorageService from '../../services/storage/AsyncStorageService';
+import { STORAGE_KEYS } from '../../utils/constants';
+import { loginByRole } from '../../api/authApi';
+import { setAuthToken } from '../../api/interceptors';
+import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import apiClient from '../../api/client';
 import AsyncStorageService from '../../services/storage/AsyncStorageService';
@@ -46,6 +51,8 @@ const isPendingApprovalError = (err) => {
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
+import AppIcon from '../../components/common/AppIcon';
+import Card from '../../components/common/Card';
 
 const LoginScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -94,17 +101,40 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const s = styles(theme);
+  // Background gradient overlay for dark mode
+  const backgroundStyle = theme.isDarkMode
+    ? {
+        backgroundColor: theme.colors.background,
+      }
+    : {
+        backgroundColor: theme.colors.background,
+      };
 
   return (
-    <SafeAreaView style={s.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-
-          {/* Logo */}
-          <View style={s.header}>
-            <View style={s.logo}>
-              <Text style={{ fontSize: 40 }}>🌱</Text>
+    <SafeAreaView style={[styles.container, backgroundStyle]}>
+      {theme.isDarkMode ? (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      ) : (
+        <>
+          <View style={[styles.gradientCircle1, styles.lightModeCircle1]} />
+          <View style={[styles.gradientCircle2, styles.lightModeCircle2]} />
+        </>
+      )}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Logo/Header */}
+          <View style={styles.header}>
+            <View style={[styles.logo, { backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+              <Text style={styles.logoText}>🌱</Text>
             </View>
             <Text style={s.title}>Welcome Back</Text>
             <Text style={s.subtitle}>Sign in to continue to FreshRoute</Text>
@@ -117,8 +147,9 @@ const LoginScreen = ({ navigation }) => {
             </View>
           )}
 
-          {/* Form */}
-          <View style={s.form}>
+          {/* Form Card with Glassmorphism */}
+          <Card variant="glass" style={styles.formCard}>
+            <View style={styles.form}>
             <Input
               label="Email"
               placeholder="you@example.com"
@@ -137,8 +168,14 @@ const LoginScreen = ({ navigation }) => {
               onChangeText={(t) => { setPassword(t); setErrors({}); setApiError(''); }}
               onBlur={() => touch('password')}
               secureTextEntry={!showPassword}
-              error={passwordError}
-              rightIcon={<EyeIcon visible={showPassword} color={theme.colors.text.secondary} />}
+              error={errors.password}
+              rightIcon={
+                <AppIcon
+                  name={showPassword ? 'eye' : 'eyeOff'}
+                  size={22}
+                  color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}
+                />
+              }
               onRightIconPress={() => setShowPassword(!showPassword)}
             />
 
@@ -146,23 +183,37 @@ const LoginScreen = ({ navigation }) => {
               <Text style={[s.forgotText, { color: theme.colors.primary.main }]}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[s.submitBtn, { backgroundColor: theme.colors.primary.main }, loading && { opacity: 0.6 }]}
-              onPress={handleLogin}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={s.submitBtnText}>Sign In</Text>}
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ForgotPassword')}
+                style={styles.forgotPassword}
+              >
+                <Text style={[styles.forgotText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                  Forgot Password?
+                </Text>
+              </TouchableOpacity>
+
+              <Button
+                title="Sign In"
+                onPress={handleLogin}
+                loading={loading}
+                style={[styles.loginButton, theme.isDarkMode && { backgroundColor: theme.colors.primary.main }]}
+              />
+
+              {!!authError && (
+                <Text style={[styles.errorText, { color: theme.colors.error || '#d32f2f' }]}>
+                  {authError}
+                </Text>
+              )}
+            </View>
+          </Card>
 
           {/* Footer */}
           <View style={s.footer}>
             <Text style={[s.footerText, { color: theme.colors.text.secondary }]}>Don't have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={[s.footerLink, { color: theme.colors.primary.main }]}>Sign Up</Text>
+              <Text style={[styles.signupText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                Sign Up
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -172,30 +223,109 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const styles = (theme) => StyleSheet.create({
-  container:    { flex: 1, backgroundColor: theme.colors.background },
-  scrollContent:{ flexGrow: 1, padding: 24, justifyContent: 'center' },
-
-  header:   { alignItems: 'center', marginBottom: 40 },
-  logo:     { width: 80, height: 80, borderRadius: 20, backgroundColor: theme.colors.primary.main, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  title:    { fontSize: 28, fontWeight: '700', color: theme.colors.text.primary, marginBottom: 8 },
-  subtitle: { fontSize: 14, color: theme.colors.text.secondary, textAlign: 'center' },
-
-  errorBanner:     { marginBottom: 16, backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', borderRadius: 12, padding: 12 },
-  errorBannerText: { color: '#f87171', fontSize: 13, textAlign: 'center' },
-
-  form:       { marginBottom: 24 },
-  forgotRow:  { alignSelf: 'flex-end', marginBottom: 24 },
-  forgotText: { fontSize: 14, fontWeight: '600' },
-
-  submitBtn:     { borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
-  submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-
-  footer:     { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  footerText: { fontSize: 14 },
-  footerLink: { fontSize: 14, fontWeight: '600' },
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  flex: {
+    flex: 1,
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  formCard: {
+    borderRadius: 24,
+    padding: 24,
+    marginVertical: 16,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logoText: {
+    fontSize: 40,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  form: {
+    marginBottom: 24,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 24,
+  },
+  forgotText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  loginButton: {
+    marginTop: 8,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 14,
+  },
+  signupText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  lightModeCircle1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.35)',
+    opacity: 0.7,
+  },
+  lightModeCircle2: {
+    backgroundColor: 'rgba(74, 222, 128, 0.2)',
+    opacity: 0.5,
+  },
 });
 
 export default LoginScreen;

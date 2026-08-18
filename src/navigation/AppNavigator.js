@@ -10,6 +10,7 @@ import AuthNavigator from './AuthNavigator';
 import BuyerNavigator from './BuyerNavigator';
 import SellerNavigator from './SellerNavigator';
 import DriverNavigator from './DriverNavigator';
+import FieldAdminNavigator from './FieldAdminNavigator';
 
 const Stack = createStackNavigator();
 
@@ -58,15 +59,21 @@ const AppNavigator = () => {
           )}
         </Stack.Navigator>
       </NavigationContainer>
-
-      <View
-        pointerEvents="none"
-        style={[styles.footer, { bottom: 0 }]}
-      >
-        <Text style={[styles.footerText, { color: theme.colors.text.tertiary }]}>
-          © {new Date().getFullYear()} FreshRoute. All rights reserved.
-        </Text>
-      </View>
+      {(!isAuthenticated || !RoleNavigator) && (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.footer,
+            {
+              backgroundColor: 'transparent',
+            },
+          ]}
+        >
+          <Text style={[styles.footerText, { color: theme.colors.text.tertiary }]}>
+            © {new Date().getFullYear()} FreshRoute. All rights reserved.
+          </Text>
+        </View>
+      )}
     </View>
   );
 };

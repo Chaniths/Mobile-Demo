@@ -12,30 +12,31 @@ import { useTheme } from '../../hooks/useTheme';
 import { loginSuccess } from '../../store/slices/authSlice';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
+import AppIcon from '../../components/common/AppIcon';
 
 const roles = [
   {
     id: 'buyer',
     title: 'Buyer',
-    icon: '🛒',
+    icon: 'buyer',
     description: 'Browse and purchase organic products',
   },
   {
     id: 'seller',
     title: 'Seller',
-    icon: '🏪',
+    icon: 'seller',
     description: 'Sell organic products and manage inventory',
   },
   {
     id: 'driver',
     title: 'Driver',
-    icon: '🚚',
+    icon: 'driver',
     description: 'Deliver products and manage routes',
   },
   {
     id: 'fieldadmin',
     title: 'Field Admin',
-    icon: '📋',
+    icon: 'fieldadmin',
     description: 'Quality checks and route assessment',
   },
 ];
@@ -64,6 +65,12 @@ const RoleSelectScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      {theme.isDarkMode && (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      )}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -79,52 +86,56 @@ const RoleSelectScreen = ({ navigation }) => {
           </Text>
         </View>
 
-        {/* Role Cards */}
-        <View style={styles.rolesContainer}>
-          {roles.map((role) => (
-            <TouchableOpacity
-              key={role.id}
-              onPress={() => setSelectedRole(role.id)}
-              activeOpacity={0.7}
-            >
-              <Card
-                style={[
-                  styles.roleCard,
-                  selectedRole === role.id && {
-                    borderWidth: 2,
-                    borderColor: theme.colors.primary.main,
-                  },
-                ]}
+        {/* Role Cards Container with Glassmorphism */}
+        <Card variant="glass" style={styles.rolesCard}>
+          <View style={styles.rolesContainer}>
+            {roles.map((role) => (
+              <TouchableOpacity
+                key={role.id}
+                onPress={() => setSelectedRole(role.id)}
+                activeOpacity={0.7}
               >
-                <View style={styles.roleContent}>
-                  <View style={[styles.iconContainer, { backgroundColor: theme.colors.primary.light }]}>
-                    <Text style={styles.icon}>{role.icon}</Text>
-                  </View>
-                  <View style={styles.roleInfo}>
-                    <Text style={[styles.roleTitle, { color: theme.colors.text.primary }]}>
-                      {role.title}
-                    </Text>
-                    <Text style={[styles.roleDescription, { color: theme.colors.text.secondary }]}>
-                      {role.description}
-                    </Text>
-                  </View>
-                  {selectedRole === role.id && (
-                    <View style={[styles.checkmark, { backgroundColor: theme.colors.primary.main }]}>
-                      <Text style={styles.checkmarkText}>✓</Text>
+                <Card
+                  variant={selectedRole === role.id ? 'glass' : 'default'}
+                  style={[
+                    styles.roleCard,
+                    selectedRole === role.id && {
+                      borderWidth: 2,
+                      borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
+                      backgroundColor: theme.isDarkMode ? 'rgba(35, 101, 113, 0.2)' : undefined,
+                    },
+                  ]}
+                >
+                  <View style={styles.roleContent}>
+                    <View style={[styles.iconContainer, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
+                      <AppIcon name={role.icon} size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
                     </View>
-                  )}
-                </View>
-              </Card>
-            </TouchableOpacity>
-          ))}
-        </View>
+                    <View style={styles.roleInfo}>
+                      <Text style={[styles.roleTitle, { color: theme.colors.text.primary }]}>
+                        {role.title}
+                      </Text>
+                      <Text style={[styles.roleDescription, { color: theme.colors.text.secondary }]}>
+                        {role.description}
+                      </Text>
+                    </View>
+                    {selectedRole === role.id && (
+                      <View style={[styles.checkmark, { backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                        <AppIcon name="check" size={16} color="#ffffff" />
+                      </View>
+                    )}
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Card>
 
         {/* Continue Button */}
         <Button
           title="Continue"
           onPress={handleContinue}
           disabled={!selectedRole}
-          style={styles.continueButton}
+          style={[styles.continueButton, theme.isDarkMode && { backgroundColor: theme.colors.primary.main }]}
         />
       </ScrollView>
     </SafeAreaView>
@@ -134,10 +145,37 @@ const RoleSelectScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
   },
   scrollContent: {
     flexGrow: 1,
     padding: 24,
+    zIndex: 1,
+  },
+  rolesCard: {
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 24,
   },
   header: {
     alignItems: 'center',

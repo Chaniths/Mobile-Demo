@@ -3,9 +3,10 @@
 
 const ENV = {
   dev: {
-    apiUrl: 'http://10.42.252.146:5000/api/v1',  // ← updated
-    wsUrl: 'ws://10.42.252.146:5000',
-},
+    // For Android emulator use: http://10.0.2.2:5001/api/v1
+    apiUrl: 'http://localhost:5001/api/v1',
+    wsUrl: 'ws://localhost:5001',
+  },
   staging: {
     apiUrl: 'https://staging-api.freshroute.com/api',
     wsUrl: 'wss://staging-api.freshroute.com',

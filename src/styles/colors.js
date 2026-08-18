@@ -10,12 +10,23 @@ export const colors = {
     soft: '#bbf7d0',      // green-200
   },
 
-  // Dark theme colors (matching web app)
+  // Dark theme colors (matching web app with teal theme)
   brand: {
     background: '#020617', // Deep navy background
     surface: '#a8bff7',    // Light surface
     card: '#020c24',       // Card background
     muted: '#1f2937',      // Borders/separators
+  },
+  
+  // Teal theme colors for dark mode
+  teal: {
+    main: '#236571',       // supply-teal (primary teal)
+    light: '#2d7a87',      // Lighter teal
+    dark: '#1a4d56',       // Darker teal
+    soft: 'rgba(35, 101, 113, 0.1)', // 10% opacity
+    medium: 'rgba(35, 101, 113, 0.2)', // 20% opacity
+    strong: 'rgba(35, 101, 113, 0.4)', // 40% opacity
+    deep: '#2E2F34',       // supply-deep (for cards)
   },
 
   // Accent colors
@@ -25,6 +36,8 @@ export const colors = {
     yellowDark: '#FFFACD',
     blue: '#38bdf8',
     greenSoft: '#bbf7d0',
+    peach: '#FFE5D9',      // Light cream/peach for textbox text
+    peachSoft: '#FFF4F0',  // Very light peach
   },
 
   // Light theme (default for mobile)

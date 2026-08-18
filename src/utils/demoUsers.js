@@ -57,6 +57,14 @@ const demoDatabase = {
       password: 'fieldadmin',
       role: 'fieldadmin',
     },
+    {
+      id: 'fieldadmin-2',
+      name: 'Chanith Wijekoon',
+      email: 'chanithwijekoon@gmail.com',
+      phone: '+1 555 555 5555',
+      password: 'password@123',
+      role: 'fieldadmin',
+    },
   ],
 };
 

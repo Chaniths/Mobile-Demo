@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
+import AppIcon from '../../components/common/AppIcon';
 import { useDispatch, useSelector } from 'react-redux';
 import { changeItemQuantity } from '../../store/slices/cartSlice';
 
@@ -28,15 +29,15 @@ const CartScreen = ({ navigation }) => {
   const total = subtotal + deliveryFee;
 
   const renderCartItem = ({ item }) => (
-    <Card style={styles.cartItem}>
-      <View style={[styles.itemImage, { backgroundColor: theme.colors.primary.light }]}>
-        <Text style={styles.itemEmoji}>{item.image}</Text>
+    <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.cartItem}>
+      <View style={[styles.itemImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
+        <AppIcon name={item.productImage || item.image} size={32} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
       </View>
       <View style={styles.itemInfo}>
         <Text style={[styles.itemName, { color: theme.colors.text.primary }]}>
           {item.name}
         </Text>
-        <Text style={[styles.itemPrice, { color: theme.colors.primary.main }]}>
+        <Text style={[styles.itemPrice, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
           ${item.price.toFixed(2)}
         </Text>
       </View>
@@ -54,7 +55,7 @@ const CartScreen = ({ navigation }) => {
         </Text>
         <TouchableOpacity
           onPress={() => updateQuantity(item.id, 1)}
-          style={[styles.quantityButton, { backgroundColor: theme.colors.primary.main }]}
+          style={[styles.quantityButton, { backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}
         >
           <Text style={styles.quantityButtonText}>+</Text>
         </TouchableOpacity>
@@ -67,7 +68,7 @@ const CartScreen = ({ navigation }) => {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={[styles.backButton, { color: theme.colors.primary.main }]}>
+            <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
               ← Back
             </Text>
           </TouchableOpacity>
@@ -75,7 +76,7 @@ const CartScreen = ({ navigation }) => {
           <View style={{ width: 50 }} />
         </View>
         <EmptyState
-          icon={<Text style={styles.emptyIcon}>🛒</Text>}
+          icon={<AppIcon name="cart" size={64} color={theme.colors.text.tertiary} />}
           title="Your cart is empty"
           message="Add some organic products to get started"
           actionLabel="Browse Products"
@@ -87,6 +88,23 @@ const CartScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode ? (
+        <>
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
+        </>
+      )}
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -103,12 +121,12 @@ const CartScreen = ({ navigation }) => {
         data={cartItems}
         renderItem={renderCartItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { zIndex: 1 }]}
         showsVerticalScrollIndicator={false}
       />
 
       {/* Summary */}
-      <Card style={styles.summary} elevation="lg">
+      <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.summary} elevation="lg">
         <View style={styles.summaryRow}>
           <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>
             Subtotal
@@ -130,7 +148,7 @@ const CartScreen = ({ navigation }) => {
           <Text style={[styles.totalLabel, { color: theme.colors.text.primary }]}>
             Total
           </Text>
-          <Text style={[styles.totalValue, { color: theme.colors.primary.main }]}>
+          <Text style={[styles.totalValue, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
             ${total.toFixed(2)}
           </Text>
         </View>
@@ -147,8 +165,63 @@ const CartScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
+    zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
+  },
+  archStrip2: {
+    position: 'absolute',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
   },
   header: {
+    zIndex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -255,6 +328,23 @@ const styles = StyleSheet.create({
   },
   emptyIcon: {
     fontSize: 64,
+  },
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
   },
 });
 

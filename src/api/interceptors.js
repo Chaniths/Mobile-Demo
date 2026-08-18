@@ -1,6 +1,12 @@
 import AsyncStorageService from '../services/storage/AsyncStorageService';
 import { STORAGE_KEYS } from '../utils/constants';
 
+let memoryToken = null;
+
+export const setAuthToken = (token) => {
+  memoryToken = token || null;
+};
+
 export const setupInterceptors = (axiosInstance) => {
   // Request interceptor - add auth token
   axiosInstance.interceptors.request.use(
@@ -30,17 +36,15 @@ export const setupInterceptors = (axiosInstance) => {
         // Handle specific error codes
         switch (error.response.status) {
           case 401:
-            // Unauthorized - clear auth and redirect to login
+            setAuthToken(null);
             await AsyncStorageService.removeItem(STORAGE_KEYS.AUTH_TOKEN);
             await AsyncStorageService.removeItem(STORAGE_KEYS.USER_DATA);
-            // TODO: Navigate to login screen
             break;
           case 403:
             // Forbidden
             console.error('Access forbidden');
             break;
           case 404:
-            console.error('Resource not found');
             break;
           case 500:
             console.error('Server error');

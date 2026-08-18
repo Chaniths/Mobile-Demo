@@ -60,3 +60,7 @@ web-build/
 *.tmp
 *.temp
 
+# Markdown / documentation (not tracked; README.md kept)
+*.md
+!README.md
+

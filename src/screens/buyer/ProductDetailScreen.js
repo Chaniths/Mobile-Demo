@@ -7,6 +7,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { useDispatch } from 'react-redux';
 import { addItem } from '../../store/slices/cartSlice';
+import AppIcon from '../../components/common/AppIcon';
 
 const ProductDetailScreen = ({ route, navigation }) => {
   const { productId } = route.params || {};
@@ -68,6 +69,23 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {theme.isDarkMode ? (
+        <>
+          {/* Arch-like strips in teal colors */}
+          <View style={styles.archStrip1} />
+          <View style={styles.archStrip2} />
+          <View style={styles.archStrip3} />
+          <View style={styles.archStrip4} />
+        </>
+      ) : (
+        <>
+          {/* Arch-like strips in green colors for light mode */}
+          <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
+          <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
+          <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
+          <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
+        </>
+      )}
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -77,7 +95,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
           {product.name}
         </Text>
         <TouchableOpacity onPress={() => navigation.navigate('CartTab')}>
-          <Text style={styles.cartIcon}>🛒</Text>
+          <AppIcon name="cart" size={24} color={theme.colors.primary.main} />
         </TouchableOpacity>
       </View>
 
@@ -87,21 +105,27 @@ const ProductDetailScreen = ({ route, navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Product hero */}
-        <Card style={styles.heroCard}>
+        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.heroCard}>
           <View
             style={[
               styles.heroImage,
-              { backgroundColor: theme.colors.primary.light },
+              { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light },
             ]}
           >
-            <Text style={styles.heroEmoji}>{product.image}</Text>
+            <AppIcon name={product.image} size={64} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
           </View>
           <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
             {product.name}
           </Text>
-          <Text style={[styles.metaText, { color: theme.colors.text.secondary }]}>
-            {product.unit} • ⭐ {product.rating}
-          </Text>
+          <View style={styles.metaRow}>
+            <Text style={[styles.metaText, { color: theme.colors.text.secondary }]}>
+              {product.unit} •{' '}
+            </Text>
+            <AppIcon name="star" size={14} color="#f59e0b" />
+            <Text style={[styles.metaText, { color: theme.colors.text.secondary }]}>
+              {' '}{product.rating}
+            </Text>
+          </View>
         </Card>
 
         {/* Sellers list */}
@@ -117,11 +141,12 @@ const ProductDetailScreen = ({ route, navigation }) => {
                 onPress={() => setSelectedSellerId(seller.id)}
               >
                 <Card
+                  variant={theme.isDarkMode ? "glass" : "default"}
                   style={[
                     styles.sellerCard,
                     isSelected && {
                       borderWidth: 1.5,
-                      borderColor: theme.colors.primary.main,
+                      borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
                     },
                   ]}
                 >
@@ -135,20 +160,23 @@ const ProductDetailScreen = ({ route, navigation }) => {
                       >
                         {seller.name}
                       </Text>
-                      <Text
-                        style={[
-                          styles.sellerMeta,
-                          { color: theme.colors.text.secondary },
-                        ]}
-                      >
-                        ⭐ {seller.rating} • {seller.distanceKm} km away
-                      </Text>
+                      <View style={styles.sellerRatingRow}>
+                        <AppIcon name="star" size={13} color="#f59e0b" />
+                        <Text
+                          style={[
+                            styles.sellerMeta,
+                            { color: theme.colors.text.secondary },
+                          ]}
+                        >
+                          {' '}{seller.rating} • {seller.distanceKm} km away
+                        </Text>
+                      </View>
                     </View>
                     <View style={styles.priceBlock}>
                       <Text
                         style={[
                           styles.price,
-                          { color: theme.colors.primary.main },
+                          { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main },
                         ]}
                       >
                         ${seller.price.toFixed(2)}
@@ -176,7 +204,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
                       <View
                         style={[
                           styles.badge,
-                          { backgroundColor: theme.colors.primary.light },
+                          { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light },
                         ]}
                       >
                         <Text style={styles.badgeText}>{seller.badge}</Text>
@@ -221,7 +249,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <Text style={[styles.totalLabel, { color: theme.colors.text.secondary }]}>
             Estimated total
           </Text>
-          <Text style={[styles.totalValue, { color: theme.colors.primary.main }]}>
+          <Text style={[styles.totalValue, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
             ${selectedSeller ? (selectedSeller.price * quantity).toFixed(2) : '0.00'}
           </Text>
         </View>
@@ -239,8 +267,63 @@ const ProductDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  // Arch-like strips pattern for dark mode
+  archStrip1: {
+    position: 'absolute',
+    top: -100,
+    left: -50,
+    width: 400,
+    height: 200,
+    borderTopLeftRadius: 200,
+    borderTopRightRadius: 200,
+    backgroundColor: 'rgba(35, 101, 113, 0.3)',
+    opacity: 0.7,
+    zIndex: 0,
+    transform: [{ rotate: '-15deg' }],
+  },
+  archStrip2: {
+    position: 'absolute',
+    top: 100,
+    right: -80,
+    width: 350,
+    height: 180,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    backgroundColor: 'rgba(45, 122, 135, 0.35)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '25deg' }],
+  },
+  archStrip3: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 380,
+    height: 190,
+    borderTopLeftRadius: 190,
+    borderTopRightRadius: 190,
+    backgroundColor: 'rgba(35, 101, 113, 0.25)',
+    opacity: 0.5,
+    zIndex: 0,
+    transform: [{ rotate: '20deg' }],
+  },
+  archStrip4: {
+    position: 'absolute',
+    bottom: -120,
+    right: -40,
+    width: 420,
+    height: 220,
+    borderTopLeftRadius: 220,
+    borderTopRightRadius: 220,
+    backgroundColor: 'rgba(45, 122, 135, 0.3)',
+    opacity: 0.6,
+    zIndex: 0,
+    transform: [{ rotate: '-30deg' }],
   },
   header: {
+    zIndex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -265,6 +348,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 140,
+    zIndex: 1,
   },
   heroCard: {
     alignItems: 'center',
@@ -289,6 +373,14 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 13,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sellerRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   section: {
     marginTop: 8,
@@ -403,6 +495,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Light mode arch strips with green colors
+  lightModeArchStrip1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.3)',
+    opacity: 0.7,
+  },
+  lightModeArchStrip2: {
+    backgroundColor: 'rgba(34, 197, 94, 0.35)',
+    opacity: 0.6,
+  },
+  lightModeArchStrip3: {
+    backgroundColor: 'rgba(22, 163, 74, 0.25)',
+    opacity: 0.5,
+  },
+  lightModeArchStrip4: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    opacity: 0.6,
   },
 });
 
