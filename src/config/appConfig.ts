@@ -5,8 +5,8 @@ interface EnvironmentConfig {
   socketUrl: string;
 }
 
-const localApiBaseUrl = 'http://192.168.1.208:5000/api/v1';
-const localSocketUrl = 'http://192.168.1.208:5000';
+const localApiBaseUrl = 'https://freshroute-backend.onrender.com/api/v1';
+const localSocketUrl = 'https://freshroute-backend.onrender.com';
 
 const envApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
 const envSocketUrl = process.env.EXPO_PUBLIC_SOCKET_URL?.trim();
@@ -17,8 +17,8 @@ const ENVIRONMENTS: Record<EnvironmentName, EnvironmentConfig> = {
     socketUrl: envSocketUrl || localSocketUrl,
   },
   production: {
-    apiBaseUrl: 'https://api.freshroute.com/api/v1',
-    socketUrl: 'https://api.freshroute.com',
+    apiBaseUrl: 'https://freshroute-backend.onrender.com/api/v1',
+    socketUrl: 'https://freshroute-backend.onrender.com',
   },
 };
 
