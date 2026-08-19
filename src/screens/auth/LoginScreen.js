@@ -13,6 +13,7 @@ import { STORAGE_KEYS } from '../../utils/constants';
 import apiClient from '../../api/client';
 import { setAuthToken } from '../../api/interceptors';
 import { buildSessionUser, normalizeRole } from '../../utils/roles';
+import { driverSocketService } from '../../services/socket/driverSocketService';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import AppIcon from '../../components/common/AppIcon';
@@ -98,6 +99,9 @@ const LoginScreen = ({ navigation }) => {
       dispatch(loginSuccess({ user: mergedUser, token: data.token }));
       if (normalizeRole(mergedUser.role) === 'buyer') {
         dispatch(fetchCart());
+      }
+      if (normalizeRole(mergedUser.role) === 'driver') {
+        driverSocketService.connect(data.token);
       }
       // Navigation handled automatically by AppNavigator based on auth state
     } catch (err) {
