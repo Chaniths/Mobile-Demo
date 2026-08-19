@@ -17,7 +17,7 @@ import TruckCapacityScreen from '../screens/fieldadmin/TruckCapacityScreen';
 import RouteOrdersScreen from '../screens/fieldadmin/RouteOrdersScreen';
 import OrdersScreen from '../screens/fieldadmin/OrdersScreen';
 import HistoryScreen from '../screens/fieldadmin/HistoryScreen';
-import ProfileScreen from '../screens/buyer/ProfileScreen'; // Reuse profile
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();

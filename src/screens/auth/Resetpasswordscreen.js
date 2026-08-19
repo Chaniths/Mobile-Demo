@@ -10,6 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import apiClient from '../../api/client';
+import ArchBackground from '../../components/common/ArchBackground';
 
 // ─── Password helpers (same rules as web/forgot-password flow) ────
 
@@ -96,6 +97,7 @@ const ResetPasswordScreen = ({ navigation, route }) => {
   if (success) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <ArchBackground />
         <View style={styles.successContainer}>
           <View style={[styles.successIcon, { backgroundColor: theme.colors.success }]}>
             <Text style={styles.successIconText}>✓</Text>
@@ -131,6 +133,7 @@ const ResetPasswordScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <ArchBackground />
       <View style={styles.content}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={[styles.backText, { color: theme.colors.primary.main }]}>← Back</Text>
@@ -227,7 +230,7 @@ const ResetPasswordScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, overflow: 'hidden' },
   content: { flex: 1, padding: 24 },
   backButton: { marginBottom: 24 },
   backText: { fontSize: 16, fontWeight: '600' },

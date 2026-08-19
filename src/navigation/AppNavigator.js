@@ -1,47 +1,100 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { useSelector } from 'react-redux';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '../hooks/useTheme';
+import { loginSuccess, logoutAsync } from '../store/slices/authSlice';
+import { fetchCart } from '../store/slices/cartSlice';
+import store from '../store';
+import AsyncStorageService from '../services/storage/AsyncStorageService';
+import { STORAGE_KEYS } from '../utils/constants';
+import { normalizeRole, unwrapStoredValue } from '../utils/roles';
 
-// Navigators
 import AuthNavigator from './AuthNavigator';
 import BuyerNavigator from './BuyerNavigator';
 import SellerNavigator from './SellerNavigator';
 import DriverNavigator from './DriverNavigator';
 import FieldAdminNavigator from './FieldAdminNavigator';
+import ArchBackground from '../components/common/ArchBackground';
 
 const Stack = createStackNavigator();
 
-// Tab bar sits at bottom:16 with height:60 → footer must clear 16+60+8 = 84
-const TAB_BAR_HEIGHT  = 60;
-const TAB_BAR_BOTTOM  = 16;
-const FOOTER_BOTTOM   = TAB_BAR_BOTTOM + TAB_BAR_HEIGHT + 8; // 84
+const UnsupportedRoleScreen = () => {
+  const dispatch = useDispatch();
+  const { theme } = useTheme();
+  const role = useSelector((state) => state.auth.user?.role);
+
+  return (
+    <View style={[styles.unsupported, { backgroundColor: theme.colors.background }]}>
+      <ArchBackground />
+      <Text style={[styles.unsupportedTitle, { color: theme.colors.text.primary }]}>
+        This role is not available on mobile
+      </Text>
+      <Text style={[styles.unsupportedBody, { color: theme.colors.text.secondary }]}>
+        {role === 'admin'
+          ? 'Admin accounts use the FreshRoute web dashboard.'
+          : `No mobile screens are set up for the "${role}" role.`}
+      </Text>
+      <TouchableOpacity
+        style={[styles.unsupportedBtn, { backgroundColor: theme.colors.primary.main }]}
+        onPress={() => dispatch(logoutAsync())}
+      >
+        <Text style={styles.unsupportedBtnText}>Sign out</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 const AppNavigator = () => {
+  const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { theme, loadThemePreference } = useTheme();
+  const insets = useSafeAreaInsets();
+  const role = normalizeRole(user?.role);
 
   useEffect(() => {
     loadThemePreference();
   }, [loadThemePreference]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const restoreSession = async () => {
+      try {
+        const token = unwrapStoredValue(
+          await AsyncStorageService.getItem(STORAGE_KEYS.AUTH_TOKEN)
+        );
+        const storedUser = unwrapStoredValue(
+          await AsyncStorageService.getItem(STORAGE_KEYS.USER_DATA)
+        );
+        if (!cancelled && token && storedUser?.role && !store.getState().auth.isAuthenticated) {
+          dispatch(loginSuccess({ token, user: storedUser }));
+          if (normalizeRole(storedUser.role) === 'buyer') {
+            dispatch(fetchCart());
+          }
+        }
+      } catch (error) {
+        console.error('Failed to restore session:', error);
+      }
+    };
+    restoreSession();
+    return () => { cancelled = true; };
+  }, [dispatch]);
+
   const getRoleNavigator = () => {
-    if (!user || !user.role) return null;
-    switch (user.role) {
-      case 'buyer':      return BuyerNavigator;
-      case 'seller':     return SellerNavigator;
-      case 'driver':     return DriverNavigator;
-      case 'fieldadmin': return BuyerNavigator;
-      default:           return BuyerNavigator;
+    if (!user || !role) return null;
+    switch (role) {
+      case 'buyer':       return { name: 'BuyerMain',       component: BuyerNavigator };
+      case 'seller':      return { name: 'SellerMain',      component: SellerNavigator };
+      case 'driver':      return { name: 'DriverMain',      component: DriverNavigator };
+      case 'field_admin': return { name: 'FieldAdminMain',  component: FieldAdminNavigator };
+      case 'admin':       return { name: 'UnsupportedMain', component: UnsupportedRoleScreen };
+      default:            return { name: 'UnsupportedMain', component: UnsupportedRoleScreen };
     }
   };
 
-  const RoleNavigator = getRoleNavigator();
-
-  // On auth screens there is no tab bar, so drop the footer to its original position
-  
+  const roleRoute = getRoleNavigator();
 
   return (
     <View style={styles.root}>
@@ -52,20 +105,25 @@ const AppNavigator = () => {
             cardStyle: { backgroundColor: theme.colors.background },
           }}
         >
-          {!isAuthenticated || !RoleNavigator ? (
+          {!isAuthenticated || !roleRoute ? (
             <Stack.Screen name="Auth" component={AuthNavigator} />
           ) : (
-            <Stack.Screen name="Main" component={RoleNavigator} />
+            <Stack.Screen
+              key={roleRoute.name}
+              name={roleRoute.name}
+              component={roleRoute.component}
+            />
           )}
         </Stack.Navigator>
       </NavigationContainer>
-      {(!isAuthenticated || !RoleNavigator) && (
+      {(!isAuthenticated || !roleRoute) && (
         <View
           pointerEvents="none"
           style={[
             styles.footer,
             {
               backgroundColor: 'transparent',
+              bottom: Math.max(insets.bottom, 8) + 8,
             },
           ]}
         >
@@ -84,10 +142,40 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+    bottom: 0,
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
   footerText: { fontSize: 10 },
+  unsupported: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    overflow: 'hidden',
+  },
+  unsupportedTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  unsupportedBody: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  unsupportedBtn: {
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+  },
+  unsupportedBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });
 
 export default AppNavigator;

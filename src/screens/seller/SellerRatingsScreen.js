@@ -4,8 +4,9 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Image, Alert,
 } from 'react-native';
-import { useTheme } from '../hooks/useTheme';
-import apiClient from '../api/client';
+import { useTheme } from '../../hooks/useTheme';
+import apiClient from '../../api/client';
+import ArchBackground from '../../components/common/ArchBackground';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -141,7 +142,7 @@ const SellerRatingsScreen = () => {
 
   if (loading) {
     return (
-      <View style={s.centered}><ActivityIndicator size="large" color="#10b981" /></View>
+      <View style={s.centered}><ArchBackground /><ActivityIndicator size="large" color="#10b981" /></View>
     );
   }
 
@@ -149,6 +150,7 @@ const SellerRatingsScreen = () => {
   if (view === 'products') {
     return (
       <View style={s.container}>
+        <ArchBackground />
         <View style={s.pageHeader}>
           <Text style={s.pageLabel}>FEEDBACK</Text>
           <Text style={s.pageTitle}>Ratings & Reviews</Text>
@@ -238,6 +240,7 @@ const SellerRatingsScreen = () => {
   // ── DETAIL VIEW ─────────────────────────────────────────────────────────────
   return (
     <View style={s.container}>
+      <ArchBackground />
       <TouchableOpacity
         onPress={() => { setView('products'); setSelectedProduct(null); setProductStats(null); }}
         style={s.backRow}
@@ -393,7 +396,7 @@ const SellerRatingsScreen = () => {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = (theme) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+  container: { flex: 1, backgroundColor: theme.colors.background, overflow: 'hidden' },
   centered:  { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background },
 
   pageHeader:   { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16, borderBottomWidth: 1, borderColor: theme.colors.border, backgroundColor: 'rgba(255,255,255,0.03)' },

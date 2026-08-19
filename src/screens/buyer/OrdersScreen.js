@@ -1,44 +1,23 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import { useSelector } from 'react-redux';
 import Card from '../../components/common/Card';
 import EmptyState from '../../components/common/EmptyState';
 import AppIcon from '../../components/common/AppIcon';
-
-const mockOrders = [
-  {
-    id: '1',
-    orderId: '#ORD-2024-001',
-    date: 'Dec 3, 2024',
-    status: 'delivered',
-    items: 3,
-    total: 18.97,
-  },
-  {
-    id: '2',
-    orderId: '#ORD-2024-002',
-    date: 'Dec 4, 2024',
-    status: 'in_transit',
-    items: 2,
-    total: 12.98,
-  },
-  {
-    id: '3',
-    orderId: '#ORD-2024-003',
-    date: 'Dec 5, 2024',
-    status: 'processing',
-    items: 4,
-    total: 24.96,
-  },
-];
+import { getBuyerOrders } from '../../api/ordersApi';
+import { formatMoney, mapOrderTab, orderStatusLabel } from '../../utils/mediaUrl';
+import { isFieldAdminRole, normalizeRole } from '../../utils/roles';
 
 const statusColors = {
   delivered: '#22c55e',
@@ -47,25 +26,69 @@ const statusColors = {
   cancelled: '#ef4444',
 };
 
-const statusLabels = {
-  delivered: 'Delivered',
-  in_transit: 'In Transit',
-  processing: 'Processing',
-  cancelled: 'Cancelled',
+const formatOrderDate = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-LK', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
 const OrdersScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const user = useSelector((state) => state.auth.user);
-  const isSeller = user?.role === 'seller';
+  const role = normalizeRole(user?.role);
+  const isSeller = role === 'seller';
+  const iconColor = theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main;
   const [activeTab, setActiveTab] = useState('all');
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+
+  const loadOrders = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    try {
+      const data = await getBuyerOrders();
+      setOrders(Array.isArray(data) ? data : []);
+      setError('');
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Could not load orders.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadOrders();
+    }, [loadOrders])
+  );
+
+  const mappedOrders = useMemo(
+    () =>
+      orders.map((order) => {
+        const tab = mapOrderTab(order.status);
+        return {
+          id: order.id,
+          orderId: order.orderNumber ? `#${order.orderNumber}` : `#${String(order.id).slice(-8).toUpperCase()}`,
+          date: formatOrderDate(order.placedAt || order.createdAt),
+          status: tab,
+          statusLabel: orderStatusLabel(order.status),
+          items: Array.isArray(order.items) ? order.items.length : 0,
+          total: Number(order.totalAmount) || 0,
+        };
+      }),
+    [orders]
+  );
 
   const filteredOrders = activeTab === 'all'
-    ? mockOrders
-    : mockOrders.filter((order) => order.status === activeTab);
+    ? mappedOrders
+    : mappedOrders.filter((order) => order.status === activeTab);
 
   const renderOrder = ({ item }) => (
-    <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.orderCard}>
+    <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.orderCard}>
       <View style={styles.orderHeader}>
         <View>
           <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>
@@ -78,11 +101,11 @@ const OrdersScreen = ({ navigation }) => {
         <View
           style={[
             styles.statusBadge,
-            { backgroundColor: `${statusColors[item.status]}20` },
+            { backgroundColor: `${statusColors[item.status] || '#94a3b8'}20` },
           ]}
         >
-          <Text style={[styles.statusText, { color: statusColors[item.status] }]}>
-            {statusLabels[item.status]}
+          <Text style={[styles.statusText, { color: statusColors[item.status] || '#94a3b8' }]}>
+            {item.statusLabel}
           </Text>
         </View>
       </View>
@@ -90,23 +113,23 @@ const OrdersScreen = ({ navigation }) => {
         <Text style={[styles.orderInfo, { color: theme.colors.text.secondary }]}>
           {item.items} items
         </Text>
-        <Text style={[styles.orderTotal, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-          ${item.total.toFixed(2)}
+        <Text style={[styles.orderTotal, { color: iconColor }]}>
+          {formatMoney(item.total)}
         </Text>
       </View>
       <TouchableOpacity
         onPress={() => {
           if (isSeller) {
-            // For sellers, navigate to truck tracking
             navigation.navigate('TruckTracking', { orderId: item.id });
+          } else if (isFieldAdminRole(role)) {
+            navigation.navigate('TrackOrder', { orderId: item.id });
           } else {
-            // For buyers, navigate to order tracking
             navigation.navigate('TrackOrder', { orderId: item.id });
           }
         }}
         style={styles.trackButton}
       >
-        <Text style={[styles.trackButtonText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+        <Text style={[styles.trackButtonText, { color: iconColor }]}>
           {isSeller ? 'Track Truck →' : 'Track Order →'}
         </Text>
       </TouchableOpacity>
@@ -117,7 +140,6 @@ const OrdersScreen = ({ navigation }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {theme.isDarkMode ? (
         <>
-          {/* Arch-like strips in teal colors */}
           <View style={styles.archStrip1} />
           <View style={styles.archStrip2} />
           <View style={styles.archStrip3} />
@@ -125,19 +147,16 @@ const OrdersScreen = ({ navigation }) => {
         </>
       ) : (
         <>
-          {/* Arch-like strips in green colors for light mode */}
           <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
           <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
           <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
           <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
         </>
       )}
-      {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>My Orders</Text>
       </View>
 
-      {/* Tabs */}
       <View style={styles.tabs}>
         {['all', 'processing', 'in_transit', 'delivered'].map((tab) => (
           <TouchableOpacity
@@ -146,7 +165,7 @@ const OrdersScreen = ({ navigation }) => {
             style={[
               styles.tab,
               activeTab === tab && {
-                borderBottomColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
+                borderBottomColor: iconColor,
                 borderBottomWidth: 2,
               },
             ]}
@@ -155,10 +174,7 @@ const OrdersScreen = ({ navigation }) => {
               style={[
                 styles.tabText,
                 {
-                  color:
-                    activeTab === tab
-                      ? (theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main)
-                      : theme.colors.text.secondary,
+                  color: activeTab === tab ? iconColor : theme.colors.text.secondary,
                 },
               ]}
             >
@@ -168,23 +184,29 @@ const OrdersScreen = ({ navigation }) => {
         ))}
       </View>
 
-      {/* Orders List */}
-      <FlatList
-        data={filteredOrders}
-        renderItem={renderOrder}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.list, { zIndex: 1 }]}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <EmptyState
-            icon={<AppIcon name="orders" size={64} color={theme.colors.text.tertiary} />}
-            title="No orders found"
-            message="You haven't placed any orders yet"
-            actionLabel="Browse Products"
-            onAction={() => navigation.navigate('BrowseTab')}
-          />
-        }
-      />
+      {loading && orders.length === 0 ? (
+        <ActivityIndicator color={iconColor} style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={filteredOrders}
+          renderItem={renderOrder}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[styles.list, { zIndex: 1 }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => loadOrders(true)} />
+          }
+          ListEmptyComponent={
+            <EmptyState
+              icon={<AppIcon name="orders" size={64} color={theme.colors.text.tertiary} />}
+              title={error ? 'Could not load orders' : 'No orders found'}
+              message={error || "You haven't placed any orders yet"}
+              actionLabel="Browse Products"
+              onAction={() => navigation.navigate('BrowseTab')}
+            />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -194,7 +216,6 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
   },
-  // Arch-like strips pattern for dark mode
   archStrip1: {
     position: 'absolute',
     top: -100,
@@ -272,6 +293,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 20,
+    paddingBottom: 40,
   },
   orderCard: {
     marginBottom: 12,
@@ -320,10 +342,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  emptyIcon: {
-    fontSize: 64,
-  },
-  // Light mode arch strips with green colors
   lightModeArchStrip1: {
     backgroundColor: 'rgba(22, 163, 74, 0.3)',
     opacity: 0.7,
@@ -343,4 +361,3 @@ const styles = StyleSheet.create({
 });
 
 export default OrdersScreen;
-

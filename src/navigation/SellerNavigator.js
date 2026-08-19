@@ -13,7 +13,8 @@ import ProductCatalogScreen from '../screens/seller/ProductCatalogScreen';
 import TruckTrackingScreen from '../screens/seller/TruckTrackingScreen';
 import OrderDetailScreen from '../screens/seller/OrderDetailScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen'; // Reuse
-import ProfileScreen from '../screens/buyer/ProfileScreen'; // Reuse
+import ProfileScreen from '../screens/ProfileScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -101,6 +102,7 @@ const SellerNavigator = () => (
     <Stack.Screen name="ProductCatalog" component={ProductCatalogScreen} />
     <Stack.Screen name="TruckTracking" component={TruckTrackingScreen} />
     <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+    <Stack.Screen name="Notifications" component={NotificationsScreen} />
   </Stack.Navigator>
 );
 

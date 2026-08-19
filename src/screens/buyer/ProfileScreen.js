@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '../../hooks/useTheme';
-import { logout } from '../../store/slices/authSlice';
+import { logoutAsync } from '../../store/slices/authSlice';
 import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
 import AppIcon from '../../components/common/AppIcon';
@@ -167,7 +167,7 @@ const ProfileScreen = ({ navigation }) => {
                   onPress: () => {
                     // Dispatch logout action - will clear auth state
                     // AppNavigator will automatically redirect to Auth flow
-                    dispatch(logout());
+                    dispatch(logoutAsync());
                   },
                 },
               ]

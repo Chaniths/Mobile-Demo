@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import apiClient from '../../api/client';
+import ArchBackground from '../../components/common/ArchBackground';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -95,11 +96,12 @@ const BuyerRatingsScreen = () => {
   const s = styles(theme);
 
   if (loading) return (
-    <View style={s.centered}><ActivityIndicator size="large" color="#10b981" /></View>
+    <View style={s.centered}><ArchBackground /><ActivityIndicator size="large" color="#10b981" /></View>
   );
 
   return (
     <View style={s.container}>
+      <ArchBackground />
       {/* Header */}
       <View style={s.pageHeader}>
         <Text style={s.pageLabel}>HISTORY</Text>
@@ -269,7 +271,7 @@ const BuyerRatingsScreen = () => {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = (theme) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
+  container: { flex: 1, backgroundColor: theme.colors.background, overflow: 'hidden' },
   centered:  { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   pageHeader:   { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16, borderBottomWidth: 1, borderColor: theme.colors.border, backgroundColor: 'rgba(255,255,255,0.03)' },

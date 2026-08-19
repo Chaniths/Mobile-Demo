@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
+import ArchBackground from '../../components/common/ArchBackground';
 
 // ─── PendingApprovalScreen ─────────────────────────────────────────────────
 // Mirrors web's PendingApprovalPage.tsx. Reusable from anywhere:
@@ -15,6 +16,7 @@ const PendingApprovalScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
+      <ArchBackground />
       <ScrollView contentContainerStyle={s.container} showsVerticalScrollIndicator={false}>
 
         {/* Clock icon */}
@@ -76,7 +78,7 @@ const PendingApprovalScreen = ({ navigation }) => {
 // ─── Styles (kept identical to the inline PendingScreen in RegisterScreen.js) ──
 
 const styles = (theme) => StyleSheet.create({
-  safe:        { flex: 1, backgroundColor: theme.colors.background },
+  safe:        { flex: 1, backgroundColor: theme.colors.background, overflow: 'hidden' },
   container:   { flexGrow: 1, padding: 24, alignItems: 'center', paddingBottom: 40 },
 
   iconWrap:    { width: 96, height: 96, borderRadius: 48, backgroundColor: 'rgba(245,158,11,0.12)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.35)', justifyContent: 'center', alignItems: 'center', marginVertical: 32 },

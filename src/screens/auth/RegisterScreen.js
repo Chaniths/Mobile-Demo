@@ -1,13 +1,12 @@
 /**
  * RegisterScreen.js
- * Changes: replaced all 🙈/👁️ emoji eye icons with proper SVG EyeIcon component.
- * Place at: src/screens/auth/RegisterScreen.js
+ * Buyer/seller signup with map address picker.
  */
 
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  KeyboardAvoidingView, Platform, TextInput, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import Svg, { Path, Circle, Line } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,8 +19,7 @@ import apiClient from '../../api/client';
 import AsyncStorageService from '../../services/storage/AsyncStorageService';
 import { STORAGE_KEYS } from '../../utils/constants';
 import MapAddressPicker from '../../components/MapAddressPicker';
-
-// ─── SVG eye icon (same as ProfileSectionScreen and web) ─────────────────────
+import { buildSessionUser } from '../../utils/roles';
 
 const EyeIcon = ({ visible, color = '#94a3b8', size = 18 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -35,31 +33,6 @@ const EyeIcon = ({ visible, color = '#94a3b8', size = 18 }) => (
     )}
   </Svg>
 );
-
-const FormField = ({
-  label, value, onChange, placeholder, keyboardType, maxLength,
-  secureTextEntry, error, onBlur, autoCapitalize, rightIcon,
-  onRightIconPress, autoComplete, textContentType,
-}) => (
-  <Input
-    label={label}
-    placeholder={placeholder}
-    value={value}
-    onChangeText={onChange}
-    onBlur={onBlur}
-    keyboardType={keyboardType}
-    maxLength={maxLength}
-    secureTextEntry={secureTextEntry}
-    autoCapitalize={autoCapitalize ?? 'sentences'}
-    error={error}
-    rightIcon={rightIcon}
-    onRightIconPress={onRightIconPress}
-    autoComplete={autoComplete}
-    textContentType={textContentType}
-  />
-);
-
-// ─── Validation helpers (mirrors web SignUpPage.tsx) ──────────────────────────
 
 const isValidEmail      = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 const isValidPersonName = (v) => /^[A-Za-z\s]+$/.test(v.trim()) && v.trim().length > 0;
@@ -76,7 +49,7 @@ const getPasswordStrength = (pw) => {
     1: { label: 'Weak',   color: '#ef4444' },
     2: { label: 'Fair',   color: '#f59e0b' },
     3: { label: 'Good',   color: '#10b981' },
-    4: { label: 'Strong', color: '#10b981' }, // green, not purple
+    4: { label: 'Strong', color: '#10b981' },
   };
   return { score, ...(map[score] ?? { label: '', color: '#94a3b8' }) };
 };
@@ -90,21 +63,15 @@ const getPasswordErrors = (pw) => {
   return e;
 };
 
-// ─── Role cards ───────────────────────────────────────────────────────────────
-
 const ROLES = [
   { id: 'buyer',  icon: '🛒', title: 'Buyer',  desc: 'Browse and purchase products' },
   { id: 'seller', icon: '🏪', title: 'Seller', desc: 'List and manage your products' },
 ];
 
-
-// ─── Main RegisterScreen ──────────────────────────────────────────────────────
-
 const RegisterScreen = ({ navigation }) => {
   const { theme }  = useTheme();
   const dispatch   = useDispatch();
 
-  // Form fields
   const [role,            setRole]            = useState(null);
   const [name,            setName]            = useState('');
   const [email,           setEmail]           = useState('');
@@ -116,7 +83,6 @@ const RegisterScreen = ({ navigation }) => {
   const [businessAddress, setBusinessAddress] = useState({ address: '', city: '', lat: null, lng: null });
   const [agreedToPolicy,  setAgreedToPolicy]  = useState(false);
 
-  // UI state
   const [showPassword,  setShowPassword]  = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading,       setLoading]       = useState(false);
@@ -128,7 +94,7 @@ const RegisterScreen = ({ navigation }) => {
   const touchAll = ()       => setTouched({
     role: true, name: true, email: true, phone: true,
     password: true, confirmPassword: true, address: true,
-    businessName: true, businessAddress: true,
+    businessName: true, businessAddress: true, policy: true,
   });
 
   const strength  = useMemo(() => getPasswordStrength(password), [password]);
@@ -168,23 +134,24 @@ const RegisterScreen = ({ navigation }) => {
           latitude: address.lat,
           longitude: address.lng,
         });
+        const sessionUser = buildSessionUser(data.user ?? {});
         await AsyncStorageService.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
-        await AsyncStorageService.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
-        dispatch(loginSuccess({ user: data.user, token: data.token }));
-      }  else {
-          const payload = {
-            businessName: businessName.trim(), ownerName: name.trim(),
-            email: email.trim(), phone: phone ? phone : undefined,
-            password, confirmPassword,
-            businessAddress: businessAddress.address,
-            city: businessAddress.city,
-            latitude: businessAddress.lat,
-            longitude: businessAddress.lng,
-            agreedToPolicy,
-          };
-          await apiClient.post('/auth/vendor/signup', payload);
-          navigation.navigate('PendingApproval');
-        }
+        await AsyncStorageService.setItem(STORAGE_KEYS.USER_DATA, sessionUser);
+        dispatch(loginSuccess({ user: sessionUser, token: data.token }));
+      } else {
+        const payload = {
+          businessName: businessName.trim(), ownerName: name.trim(),
+          email: email.trim(), phone: phone ? phone : undefined,
+          password, confirmPassword,
+          businessAddress: businessAddress.address,
+          city: businessAddress.city,
+          latitude: businessAddress.lat,
+          longitude: businessAddress.lng,
+          agreedToPolicy,
+        };
+        await apiClient.post('/auth/vendor/signup', payload);
+        navigation.navigate('PendingApproval');
+      }
     } catch (err) {
       setApiError(err?.response?.data?.message ?? 'Registration failed. Please try again.');
     } finally {
@@ -192,7 +159,7 @@ const RegisterScreen = ({ navigation }) => {
     }
   };
 
-  const s = styles(theme);
+  const accent = theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
@@ -216,191 +183,207 @@ const RegisterScreen = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
-          <View style={s.header}>
-            <Text style={s.title}>Create Account</Text>
-            <Text style={s.subtitle}>Join FreshRoute today</Text>
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: theme.colors.text.primary }]}>Create Account</Text>
+            <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>Join FreshRoute today</Text>
           </View>
 
-          {/* Main Content Card with Glassmorphism */}
+          {!!apiError && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>❌ {apiError}</Text>
+            </View>
+          )}
+
           <Card variant="glass" style={styles.mainCard}>
-            {/* Role Selection */}
             <View style={styles.rolesContainer}>
-            <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
-              Choose your role
-            </Text>
-              {availableRoles.map((role) => (
-                <TouchableOpacity key={role.id} onPress={() => setSelectedRole(role.id)}>
+              <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>
+                Choose your role
+              </Text>
+              {ROLES.map((item) => (
+                <TouchableOpacity key={item.id} onPress={() => { setRole(item.id); setErrors((p) => ({ ...p, role: '' })); }}>
                   <Card
-                    variant={selectedRole === role.id ? 'glass' : 'default'}
+                    variant={role === item.id ? 'glass' : 'default'}
                     style={[
                       styles.roleCard,
-                      selectedRole === role.id && {
+                      role === item.id && {
                         borderWidth: 2,
-                        borderColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
+                        borderColor: accent,
                         backgroundColor: theme.isDarkMode ? 'rgba(35, 101, 113, 0.2)' : undefined,
                       },
                     ]}
                   >
                     <View style={styles.roleContent}>
                       <View style={[styles.iconContainer, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-                        <AppIcon name={role.icon} size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
+                        <Text style={styles.roleIcon}>{item.icon}</Text>
                       </View>
                       <View style={styles.roleInfo}>
-                        <Text style={[styles.roleTitle, { color: theme.colors.text.primary }]}>
-                          {role.title}
-                        </Text>
-                        <Text style={[styles.roleDescription, { color: theme.colors.text.secondary }]}>
-                          {role.description}
-                        </Text>
+                        <Text style={[styles.roleTitle, { color: theme.colors.text.primary }]}>{item.title}</Text>
+                        <Text style={[styles.roleDescription, { color: theme.colors.text.secondary }]}>{item.desc}</Text>
                       </View>
-                      {selectedRole === role.id && (
-                        <View style={[styles.checkmark, { backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-                          <AppIcon name="check" size={16} color="#ffffff" />
+                      {role === item.id && (
+                        <View style={[styles.checkmark, { backgroundColor: accent }]}>
+                          <Text style={styles.checkmarkText}>✓</Text>
                         </View>
                       )}
                     </View>
                   </Card>
                 </TouchableOpacity>
               ))}
-              {errors.role && (
-                <Text style={[styles.errorText, { color: theme.colors.error || '#d32f2f' }]}>
-                  {errors.role}
-                </Text>
-              )}
+              {errors.role ? <Text style={styles.errorText}>{errors.role}</Text> : null}
               <Text style={[styles.helperText, { color: theme.colors.text.secondary }]}>
                 Drivers and field admins are added by administrators only.
               </Text>
             </View>
 
-            {/* Form */}
             <View style={styles.form}>
               <Input
-                label="Full Name"
+                label={role === 'seller' ? 'Owner full name' : 'Full Name'}
                 placeholder="Enter your full name"
-                value={formData.name}
-                onChangeText={(text) => updateField('name', text)}
-                error={errors.name}
+                value={name}
+                onChangeText={(t) => { setName(t); setErrors((p) => ({ ...p, name: '' })); }}
+                onBlur={() => touch('name')}
+                error={touched.name && errors.name ? errors.name : ''}
               />
+
+              {role === 'seller' && (
+                <Input
+                  label="Business name"
+                  placeholder="Green Market"
+                  value={businessName}
+                  onChangeText={(t) => { setBusinessName(t); setErrors((p) => ({ ...p, businessName: '' })); }}
+                  onBlur={() => touch('businessName')}
+                  error={touched.businessName && errors.businessName ? errors.businessName : ''}
+                />
+              )}
 
               <Input
                 label="Email"
                 placeholder="Enter your email"
-                value={formData.email}
-                onChangeText={(text) => updateField('email', text)}
+                value={email}
+                onChangeText={(t) => { setEmail(t); setErrors((p) => ({ ...p, email: '' })); }}
+                onBlur={() => touch('email')}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                error={errors.email}
+                error={touched.email && errors.email ? errors.email : ''}
               />
 
               <Input
                 label="Phone Number"
-                placeholder="Enter your phone number"
-                value={formData.phone}
-                onChangeText={(text) => updateField('phone', text)}
+                placeholder="7XXXXXXXX"
+                value={phone}
+                onChangeText={(t) => { setPhone(t.replace(/\D/g, '').slice(0, 9)); setErrors((p) => ({ ...p, phone: '' })); }}
+                onBlur={() => touch('phone')}
                 keyboardType="phone-pad"
-                error={errors.phone}
+                error={touched.phone && errors.phone ? errors.phone : ''}
               />
+
+              {role === 'buyer' && (
+                <View style={styles.mapBlock}>
+                  <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>Delivery address</Text>
+                  <MapAddressPicker
+                    theme={theme}
+                    onChange={(next) => {
+                      setAddress(next);
+                      setErrors((p) => ({ ...p, address: '' }));
+                      touch('address');
+                    }}
+                  />
+                  {touched.address && errors.address ? <Text style={styles.fieldError}>{errors.address}</Text> : null}
+                </View>
+              )}
+
+              {role === 'seller' && (
+                <View style={styles.mapBlock}>
+                  <Text style={[styles.sectionLabel, { color: theme.colors.text.secondary }]}>Business address</Text>
+                  <MapAddressPicker
+                    theme={theme}
+                    onChange={(next) => {
+                      setBusinessAddress(next);
+                      setErrors((p) => ({ ...p, businessAddress: '' }));
+                      touch('businessAddress');
+                    }}
+                  />
+                  {touched.businessAddress && errors.businessAddress ? <Text style={styles.fieldError}>{errors.businessAddress}</Text> : null}
+                </View>
+              )}
 
               <Input
                 label="Password"
                 placeholder="Create a password"
-                value={formData.password}
-                onChangeText={(text) => updateField('password', text)}
+                value={password}
+                onChangeText={(t) => { setPassword(t); setErrors((p) => ({ ...p, password: '' })); }}
                 secureTextEntry={!showPassword}
-                error={errors.password}
-              />
-
-              <Input
-                label="Confirm Password"
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChangeText={(text) => updateField('confirmPassword', text)}
-                secureTextEntry={!showPassword}
-                error={errors.confirmPassword}
-                rightIcon={
-                  <AppIcon
-                    name={showPassword ? 'eye' : 'eyeOff'}
-                    size={22}
-                    color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}
-                  />
-                }
+                error={touched.password && errors.password ? errors.password : ''}
+                rightIcon={<EyeIcon visible={showPassword} color={theme.colors.text.secondary} />}
                 onRightIconPress={() => setShowPassword(!showPassword)}
               />
 
-            {/* Password strength bar */}
-            {password.length > 0 && (
-              <View style={s.strengthWrap}>
-                <View style={s.strengthBg}>
-                  <View style={[s.strengthBar, { width: `${strength.score * 25}%`, backgroundColor: strength.color }]} />
+              {password.length > 0 && (
+                <View style={styles.strengthWrap}>
+                  <View style={styles.strengthBg}>
+                    <View style={[styles.strengthBar, { width: `${strength.score * 25}%`, backgroundColor: strength.color }]} />
+                  </View>
+                  <Text style={[styles.strengthLabel, { color: strength.color }]}>{strength.label}</Text>
                 </View>
-                <Text style={[s.strengthLabel, { color: strength.color }]}>{strength.label}</Text>
-              </View>
-            )}
-            {password.length > 0 && pwdErrors.length > 0 && (
-              <View style={{ marginTop: 4, marginBottom: 8 }}>
-                {pwdErrors.map((e) => <Text key={e} style={s.fieldError}>✕ {e}</Text>)}
-              </View>
-            )}
-            {password.length > 0 && pwdErrors.length === 0 && (
-              <Text style={[s.fieldOk, { marginTop: 4 }]}>✓ Password looks great!</Text>
-            )}
-
-            {/* Confirm password — also uses SVG eye via same showPassword toggle */}
-            <Input
-              label="Confirm password"
-              placeholder="Repeat your password"
-              value={confirmPassword}
-              onChangeText={(t) => { setConfirmPassword(t); setErrors((p) => ({ ...p, confirmPassword: '' })); }}
-              onBlur={() => touch('confirmPassword')}
-              secureTextEntry={!showConfirmPassword}
-              error={touched.confirmPassword && errors.confirmPassword ? errors.confirmPassword : ''}
-              rightIcon={<EyeIcon visible={showConfirmPassword} color={theme.colors.text.secondary} />}
-              onRightIconPress={() => setShowConfirmPassword(!showConfirmPassword)}
-              autoComplete="new-password"
-              textContentType="newPassword"
-            />
-            {confirmPassword && password === confirmPassword && (
-              <Text style={s.fieldOk}>✓ Passwords match</Text>
-            )}
-
-            {/* Seller policy */}
-            {role === 'seller' && (
-              <TouchableOpacity style={s.policyRow} onPress={() => setAgreedToPolicy(!agreedToPolicy)} activeOpacity={0.7}>
-                <View style={[s.checkbox, agreedToPolicy && { backgroundColor: theme.colors.primary.main, borderColor: theme.colors.primary.main }]}>
-                  {agreedToPolicy && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>✓</Text>}
+              )}
+              {password.length > 0 && pwdErrors.length > 0 && (
+                <View style={{ marginTop: 4, marginBottom: 8 }}>
+                  {pwdErrors.map((msg) => <Text key={msg} style={styles.fieldError}>✕ {msg}</Text>)}
                 </View>
-                <Text style={[s.policyText, { color: theme.colors.text.secondary }]}>
-                  I agree to the FreshRoute Vendor Policy and understand that orders and payouts are managed by the platform.
-                </Text>
+              )}
+              {password.length > 0 && pwdErrors.length === 0 && (
+                <Text style={[styles.fieldOk, { marginTop: 4 }]}>✓ Password looks great!</Text>
+              )}
+
+              <Input
+                label="Confirm password"
+                placeholder="Repeat your password"
+                value={confirmPassword}
+                onChangeText={(t) => { setConfirmPassword(t); setErrors((p) => ({ ...p, confirmPassword: '' })); }}
+                onBlur={() => touch('confirmPassword')}
+                secureTextEntry={!showConfirmPassword}
+                error={touched.confirmPassword && errors.confirmPassword ? errors.confirmPassword : ''}
+                rightIcon={<EyeIcon visible={showConfirmPassword} color={theme.colors.text.secondary} />}
+                onRightIconPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              />
+              {confirmPassword && password === confirmPassword && (
+                <Text style={styles.fieldOk}>✓ Passwords match</Text>
+              )}
+
+              {role === 'seller' && (
+                <TouchableOpacity style={styles.policyRow} onPress={() => setAgreedToPolicy(!agreedToPolicy)} activeOpacity={0.7}>
+                  <View style={[styles.checkbox, agreedToPolicy && { backgroundColor: theme.colors.primary.main, borderColor: theme.colors.primary.main }]}>
+                    {agreedToPolicy && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>✓</Text>}
+                  </View>
+                  <Text style={[styles.policyText, { color: theme.colors.text.secondary }]}>
+                    I agree to the FreshRoute Vendor Policy and understand that orders and payouts are managed by the platform.
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {touched.policy && errors.policy ? <Text style={styles.fieldError}>{errors.policy}</Text> : null}
+
+              <TouchableOpacity
+                style={[styles.submitBtn, { backgroundColor: theme.colors.primary.main }, loading && { opacity: 0.6 }]}
+                onPress={handleRegister}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {loading
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={styles.submitBtnText}>{role === 'seller' ? 'Register Vendor Account' : 'Create Account'}</Text>
+                }
               </TouchableOpacity>
-            )}
-            {touched.policy && errors.policy ? <Text style={s.fieldError}>{errors.policy}</Text> : null}
+            </View>
+          </Card>
 
-            {/* Submit */}
-            <TouchableOpacity
-              style={[s.submitBtn, { backgroundColor: theme.colors.primary.main }, loading && { opacity: 0.6 }]}
-              onPress={handleRegister}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={s.submitBtnText}>{role === 'seller' ? 'Register Vendor Account' : 'Create Account'}</Text>
-              }
-            </TouchableOpacity>
-          </View>
-
-          {/* Footer */}
-          <View style={s.footer}>
-            <Text style={[s.footerText, { color: theme.colors.text.secondary }]}>Already have an account? </Text>
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: theme.colors.text.secondary }]}>Already have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={[styles.loginText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+              <Text style={[styles.loginText, { color: accent }]}>
                 Sign In
               </Text>
             </TouchableOpacity>
           </View>
-
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -408,13 +391,8 @@ const RegisterScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-  flex: {
-    flex: 1,
-  },
+  container: { flex: 1, overflow: 'hidden' },
+  flex: { flex: 1 },
   gradientCircle1: {
     position: 'absolute',
     top: -160,
@@ -435,117 +413,53 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(35, 101, 113, 0.4)',
     opacity: 0.6,
   },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 24,
-    zIndex: 1,
-  },
-  mainCard: {
-    borderRadius: 24,
-    padding: 20,
-    marginVertical: 8,
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  rolesContainer: {
-    marginBottom: 16,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  roleCard: {
-    marginBottom: 12,
-  },
-  roleContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  scrollContent: { flexGrow: 1, padding: 24, zIndex: 1 },
+  mainCard: { borderRadius: 24, padding: 20, marginVertical: 8 },
+  header: { alignItems: 'center', marginTop: 20, marginBottom: 24 },
+  title: { fontSize: 28, fontWeight: '700', marginBottom: 8 },
+  subtitle: { fontSize: 14, textAlign: 'center' },
+  rolesContainer: { marginBottom: 16 },
+  sectionLabel: { fontSize: 14, fontWeight: '600', marginBottom: 12 },
+  roleCard: { marginBottom: 12 },
+  roleContent: { flexDirection: 'row', alignItems: 'center' },
   iconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
+    width: 52, height: 52, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center', marginRight: 14,
   },
-  roleIcon: {
-    fontSize: 26,
+  roleIcon: { fontSize: 26 },
+  roleInfo: { flex: 1 },
+  roleTitle: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  roleDescription: { fontSize: 13 },
+  checkmark: { width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
+  checkmarkText: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
+  helperText: { fontSize: 12, marginTop: 4 },
+  form: { marginBottom: 8 },
+  mapBlock: { marginBottom: 16 },
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingBottom: 20 },
+  footerText: { fontSize: 14 },
+  loginText: { fontSize: 14, fontWeight: '600' },
+  errorText: { marginTop: 8, fontSize: 13, fontWeight: '600', color: '#ef4444' },
+  errorBanner: {
+    borderRadius: 12, padding: 12, marginBottom: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
   },
-  roleInfo: {
-    flex: 1,
+  errorBannerText: { color: '#ef4444', fontSize: 13, textAlign: 'center' },
+  fieldError: { fontSize: 12, color: '#ef4444', marginTop: 4 },
+  fieldOk: { fontSize: 12, color: '#10b981', marginBottom: 8 },
+  strengthWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 8 },
+  strengthBg: { flex: 1, height: 4, borderRadius: 2, backgroundColor: 'rgba(148,163,184,0.3)', overflow: 'hidden' },
+  strengthBar: { height: 4, borderRadius: 2 },
+  strengthLabel: { fontSize: 11, fontWeight: '600', minWidth: 48 },
+  policyRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 8, marginBottom: 8 },
+  checkbox: {
+    width: 20, height: 20, borderRadius: 6, borderWidth: 1.5,
+    borderColor: '#94a3b8', alignItems: 'center', justifyContent: 'center', marginTop: 2,
   },
-  roleTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  roleDescription: {
-    fontSize: 13,
-  },
-  checkmark: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkmarkText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  helperText: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  form: {
-    marginBottom: 24,
-  },
-  registerButton: {
-    marginTop: 8,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 20,
-  },
-  footerText: {
-    fontSize: 14,
-  },
-  loginText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  errorText: {
-    marginTop: 12,
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  lightModeCircle1: {
-    backgroundColor: 'rgba(22, 163, 74, 0.35)',
-    opacity: 0.7,
-  },
-  lightModeCircle2: {
-    backgroundColor: 'rgba(74, 222, 128, 0.2)',
-    opacity: 0.5,
-  },
+  policyText: { flex: 1, fontSize: 12, lineHeight: 18 },
+  submitBtn: { marginTop: 12, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  lightModeCircle1: { backgroundColor: 'rgba(22, 163, 74, 0.35)', opacity: 0.7 },
+  lightModeCircle2: { backgroundColor: 'rgba(74, 222, 128, 0.2)', opacity: 0.5 },
 });
-
 
 export default RegisterScreen;

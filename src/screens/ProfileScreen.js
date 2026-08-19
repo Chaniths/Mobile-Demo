@@ -6,11 +6,13 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
-import { logout, loginSuccess } from '../store/slices/authSlice';
+import { loginSuccess, logoutAsync } from '../store/slices/authSlice';
 import Card from '../components/common/Card';
 import Avatar from '../components/common/Avatar';
 import apiClient from '../api/client';
 import MapAddressPicker from '../components/MapAddressPicker';
+import ArchBackground from '../components/common/ArchBackground';
+import { isFieldAdminRole } from '../utils/roles';
 
 // ─── Validation helpers ───────────────────────────────────────────────────────
 
@@ -64,6 +66,7 @@ const getRoleBadge = (role) => ({
   seller:      { label: 'Seller',      color: '#6366f1' },
   driver:      { label: 'Driver',      color: '#f59e0b' },
   field_admin: { label: 'Field Admin', color: '#0ea5e9' },
+  fieldadmin:  { label: 'Field Admin', color: '#0ea5e9' },
 }[role] ?? { label: role, color: '#94a3b8' });
 
 // ─── Role-based menu config ───────────────────────────────────────────────────
@@ -103,8 +106,8 @@ const getMenuItems = (role) => {
     danger,
   ];
 
-  if (role === 'driver' || role === 'field_admin') {
-    const isFieldAdmin = role === 'field_admin';
+  if (role === 'driver' || isFieldAdminRole(role)) {
+    const isFieldAdmin = isFieldAdminRole(role);
     return [
       edit,
       password,
@@ -1027,7 +1030,7 @@ const DangerZoneSection = ({ role, dispatch, theme }) => {
     try {
       await apiClient.delete('/profile');
       Alert.alert('Account deleted', 'Your account has been permanently removed.');
-      dispatch(logout());
+      dispatch(logoutAsync());
     } catch (err) {
       Alert.alert('Error', err?.response?.data?.message ?? 'Failed to delete account');
       setDeleting(false);
@@ -1080,7 +1083,7 @@ const DangerZoneSection = ({ role, dispatch, theme }) => {
 // ─── Detail view ──────────────────────────────────────────────────────────────
 
 const DetailView = ({ section, user, theme, dispatch, token, role, onBack }) => {
-  const isFieldAdmin = role === 'field_admin';
+  const isFieldAdmin = isFieldAdminRole(role);
 
   const renderContent = () => {
     switch (section.id) {
@@ -1139,7 +1142,7 @@ const ProfileScreen = () => {
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => dispatch(logout()) },
+      { text: 'Logout', style: 'destructive', onPress: () => dispatch(logoutAsync()) },
     ]);
   };
 
@@ -1147,6 +1150,7 @@ const ProfileScreen = () => {
   if (activeSection) {
     return (
       <View style={[ms.container, { backgroundColor: theme.colors.background }]}>
+        <ArchBackground />
         <DetailView
           section={activeSection}
           user={user}
@@ -1163,6 +1167,7 @@ const ProfileScreen = () => {
   // ── Menu (home) view ──
   return (
     <View style={[ms.container, { backgroundColor: theme.colors.background }]}>
+      <ArchBackground />
       <View style={ms.header}>
         <Text style={[ms.headerTitle, { color: theme.colors.text.primary }]}>Profile</Text>
       </View>
@@ -1311,7 +1316,7 @@ const sh = StyleSheet.create({
 // ─── Main screen styles ───────────────────────────────────────────────────────
 
 const ms = StyleSheet.create({
-  container:    { flex: 1 },
+  container:    { flex: 1, overflow: 'hidden' },
   header:       { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16 },
   headerTitle:  { fontSize: 28, fontWeight: '700' },
   scrollContent:{ paddingBottom: 120 },

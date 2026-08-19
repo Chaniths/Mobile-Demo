@@ -6,16 +6,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { useTheme } from '../../hooks/useTheme';
-import { loginFailure, loginStart, loginSuccess } from '../../store/slices/authSlice';
+import { loginSuccess } from '../../store/slices/authSlice';
+import { fetchCart } from '../../store/slices/cartSlice';
 import AsyncStorageService from '../../services/storage/AsyncStorageService';
 import { STORAGE_KEYS } from '../../utils/constants';
-import { loginByRole } from '../../api/authApi';
+import apiClient from '../../api/client';
 import { setAuthToken } from '../../api/interceptors';
+import { buildSessionUser, normalizeRole } from '../../utils/roles';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import apiClient from '../../api/client';
-import AsyncStorageService from '../../services/storage/AsyncStorageService';
-import { STORAGE_KEYS } from '../../utils/constants';
+import AppIcon from '../../components/common/AppIcon';
+import Card from '../../components/common/Card';
 import Svg, { Path, Circle, Line } from 'react-native-svg';
 
 const EyeIcon = ({ visible, color = '#94a3b8', size = 18 }) => (
@@ -32,7 +33,13 @@ const EyeIcon = ({ visible, color = '#94a3b8', size = 18 }) => (
 );
 // ─── Validation ───────────────────────────────────────────────────────────────
 
-const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '').trim());
+
+const normalizeEmail = (v) =>
+  String(v || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\u2024\u3002\uff0e]/g, '.');
 
 // Recognize a "not approved yet" login response from the API.
 // Adjust this to match your backend's actual shape — common patterns:
@@ -51,8 +58,6 @@ const isPendingApprovalError = (err) => {
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
-import AppIcon from '../../components/common/AppIcon';
-import Card from '../../components/common/Card';
 
 const LoginScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -70,11 +75,11 @@ const LoginScreen = ({ navigation }) => {
   const touch = (field) => setTouched((p) => ({ ...p, [field]: true }));
 
   const emailError    = touched.email    && (!email    ? 'Email is required'    : !isValidEmail(email)    ? 'Enter a valid email address'         : '');
-  const passwordError = touched.password && (!password ? 'Password is required' : password.length < 8     ? 'Password must be at least 8 characters' : '');
+  const passwordError = touched.password && (!password ? 'Password is required' : '');
 
   const validate = () => {
     setTouched({ email: true, password: true });
-    return isValidEmail(email) && password.length >= 8;
+    return isValidEmail(email) && password.trim().length > 0;
   };
 
   const handleLogin = async () => {
@@ -82,19 +87,29 @@ const LoginScreen = ({ navigation }) => {
     setLoading(true);
     setApiError('');
     try {
-      const { data } = await apiClient.post('/auth/login', { email: email.trim(), password });
-      // 🔧 merge seller's business profile (businessName, businessAddress, lat/lng)
-      // straight into user, since backend sends it as a separate `profile` object
-      const mergedUser = { ...data.user, ...(data.profile ?? {}) };
+      const { data } = await apiClient.post('/auth/login', {
+        email: normalizeEmail(email),
+        password: password.trim(),
+      });
+      const mergedUser = buildSessionUser(data.user ?? {}, data.profile ?? {});
+      setAuthToken(data.token);
       await AsyncStorageService.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
-      await AsyncStorageService.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(mergedUser));
+      await AsyncStorageService.setItem(STORAGE_KEYS.USER_DATA, mergedUser);
       dispatch(loginSuccess({ user: mergedUser, token: data.token }));
+      if (normalizeRole(mergedUser.role) === 'buyer') {
+        dispatch(fetchCart());
+      }
       // Navigation handled automatically by AppNavigator based on auth state
     } catch (err) {
       if (isPendingApprovalError(err)) {
         navigation.navigate('PendingApproval');
       } else {
-        setApiError(err?.response?.data?.message ?? 'Invalid email or password');
+        setApiError(
+          err?.response?.data?.message
+          ?? (err?.request && !err?.response ? 'Cannot reach the server. Check that the backend is running.' : null)
+          ?? err?.message
+          ?? 'Invalid email or password'
+        );
       }
     } finally {
       setLoading(false);
@@ -136,14 +151,14 @@ const LoginScreen = ({ navigation }) => {
             <View style={[styles.logo, { backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
               <Text style={styles.logoText}>🌱</Text>
             </View>
-            <Text style={s.title}>Welcome Back</Text>
-            <Text style={s.subtitle}>Sign in to continue to FreshRoute</Text>
+            <Text style={[styles.title, { color: theme.colors.text.primary }]}>Welcome Back</Text>
+            <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>Sign in to continue to FreshRoute</Text>
           </View>
 
           {/* API error banner */}
           {!!apiError && (
-            <View style={s.errorBanner}>
-              <Text style={s.errorBannerText}>❌ {apiError}</Text>
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>❌ {apiError}</Text>
             </View>
           )}
 
@@ -158,6 +173,9 @@ const LoginScreen = ({ navigation }) => {
               onBlur={() => touch('email')}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+              textContentType="username"
               error={emailError}
             />
 
@@ -168,7 +186,10 @@ const LoginScreen = ({ navigation }) => {
               onChangeText={(t) => { setPassword(t); setErrors({}); setApiError(''); }}
               onBlur={() => touch('password')}
               secureTextEntry={!showPassword}
-              error={errors.password}
+              autoCorrect={false}
+              autoComplete="password"
+              textContentType="password"
+              error={passwordError}
               rightIcon={
                 <AppIcon
                   name={showPassword ? 'eye' : 'eyeOff'}
@@ -178,10 +199,6 @@ const LoginScreen = ({ navigation }) => {
               }
               onRightIconPress={() => setShowPassword(!showPassword)}
             />
-
-            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={s.forgotRow}>
-              <Text style={[s.forgotText, { color: theme.colors.primary.main }]}>Forgot Password?</Text>
-            </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => navigation.navigate('ForgotPassword')}
@@ -198,18 +215,12 @@ const LoginScreen = ({ navigation }) => {
                 loading={loading}
                 style={[styles.loginButton, theme.isDarkMode && { backgroundColor: theme.colors.primary.main }]}
               />
-
-              {!!authError && (
-                <Text style={[styles.errorText, { color: theme.colors.error || '#d32f2f' }]}>
-                  {authError}
-                </Text>
-              )}
             </View>
           </Card>
 
           {/* Footer */}
-          <View style={s.footer}>
-            <Text style={[s.footerText, { color: theme.colors.text.secondary }]}>Don't have an account? </Text>
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: theme.colors.text.secondary }]}>Don't have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
               <Text style={[styles.signupText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                 Sign Up
@@ -261,6 +272,17 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 24,
     marginVertical: 16,
+  },
+  errorBanner: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+  },
+  errorBannerText: {
+    color: '#ef4444',
+    fontSize: 13,
+    textAlign: 'center',
   },
   header: {
     alignItems: 'center',

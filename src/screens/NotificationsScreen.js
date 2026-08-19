@@ -8,14 +8,17 @@ import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../hooks/useTheme';
 import { useNotificationContext } from '../context/NotificationContext';
 import Card from '../components/common/Card';
+import ArchBackground from '../components/common/ArchBackground';
 
 // ─── Role → allowed tabs ──────────────────────────────────────────
 
 const tabsByRole = {
-  buyer:  ['all', 'unread', 'orders'],
-  seller: ['all', 'unread', 'orders', 'stock'],
-  admin:  ['all', 'unread', 'registrations'],
-  driver: ['all', 'unread'],
+  buyer:       ['all', 'unread', 'orders'],
+  seller:      ['all', 'unread', 'orders', 'stock'],
+  admin:       ['all', 'unread', 'registrations'],
+  driver:      ['all', 'unread'],
+  field_admin: ['all', 'unread'],
+  fieldadmin:  ['all', 'unread'],
 };
 
 const tabLabels = {
@@ -109,6 +112,7 @@ const NotificationsScreen = () => {
 
   return (
     <View style={[ns.container, { backgroundColor: theme.colors.background }]}>
+      <ArchBackground />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={ns.scroll}>
 
         {/* Header — light green, same as active tab chip */}
@@ -256,7 +260,7 @@ const NotificationsScreen = () => {
 };
 
 const ns = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, overflow: 'hidden' },
   scroll:    { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 60, gap: 14 },
 
   headerCard:  { padding: 20, gap: 4 },

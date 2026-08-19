@@ -8,10 +8,11 @@ import { TabBarIcon } from '../components/common/AppIcon';
 import HomeScreen from '../screens/driver/HomeScreen';
 import RouteScreen from '../screens/driver/RouteScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen'; // Reuse for deliveries tab
-import ProfileScreen from '../screens/buyer/ProfileScreen'; // Reuse
+import ProfileScreen from '../screens/ProfileScreen';
 import DeliveryDetailScreen from '../screens/driver/DeliveryDetailScreen';
 import AllDeliveriesScreen from '../screens/driver/AllDeliveriesScreen';
 import ReportIssueScreen from '../screens/driver/ReportIssueScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -101,10 +102,10 @@ const DriverTabs = () => {
 };
 
 const DriverNavigator = () => (
-  <RootStack.Navigator screenOptions={{ headerShown: false }}>
-    <RootStack.Screen name="DriverTabs" component={DriverTabs} />
-    <RootStack.Screen name="Notifications" component={NotificationsScreen} />
-  </RootStack.Navigator>
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="DriverTabs" component={DriverTabs} />
+    <Stack.Screen name="Notifications" component={NotificationsScreen} />
+  </Stack.Navigator>
 );
 
 export default DriverNavigator;

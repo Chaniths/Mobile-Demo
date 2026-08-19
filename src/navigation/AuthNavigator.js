@@ -9,6 +9,7 @@ import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import PendingApprovalScreen from '../screens/auth/PendingApprovalScreen';
 import SecureAccountScreen from '../screens/auth/SecureAccountScreen';
+import RoleSelectScreen from '../screens/auth/RoleSelectScreen';
 
 const Stack = createStackNavigator();
 
@@ -28,6 +29,7 @@ const AuthNavigator = () => {
       {/* FIX: was missing — needed for deep links from the reset-password email */}
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
+      <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
       {/* FIX: was missing — needed for deep links from the "secure my account" email */}
       <Stack.Screen name="SecureAccount" component={SecureAccountScreen} />
     </Stack.Navigator>
