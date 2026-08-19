@@ -83,7 +83,12 @@ export const driverSocketService = {
     notify({ status: 'connecting', message: 'Connecting live updates...' });
 
     socket = io(appConfig.socketUrl, {
-      transports: ['websocket', 'polling'],
+      // Polling first, then upgrade to websocket — this is socket.io's own
+      // default and is far more reliable through Render's free-tier proxy
+      // than forcing a websocket-first handshake, which was failing outright
+      // with "websocket error" on some networks even though the backend
+      // itself was healthy.
+      transports: ['polling', 'websocket'],
       auth: {
         token,
       },
@@ -91,7 +96,7 @@ export const driverSocketService = {
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      timeout: 10000,
+      timeout: 20000,
     });
 
     bindEvents(socket);
@@ -106,7 +111,7 @@ export const driverSocketService = {
     return !!socket?.connected;
   },
 
-  async waitForConnect(timeoutMs = 12000): Promise<void> {
+  async waitForConnect(timeoutMs = 22000): Promise<void> {
     const activeSocket = socket;
     if (!activeSocket) {
       throw new Error('Socket is not initialized.');
