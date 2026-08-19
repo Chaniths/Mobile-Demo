@@ -92,7 +92,6 @@ const normalizeStats = (raw: any): DriverStats => ({
   totalDeliveries: asNumber(raw?.totalDeliveries ?? raw?.deliveries ?? raw?.assignedDeliveries ?? 0, 0),
   completedDeliveries: asNumber(raw?.completedDeliveries ?? raw?.completed ?? 0, 0),
   remainingDeliveries: asNumber(raw?.remainingDeliveries ?? raw?.remaining ?? 0, 0),
-  earningsToday: asNumber(raw?.earningsToday ?? raw?.todayEarnings ?? raw?.earnings ?? 0, 0),
 });
 
 const normalizeLiveSeedPoint = (raw: any): DriverLiveSeedPoint | null => {
@@ -226,11 +225,6 @@ export const driverApi = {
     stopId?: string;
   }): Promise<any> {
     const response = await httpClient.post(appConfig.endpoints.driverIssues, payload);
-    return dataOrSelf<any>(response.data);
-  },
-
-  async getEarnings(): Promise<any> {
-    const response = await httpClient.get(appConfig.endpoints.driverEarnings);
     return dataOrSelf<any>(response.data);
   },
 };

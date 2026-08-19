@@ -12,20 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-<<<<<<< HEAD
-import BackgroundShapes from '../../components/common/BackgroundShapes';
-
-const SellerRejectScreen = ({ navigation, route }) => {
-  const { theme } = useTheme();
-  const [selectedReason, setSelectedReason] = useState('');
-  const [customReason, setCustomReason] = useState('');
-
-  const item = route?.params?.item || {
-    id: '1',
-    name: 'Baby Carrots',
-    quantity: '3kg',
-  };
-=======
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
@@ -78,7 +64,6 @@ const SellerRejectScreen = ({ navigation, route }) => {
   }, [isFlowMode, selectedOrderId]);
 
   const flowCurrentItem = isFlowMode ? flow.rejectedItems[currentItemIndex] ?? null : null;
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
   const flowOrder = useMemo(() => {
     if (!isFlowMode || !flow?.order) return null;
@@ -165,13 +150,6 @@ const SellerRejectScreen = ({ navigation, route }) => {
   ];
 
   const handleReject = () => {
-<<<<<<< HEAD
-    if (!selectedReason && !customReason.trim()) {
-      alert('Please provide a rejection reason');
-      return;
-    }
-    console.log('Product rejected:', { item, order: order.orderId, reason: selectedReason || customReason });
-=======
     if (!item?.id) {
       Alert.alert('Unavailable', 'No order item selected.');
       return;
@@ -239,7 +217,6 @@ const SellerRejectScreen = ({ navigation, route }) => {
       confirmLeaveFlow(() => navigation.goBack());
       return;
     }
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
     navigation.goBack();
   };
 
@@ -247,9 +224,6 @@ const SellerRejectScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-<<<<<<< HEAD
-      <BackgroundShapes variant="form" />
-=======
       {theme.isDarkMode ? (
         <>
           {/* Arch-like strips in teal colors */}
@@ -267,49 +241,15 @@ const SellerRejectScreen = ({ navigation, route }) => {
           <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
         </>
       )}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-<<<<<<< HEAD
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={[styles.backText, { color: teal }]}>{'<- Back'}</Text>
-=======
           <TouchableOpacity onPress={handleBackPress}>
             <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Reject Products</Text>
           <View style={{ width: 70 }} />
         </View>
 
-<<<<<<< HEAD
-        {/* Product Card */}
-        <View style={styles.card}>
-          <Text style={styles.fieldLabel}>PRODUCT</Text>
-          <Text style={[styles.productName, { color: theme.colors.text.primary }]}>{item.name}</Text>
-          <Text style={styles.productQty}>{item.quantity}</Text>
-          <View style={styles.divider} />
-          <Text style={styles.fieldLabel}>ORDER ID</Text>
-          <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>{order.orderId}</Text>
-          <Text style={styles.fieldLabel}>SELLER</Text>
-          <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>{order.seller}</Text>
-        </View>
-
-        {/* Rejection Reasons */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Select Rejection Reason</Text>
-        <View style={styles.reasonsList}>
-          {rejectionReasons.map((reason) => {
-            const isSelected = selectedReason === reason;
-            return (
-              <TouchableOpacity
-                key={reason}
-                style={[styles.reasonPill, isSelected && styles.reasonPillActive]}
-                onPress={() => {
-                  setSelectedReason(reason);
-                  if (reason !== 'Other') setCustomReason('');
-                }}
-                activeOpacity={0.7}
-=======
         {isFlowMode ? <FieldAdminFlowStepper currentStep={FLOW_STEPS.REJECT} /> : null}
         {isFlowMode && flow.rejectedItems.length > 1 ? (
           <Text style={[styles.flowProgress, { color: theme.colors.text.secondary }]}>
@@ -392,37 +332,37 @@ const SellerRejectScreen = ({ navigation, route }) => {
           Select Rejection Reason
         </Text>
         <View style={styles.reasonsContainer}>
-          {rejectionReasons.map((reasonOption) => (
-            <TouchableOpacity
-              key={reasonOption}
-              style={[
-                styles.reasonCard,
-                {
-                  borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
-                  backgroundColor: theme.colors.card || '#f9fafb',
-                },
-                selectedReason === reasonOption && {
-                  backgroundColor: `${theme.colors.error}20`,
-                  borderColor: theme.colors.error,
-                },
-              ]}
-              onPress={() => {
-                setSelectedReason(reasonOption);
-                if (reasonOption !== 'Other') {
-                  setReason('');
-                }
-              }}
-            >
-              <Text
+          {rejectionReasons.map((reasonOption) => {
+            const isSelected = selectedReason === reasonOption;
+            return (
+              <TouchableOpacity
+                key={reasonOption}
                 style={[
-                  styles.reasonText,
-                  { color: theme.colors.text.primary },
-                  selectedReason === reasonOption && { color: theme.colors.error, fontWeight: '700' },
+                  styles.reasonCard,
+                  {
+                    borderColor: theme.colors.border.light || theme.colors.border?.light || '#e5e7eb',
+                    backgroundColor: theme.colors.card || '#f9fafb',
+                  },
+                  isSelected && {
+                    backgroundColor: `${theme.colors.error}20`,
+                    borderColor: theme.colors.error,
+                  },
                 ]}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
+                onPress={() => {
+                  setSelectedReason(reasonOption);
+                  if (reasonOption !== 'Other') {
+                    setReason('');
+                  }
+                }}
               >
-                <Text style={[styles.reasonText, { color: theme.colors.text.primary }, isSelected && styles.reasonTextActive]}>
-                  {reason}
+                <Text
+                  style={[
+                    styles.reasonText,
+                    { color: theme.colors.text.primary },
+                    isSelected && styles.reasonTextActive,
+                  ]}
+                >
+                  {reasonOption}
                 </Text>
               </TouchableOpacity>
             );
@@ -431,39 +371,24 @@ const SellerRejectScreen = ({ navigation, route }) => {
 
         {(selectedReason === 'Other' || !selectedReason) && (
           <>
-<<<<<<< HEAD
-            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Additional Details</Text>
-            <View style={styles.inputCard}>
-              <TextInput
-                style={[styles.textInput, { color: theme.colors.text.primary }]}
-=======
             <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
               Additional Details (Required)
             </Text>
             <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.detailsCard}>
               <TextInput
                 style={[styles.detailsInput, { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary }]}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
                 placeholder="Describe the issue in detail..."
                 placeholderTextColor={theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary}
                 multiline
                 numberOfLines={5}
-                value={customReason}
-                onChangeText={setCustomReason}
+                value={reason}
+                onChangeText={setReason}
               />
-            </View>
+            </Card>
           </>
         )}
 
         {/* Actions */}
-<<<<<<< HEAD
-        <TouchableOpacity style={[styles.submitBtn, { backgroundColor: teal }]} onPress={handleReject} activeOpacity={0.8}>
-          <Text style={styles.submitText}>Submit Rejection</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-          <Text style={[styles.cancelText, { color: theme.colors.text.secondary }]}>Cancel</Text>
-        </TouchableOpacity>
-=======
         <View style={styles.actionsContainer}>
           <Button
             title={submitting ? 'Submitting...' : isFlowMode && currentItemIndex < flow.rejectedItems.length - 1 ? 'Submit & Next Item' : 'Submit Rejection'}
@@ -482,7 +407,6 @@ const SellerRejectScreen = ({ navigation, route }) => {
         </View>
         </>
         ) : null}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
       </ScrollView>
       <Modal
         visible={isOrderPickerVisible}
@@ -623,10 +547,6 @@ const SellerRejectScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
-  container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-=======
   container: {
     flex: 1,
     overflow: 'hidden',
@@ -689,42 +609,41 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
     zIndex: 1,
   },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingTop: 16, paddingBottom: 20,
   },
-<<<<<<< HEAD
-  backText: { fontSize: 16, fontWeight: '600' },
+  backButton: { fontSize: 16, fontWeight: '600' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
-
-  card: {
-    backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
-=======
-  backButton: {
-    fontSize: 16,
-    fontWeight: '600',
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
-  },
+  label: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, marginTop: 8 },
   fieldLabel: { fontSize: 11, fontWeight: '600', color: '#94a3b8', letterSpacing: 0.8, marginBottom: 4, marginTop: 8 },
   productName: { fontSize: 18, fontWeight: '800' },
+  productQuantity: { fontSize: 14, marginTop: 2 },
   productQty: { fontSize: 14, color: '#94a3b8', marginTop: 2 },
+  orderId: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  seller: { fontSize: 15, fontWeight: '500', marginBottom: 4 },
   divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 14 },
   fieldValue: { fontSize: 15, fontWeight: '500', marginBottom: 4 },
 
   sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
 
+  reasonsContainer: { gap: 10, marginBottom: 24 },
+  reasonCard: {
+    borderRadius: 14, paddingVertical: 14, paddingHorizontal: 18,
+    borderWidth: 1.5,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+  },
+  detailsCard: { padding: 16, marginBottom: 24 },
+  detailsInput: { fontSize: 14, minHeight: 120, textAlignVertical: 'top' },
+  actionsContainer: { gap: 12, marginBottom: 12 },
+  rejectButton: { marginTop: 4 },
+  cancelButton: {},
   reasonsList: { gap: 10, marginBottom: 24 },
   reasonPill: {
     backgroundColor: '#fff', borderRadius: 20, paddingVertical: 16, paddingHorizontal: 20,
     borderWidth: 1.5, borderColor: '#e0dcd9',
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
   },
-<<<<<<< HEAD
-  reasonPillActive: {
-    backgroundColor: '#fee2e2', borderColor: '#ef4444',
-=======
   flowProgress: {
     fontSize: 13,
     marginBottom: 12,
@@ -745,7 +664,6 @@ const styles = StyleSheet.create({
   productCard: {
     padding: 16,
     marginBottom: 24,
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   },
   reasonText: { fontSize: 15, fontWeight: '500' },
   reasonTextActive: { color: '#ef4444', fontWeight: '700' },
@@ -754,14 +672,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 24,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
   },
-<<<<<<< HEAD
-  textInput: { fontSize: 14, minHeight: 120, textAlignVertical: 'top', lineHeight: 22 },
-
-  submitBtn: { borderRadius: 20, paddingVertical: 18, alignItems: 'center', marginTop: 4 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  cancelBtn: { borderRadius: 20, paddingVertical: 16, alignItems: 'center', marginTop: 10 },
-  cancelText: { fontSize: 16, fontWeight: '600' },
-=======
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -829,7 +739,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(34, 197, 94, 0.3)',
     opacity: 0.6,
   },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 });
 
 export default SellerRejectScreen;

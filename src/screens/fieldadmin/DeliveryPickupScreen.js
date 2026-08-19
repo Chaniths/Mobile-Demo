@@ -12,14 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-<<<<<<< HEAD
-import BackgroundShapes from '../../components/common/BackgroundShapes';
-=======
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
 import AppIcon from '../../components/common/AppIcon';
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
 const DeliveryPickupScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -34,15 +30,6 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
   const [orderSearch, setOrderSearch] = useState('');
   const [quickSearch, setQuickSearch] = useState('');
 
-<<<<<<< HEAD
-  const order = route?.params?.order || {
-    id: '1',
-    orderId: '#ORD-2024-001',
-    customer: 'John Doe',
-    address: '123 Main st',
-    status: 'In Transit',
-  };
-=======
   useEffect(() => {
     const loadOrders = async () => {
       try {
@@ -106,17 +93,12 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
       )
       .slice(0, 5);
   }, [orders, quickSearch]);
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
   const handleMarkAction = () => {
     if (!actionType) {
       alert('Please select an action');
       return;
     }
-<<<<<<< HEAD
-    console.log('Action marked:', { type: actionType, orderId: order.orderId, signature, notes });
-    navigation.goBack();
-=======
     if (!order?.stopId) {
       Alert.alert('Unavailable', 'No delivery stop linked to this order.');
       return;
@@ -154,16 +136,12 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
       }
     };
     submit();
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   };
 
   const teal = theme.colors.primary?.main || '#14b8a6';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-<<<<<<< HEAD
-      <BackgroundShapes variant="form" />
-=======
       {theme.isDarkMode ? (
         <>
           {/* Arch-like strips in teal colors */}
@@ -181,34 +159,16 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
           <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
         </>
       )}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-<<<<<<< HEAD
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={[styles.backText, { color: teal }]}>{'<- Back'}</Text>
-=======
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Delivery / Pickup</Text>
           <View style={{ width: 70 }} />
         </View>
 
-<<<<<<< HEAD
-        {/* Order Card */}
-        <View style={styles.card}>
-          <Text style={styles.fieldLabel}>ORDER ID</Text>
-          <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>{order.orderId}</Text>
-          <View style={styles.divider} />
-          <Text style={styles.fieldLabel}>CUSTOMER</Text>
-          <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>{order.customer}</Text>
-          <Text style={styles.fieldLabel}>ADDRESS</Text>
-          <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>{order.address}</Text>
-        </View>
-=======
         {loading ? <ActivityIndicator color={theme.colors.primary.main} style={{ marginBottom: 16 }} /> : null}
         {order ? (
           <TouchableOpacity
@@ -282,7 +242,6 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
             No assigned/in-transit delivery order available.
           </Text>
         )}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
         {/* Action Buttons */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Select Action</Text>
@@ -292,11 +251,6 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
             onPress={() => setActionType('delivery')}
             activeOpacity={0.7}
           >
-<<<<<<< HEAD
-            <Text style={[styles.actionText, actionType === 'delivery' ? { color: '#fff' } : { color: theme.colors.text.primary }]}>
-              {'✓  Mark Delivered'}
-            </Text>
-=======
             <View style={styles.actionButtonContent}>
               <AppIcon
                 name="check"
@@ -313,51 +267,12 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
                 Mark Delivered
               </Text>
             </View>
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, actionType === 'pickup' && { backgroundColor: teal, borderColor: teal }]}
             onPress={() => setActionType('pickup')}
             activeOpacity={0.7}
           >
-<<<<<<< HEAD
-            <Text style={[styles.actionText, actionType === 'pickup' ? { color: '#fff' } : { color: theme.colors.text.primary }]}>
-              {'📦'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Signature */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Customer Signature/ Confirmation</Text>
-        <View style={styles.inputCard}>
-          <TextInput
-            style={[styles.textInput, { color: theme.colors.text.primary }]}
-            placeholder="Enter customer name or signature ......"
-            placeholderTextColor={theme.colors.text.tertiary}
-            value={signature}
-            onChangeText={setSignature}
-          />
-        </View>
-
-        {/* Notes */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Additional Notes</Text>
-        <View style={[styles.inputCard, { minHeight: 100 }]}>
-          <TextInput
-            style={[styles.textInput, { color: theme.colors.text.primary, minHeight: 80, textAlignVertical: 'top' }]}
-            placeholder="Add any notes ......."
-            placeholderTextColor={theme.colors.text.tertiary}
-            multiline
-            numberOfLines={4}
-            value={notes}
-            onChangeText={setNotes}
-          />
-        </View>
-
-        {/* Submit */}
-        <TouchableOpacity style={[styles.submitBtn, { backgroundColor: teal }]} onPress={handleMarkAction} activeOpacity={0.8}>
-          <Text style={styles.submitText}>Confirm Delivery</Text>
-        </TouchableOpacity>
-=======
             <View style={styles.actionButtonContent}>
               <AppIcon
                 name="orders"
@@ -415,7 +330,6 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
             />
           </>
         )}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
       </ScrollView>
       <Modal
         visible={isPickerVisible}
@@ -490,10 +404,6 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
-  container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-=======
   container: { 
     flex: 1,
     overflow: 'hidden',
@@ -556,43 +466,10 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     zIndex: 1,
   },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingTop: 16, paddingBottom: 20,
   },
-<<<<<<< HEAD
-  backBtn: { flexDirection: 'row', alignItems: 'center' },
-  backText: { fontSize: 16, fontWeight: '600' },
-  headerTitle: { fontSize: 20, fontWeight: '700' },
-
-  card: {
-    backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
-  },
-  fieldLabel: { fontSize: 11, fontWeight: '600', color: '#94a3b8', letterSpacing: 0.8, marginBottom: 4, marginTop: 8 },
-  orderId: { fontSize: 18, fontWeight: '800' },
-  divider: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 14 },
-  fieldValue: { fontSize: 15, fontWeight: '500' },
-
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
-
-  actionRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
-  actionBtn: {
-    flex: 1, paddingVertical: 16, borderRadius: 20, borderWidth: 1.5, borderColor: '#e0dcd9',
-    alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff',
-  },
-  actionText: { fontSize: 14, fontWeight: '700' },
-
-  inputCard: {
-    backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 20,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
-  },
-  textInput: { fontSize: 14, fontWeight: '400' },
-
-  submitBtn: { borderRadius: 20, paddingVertical: 18, alignItems: 'center', marginTop: 4 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-=======
   backButton: { fontSize: 16, fontWeight: '600' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
   openPickerButton: {
@@ -711,7 +588,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(34, 197, 94, 0.3)',
     opacity: 0.6,
   },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 });
 
 export default DeliveryPickupScreen;

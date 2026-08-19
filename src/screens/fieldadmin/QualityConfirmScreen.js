@@ -12,15 +12,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-<<<<<<< HEAD
-import BackgroundShapes from '../../components/common/BackgroundShapes';
-=======
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
 import FieldAdminFlowStepper from '../../components/common/FieldAdminFlowStepper';
 import { buildQualityFlow, FLOW_STEPS } from '../../utils/fieldAdminQualityFlow';
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
 const QualityConfirmScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -34,20 +30,6 @@ const QualityConfirmScreen = ({ navigation, route }) => {
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [orderSearch, setOrderSearch] = useState('');
 
-<<<<<<< HEAD
-  const order = route?.params?.order || {
-    id: '1',
-    orderId: '#ORD-2024-045',
-    seller: 'Green Market',
-    sellerId: 'seller-001',
-    date: '2024-12-09',
-    items: [
-      { id: '1', name: 'Heirloom Tomatoes', quantity: '5kg', quantityValue: 5, quantityUnit: 'kg' },
-      { id: '2', name: 'Organic Spinach', quantity: '10 bunches', quantityValue: 10, quantityUnit: 'bunches' },
-      { id: '3', name: 'Baby Carrots', quantity: '3kg', quantityValue: 3, quantityUnit: 'kg' },
-    ],
-  };
-=======
   useEffect(() => {
     const loadOrders = async () => {
       try {
@@ -98,7 +80,6 @@ const QualityConfirmScreen = ({ navigation, route }) => {
   }, [selectedOrderId]);
 
   const warningColor = theme.colors.warning || theme.colors.accent?.yellow || '#f59e0b';
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
   const teal = theme.colors.primary?.main || '#14b8a6';
 
@@ -106,38 +87,6 @@ const QualityConfirmScreen = ({ navigation, route }) => {
     const totalQuantity = item.quantityValue || 0;
     setSelectedProducts((prev) => {
       const filtered = prev.filter((p) => p.itemId !== itemId);
-<<<<<<< HEAD
-      const entry = { itemId, quality };
-      if (quality === 'approved') {
-        entry.approvedQuantity = item.quantityValue;
-        entry.approvedUnit = item.quantityUnit;
-        setPartialQuantities((q) => { const n = { ...q }; delete n[itemId]; return n; });
-      } else if (quality === 'rejected') {
-        entry.approvedQuantity = 0;
-        entry.approvedUnit = item.quantityUnit;
-        setPartialQuantities((q) => { const n = { ...q }; delete n[itemId]; return n; });
-      } else if (quality === 'partial') {
-        entry.approvedQuantity = partialQuantities[itemId] || 0;
-        entry.approvedUnit = item.quantityUnit;
-      }
-      return [...filtered, entry];
-    });
-  };
-
-  const handlePartialQty = (itemId, value, item) => {
-    const num = parseFloat(value) || 0;
-    const max = item.quantityValue || 0;
-    const clamped = Math.max(0, Math.min(num, max));
-    setPartialQuantities((prev) => ({ ...prev, [itemId]: clamped }));
-    if (clamped > 0 && clamped < max) {
-      setSelectedProducts((prev) => {
-        const filtered = prev.filter((p) => p.itemId !== itemId);
-        return [...filtered, { itemId, quality: 'partial', approvedQuantity: clamped, approvedUnit: item.quantityUnit }];
-      });
-    } else if (clamped === max) {
-      handleQualityCheck(itemId, 'approved', item);
-    } else if (clamped === 0) {
-=======
       let approvedQuantity = 0;
       if (quality === 'approved') {
         approvedQuantity = totalQuantity;
@@ -226,23 +175,10 @@ const QualityConfirmScreen = ({ navigation, route }) => {
     } else if (clampedValue >= maxValue) {
       handleQualityCheck(itemId, 'approved', item);
     } else if (clampedValue === 0) {
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
       handleQualityCheck(itemId, 'rejected', item);
     }
   };
 
-<<<<<<< HEAD
-  const handleConfirm = () => {
-    console.log('Quality reviews submitted:', { orderId: order.orderId, selectedProducts, notes });
-    navigation.goBack();
-  };
-
-  const allChecked = order.items.every((item) =>
-    selectedProducts.some((p) => p.itemId === item.id && ['approved', 'rejected', 'partial'].includes(p.quality))
-  );
-
-  const getQuality = (itemId) => selectedProducts.find((p) => p.itemId === itemId);
-=======
   const isPartialComplete = (item, qualityData) => {
     if (qualityData?.quality !== 'partial') return false;
     const approvedQty = qualityData.approvedQuantity ?? partialQuantities[item.id];
@@ -357,7 +293,6 @@ const QualityConfirmScreen = ({ navigation, route }) => {
     }
     return null;
   };
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
   const filteredOrders = useMemo(() => {
     const query = orderSearch.trim().toLowerCase();
@@ -369,9 +304,6 @@ const QualityConfirmScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-<<<<<<< HEAD
-      <BackgroundShapes variant="detail" />
-=======
       {theme.isDarkMode ? (
         <>
           {/* Arch-like strips in teal colors */}
@@ -389,54 +321,15 @@ const QualityConfirmScreen = ({ navigation, route }) => {
           <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
         </>
       )}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-<<<<<<< HEAD
-            <Text style={[styles.backText, { color: teal }]}>{'<- Back'}</Text>
-=======
             <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Confirm Quality</Text>
           <View style={{ width: 70 }} />
         </View>
 
-<<<<<<< HEAD
-        {/* Order Card */}
-        <View style={styles.card}>
-          <Text style={styles.fieldLabel}>ORDER ID</Text>
-          <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>{order.orderId}</Text>
-          <View style={styles.divider} />
-          <Text style={styles.fieldLabel}>SELLER</Text>
-          <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>{order.seller}</Text>
-          <Text style={styles.fieldLabel}>DATE</Text>
-          <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>{order.date}</Text>
-        </View>
-
-        {/* Products */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Product Quality Check</Text>
-        {order.items.map((item) => {
-          const qd = getQuality(item.id);
-          const quality = qd?.quality;
-          const approvedQty = qd?.approvedQuantity || partialQuantities[item.id] || 0;
-          const totalQty = item.quantityValue || 0;
-
-          return (
-            <View key={item.id} style={styles.productCard}>
-              <Text style={[styles.productName, { color: theme.colors.text.primary }]}>{item.name}</Text>
-              <Text style={styles.productQty}>Total: {item.quantity}</Text>
-
-              {quality && (
-                <View style={[styles.statusBadge, {
-                  backgroundColor: quality === 'approved' ? '#dcfce7' : quality === 'partial' ? '#fef3c7' : '#fee2e2',
-                }]}>
-                  <Text style={[styles.statusText, {
-                    color: quality === 'approved' ? '#22c55e' : quality === 'partial' ? '#f59e0b' : '#ef4444',
-                  }]}>
-                    {quality === 'approved' ? 'Fully Approved' : quality === 'partial' ? `Partial (${approvedQty}${item.quantityUnit})` : 'Rejected'}
-=======
         <FieldAdminFlowStepper currentStep={FLOW_STEPS.QUALITY} />
 
         {!order && !loading ? (
@@ -563,7 +456,6 @@ const QualityConfirmScreen = ({ navigation, route }) => {
                 <View style={[styles.partialApprovalContainer, { backgroundColor: `${warningColor}18` }]}>
                   <Text style={[styles.partialLabel, { color: warningColor }]}>
                     Approved Quantity
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
                   </Text>
                 </View>
               )}
@@ -573,9 +465,6 @@ const QualityConfirmScreen = ({ navigation, route }) => {
                   <Text style={styles.partialLabel}>Approved Quantity</Text>
                   <View style={styles.qtyRow}>
                     <TextInput
-<<<<<<< HEAD
-                      style={[styles.qtyInput, { color: theme.colors.text.primary }]}
-=======
                       style={[
                         styles.quantityInput,
                         {
@@ -584,25 +473,16 @@ const QualityConfirmScreen = ({ navigation, route }) => {
                           backgroundColor: theme.colors.background,
                         },
                       ]}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
                       placeholder="0"
                       placeholderTextColor="#94a3b8"
                       keyboardType="numeric"
-<<<<<<< HEAD
-                      value={approvedQty > 0 ? approvedQty.toString() : ''}
-                      onChangeText={(v) => handlePartialQty(item.id, v, item)}
-=======
                       value={partialInputValue}
                       onChangeText={(value) => handlePartialQuantityChange(item.id, value, item)}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
                     />
                     <Text style={styles.qtyUnit}>{item.quantityUnit} / {totalQty} {item.quantityUnit}</Text>
                   </View>
                   {numericApproved > 0 && totalQty > 0 && (
                     <View style={styles.progressBar}>
-<<<<<<< HEAD
-                      <View style={[styles.progressFill, { width: `${(approvedQty / totalQty) * 100}%`, backgroundColor: '#22c55e' }]} />
-=======
                       <View
                         style={[
                           styles.progressFill,
@@ -612,42 +492,11 @@ const QualityConfirmScreen = ({ navigation, route }) => {
                           },
                         ]}
                       />
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
                     </View>
                   )}
                 </View>
               )}
 
-<<<<<<< HEAD
-              <View style={styles.btnRow}>
-                <TouchableOpacity
-                  style={[styles.qualityBtn, quality === 'approved' && { backgroundColor: '#22c55e', borderColor: '#22c55e' }]}
-                  onPress={() => handleQualityCheck(item.id, 'approved', item)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.qualityBtnText, quality === 'approved' ? { color: '#fff' } : { color: theme.colors.text.primary }]}>
-                    {'✓ Approve All'}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.qualityBtn, quality === 'rejected' && { backgroundColor: '#ef4444', borderColor: '#ef4444' }]}
-                  onPress={() => {
-                    handleQualityCheck(item.id, 'rejected', item);
-                    navigation.navigate('SellerReject', { item, order });
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.qualityBtnText, quality === 'rejected' ? { color: '#fff' } : { color: theme.colors.text.primary }]}>
-                    {'✗ Reject All'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {quality !== 'partial' && (
-                <TouchableOpacity style={styles.partialToggle} onPress={() => handleQualityCheck(item.id, 'partial', item)}>
-                  <Text style={[styles.partialToggleText, { color: teal }]}>Approve Partial Quantity</Text>
-                </TouchableOpacity>
-=======
               {quality !== 'partial' ? (
                 <View style={styles.qualityButtons}>
                   <TouchableOpacity
@@ -770,21 +619,12 @@ const QualityConfirmScreen = ({ navigation, route }) => {
                     </Text>
                   </TouchableOpacity>
                 </View>
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
               )}
-            </View>
+            </Card>
           );
         })}
 
         {/* Notes */}
-<<<<<<< HEAD
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Additional Notes</Text>
-        <View style={styles.inputCard}>
-          <TextInput
-            style={[styles.textInput, { color: theme.colors.text.primary }]}
-            placeholder="Add notes about quality check..."
-            placeholderTextColor="#94a3b8"
-=======
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Additional Notes
         </Text>
@@ -793,26 +633,13 @@ const QualityConfirmScreen = ({ navigation, route }) => {
             style={[styles.notesInput, { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary }]}
             placeholder="Add notes about quality check..."
             placeholderTextColor={theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
             multiline
             numberOfLines={4}
             value={notes}
             onChangeText={setNotes}
           />
-        </View>
+        </Card>
 
-<<<<<<< HEAD
-        <TouchableOpacity
-          style={[styles.submitBtn, { backgroundColor: teal, opacity: allChecked ? 1 : 0.5 }]}
-          onPress={handleConfirm}
-          disabled={!allChecked}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.submitText}>
-            {allChecked ? 'Submit Quality Reviews' : `Review ${order.items.length - selectedProducts.length} more item(s)`}
-          </Text>
-        </TouchableOpacity>
-=======
         {/* Confirm Button */}
         <Button
           title={submitting ? "Submitting..." : allChecked ? "Submit Quality Reviews" : `Review ${order.items.length - selectedProducts.length} more item(s)`}
@@ -822,7 +649,6 @@ const QualityConfirmScreen = ({ navigation, route }) => {
         />
         </>
         ) : null}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
       </ScrollView>
       <Modal
         visible={isPickerVisible}
@@ -903,10 +729,6 @@ const QualityConfirmScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
-  container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-=======
   container: {
     flex: 1,
     overflow: 'hidden',
@@ -969,19 +791,10 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
     zIndex: 1,
   },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingTop: 16, paddingBottom: 20,
   },
-<<<<<<< HEAD
-  backText: { fontSize: 16, fontWeight: '600' },
-  headerTitle: { fontSize: 20, fontWeight: '700' },
-
-  card: {
-    backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
-=======
   backButton: {
     fontSize: 16,
     fontWeight: '600',
@@ -1030,7 +843,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 12,
     marginTop: 8,
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   },
   fieldLabel: { fontSize: 11, fontWeight: '600', color: '#94a3b8', letterSpacing: 0.8, marginBottom: 4, marginTop: 8 },
   orderId: { fontSize: 18, fontWeight: '800' },
@@ -1067,21 +879,6 @@ const styles = StyleSheet.create({
     flex: 1, paddingVertical: 14, borderRadius: 20, borderWidth: 1.5, borderColor: '#e0dcd9',
     alignItems: 'center', backgroundColor: '#fff',
   },
-<<<<<<< HEAD
-  qualityBtnText: { fontSize: 14, fontWeight: '700' },
-
-  partialToggle: { paddingVertical: 10, alignItems: 'center', marginTop: 4 },
-  partialToggleText: { fontSize: 13, fontWeight: '600' },
-
-  inputCard: {
-    backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
-  },
-  textInput: { fontSize: 14, minHeight: 100, textAlignVertical: 'top', lineHeight: 22 },
-
-  submitBtn: { borderRadius: 20, paddingVertical: 18, alignItems: 'center' },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-=======
   productQuantity: {
     fontSize: 14,
   },
@@ -1244,7 +1041,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(34, 197, 94, 0.3)',
     opacity: 0.6,
   },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 });
 
 export default QualityConfirmScreen;

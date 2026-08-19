@@ -102,32 +102,18 @@ const FieldAdminNavigator = () => {
         component={FieldAdminStack}
         options={{
           tabBarLabel: 'Home',
-<<<<<<< HEAD
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>🏠</Text>
-=======
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="home" color={color} focused={focused} />
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           ),
         }}
       />
       <Tab.Screen
-<<<<<<< HEAD
-        name="Routes"
-        component={RouteOrdersScreen}
-        options={{
-          tabBarLabel: 'Routes',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>🗺️</Text>
-=======
         name="RoutesTab"
         component={RoutesStack}
         options={{
           tabBarLabel: 'Routes',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="map" color={color} focused={focused} />
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           ),
         }}
       />
@@ -135,15 +121,9 @@ const FieldAdminNavigator = () => {
         name="OrdersTab"
         component={OrdersStack}
         options={{
-<<<<<<< HEAD
-          tabBarLabel: 'Assess',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>📋</Text>
-=======
           tabBarLabel: 'Orders',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="orders" color={color} focused={focused} />
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           ),
         }}
       />
@@ -152,13 +132,8 @@ const FieldAdminNavigator = () => {
         component={HistoryScreen}
         options={{
           tabBarLabel: 'History',
-<<<<<<< HEAD
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>📊</Text>
-=======
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="chart" color={color} focused={focused} />
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           ),
         }}
       />
@@ -167,13 +142,8 @@ const FieldAdminNavigator = () => {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-<<<<<<< HEAD
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>👤</Text>
-=======
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="profile" color={color} focused={focused} />
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           ),
         }}
       />

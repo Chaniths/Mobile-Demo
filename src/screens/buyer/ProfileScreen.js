@@ -7,15 +7,6 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
-<<<<<<< HEAD
-} from "react-native";
-import { useDispatch, useSelector } from "react-redux";
-import { useTheme } from "../../hooks/useTheme";
-import { logoutAsync } from "../../store/slices/authSlice";
-import Card from "../../components/common/Card";
-import Avatar from "../../components/common/Avatar";
-import BackgroundShapes from "../../components/common/BackgroundShapes";
-=======
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '../../hooks/useTheme';
@@ -23,24 +14,10 @@ import { logout } from '../../store/slices/authSlice';
 import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
 import AppIcon from '../../components/common/AppIcon';
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
 const ProfileScreen = ({ navigation }) => {
   const { theme, isDarkMode, toggleTheme } = useTheme();
   const dispatch = useDispatch();
-<<<<<<< HEAD
-  const user = useSelector((state) => state.auth.user);
-
-  const menuItems = [
-    { id: "1", icon: "👤", title: "Edit Profile", screen: "EditProfile" },
-    { id: "2", icon: "📍", title: "Addresses", screen: "Addresses" },
-    { id: "3", icon: "💳", title: "Payment Methods", screen: "PaymentMethods" },
-    { id: "4", icon: "🔔", title: "Notifications", screen: "Notifications" },
-    { id: "5", icon: "❤️", title: "Wishlist", screen: "Wishlist" },
-    { id: "6", icon: "⭐", title: "My Reviews", screen: "MyReviews" },
-    { id: "7", icon: "❓", title: "Help & Support", screen: "Help" },
-    { id: "8", icon: "📄", title: "Terms & Privacy", screen: "Terms" },
-=======
   const authUser = useSelector((state) => state.auth.user);
 
   const isFieldAdmin = authUser?.role === 'fieldadmin';
@@ -57,7 +34,6 @@ const ProfileScreen = ({ navigation }) => {
     { id: '2', icon: 'notifications', title: 'Notifications' },
     { id: '3', icon: 'help', title: 'Help & Support' },
     { id: '4', icon: 'document', title: 'Terms & Privacy' },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   ];
 
   const defaultMenuItems = [
@@ -74,12 +50,6 @@ const ProfileScreen = ({ navigation }) => {
   const menuItems = isFieldAdmin ? fieldAdminMenuItems : defaultMenuItems;
 
   return (
-<<<<<<< HEAD
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <BackgroundShapes variant="profile" />
-=======
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {theme.isDarkMode ? (
         <>
@@ -98,7 +68,6 @@ const ProfileScreen = ({ navigation }) => {
           <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
         </>
       )}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>
@@ -112,22 +81,6 @@ const ProfileScreen = ({ navigation }) => {
         style={styles.scrollView}
       >
         {/* User Info */}
-<<<<<<< HEAD
-        <Card style={styles.userCard}>
-          <Avatar name={user?.name || "Driver"} size="large" />
-          <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
-            {user?.name || "Driver"}
-          </Text>
-          <Text
-            style={[styles.userEmail, { color: theme.colors.text.secondary }]}
-          >
-            {user?.email || "Not available"}
-          </Text>
-          <Text
-            style={[styles.userPhone, { color: theme.colors.text.tertiary }]}
-          >
-            {user?.phone || "Phone not available"}
-=======
         <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.userCard}>
           <Avatar name={displayName} size="large" />
           <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
@@ -138,7 +91,6 @@ const ProfileScreen = ({ navigation }) => {
           </Text>
           <Text style={[styles.userPhone, { color: theme.colors.text.tertiary }]}>
             {displayPhone}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           </Text>
         </Card>
 
@@ -146,11 +98,7 @@ const ProfileScreen = ({ navigation }) => {
         <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.themeCard}>
           <View style={styles.themeRow}>
             <View style={styles.themeInfo}>
-<<<<<<< HEAD
-              <Text style={styles.themeIcon}>{isDarkMode ? "🌙" : "☀️"}</Text>
-=======
               <AppIcon name={isDarkMode ? 'moon' : 'sun'} size={24} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
               <View>
                 <Text
                   style={[
@@ -197,18 +145,8 @@ const ProfileScreen = ({ navigation }) => {
             >
               <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.menuItem}>
                 <View style={styles.menuItemContent}>
-<<<<<<< HEAD
-                  <Text style={styles.menuIcon}>{item.icon}</Text>
-                  <Text
-                    style={[
-                      styles.menuTitle,
-                      { color: theme.colors.text.primary },
-                    ]}
-                  >
-=======
                   <AppIcon name={item.icon} size={22} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
                   <Text style={[styles.menuTitle, { color: theme.colors.text.primary }]}>
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
                     {item.title}
                   </Text>
                 </View>

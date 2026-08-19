@@ -12,13 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-<<<<<<< HEAD
-import BackgroundShapes from '../../components/common/BackgroundShapes';
-
-const AssessmentScreen = ({ navigation, route }) => {
-  const { theme } = useTheme();
-  const [selectedType, setSelectedType] = useState(null);
-=======
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
@@ -28,7 +21,6 @@ const AssessmentScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
   const [selectedType, setSelectedType] = useState(null); // 'driver', 'buyer', 'seller'
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   const [rating, setRating] = useState(0);
   const [comments, setComments] = useState('');
   const [candidates, setCandidates] = useState({ drivers: [], buyers: [], sellers: [] });
@@ -38,18 +30,6 @@ const AssessmentScreen = ({ navigation, route }) => {
   const [candidateSearch, setCandidateSearch] = useState('');
 
   const assessmentTypes = [
-<<<<<<< HEAD
-    { id: 'driver', label: 'Driver\nAssessment', icon: '🚚', color: '#3b82f6' },
-    { id: 'buyer', label: 'Buyer\nAssessment', icon: '👤', color: '#22c55e' },
-    { id: 'seller', label: 'Seller\nAssessment', icon: '🏪', color: '#f59e0b' },
-  ];
-
-  const mockSubjects = {
-    driver: { name: 'Mike Johnson', orderId: '#ORD-2024-042', extra: 'Route: Route #12' },
-    buyer: { name: 'John Doe', orderId: '#ORD-2024-042', extra: 'Total Orders: 24' },
-    seller: { name: 'Green Market', orderId: '#ORD-2024-042', extra: 'Quality Score: 4.5' },
-  };
-=======
     { id: 'driver', label: 'Driver Assessment', icon: 'truck', color: '#3b82f6' },
     { id: 'buyer', label: 'Buyer Assessment', icon: 'profile', color: '#22c55e' },
     { id: 'seller', label: 'Seller Assessment', icon: 'store', color: '#f59e0b' },
@@ -100,17 +80,12 @@ const AssessmentScreen = ({ navigation, route }) => {
     if (!query) return candidateList;
     return candidateList.filter((candidate) => candidate.name?.toLowerCase().includes(query));
   }, [candidateList, candidateSearch]);
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
   const handleSubmit = () => {
     if (!selectedType || rating === 0 || !comments.trim()) {
       alert('Please complete all fields');
       return;
     }
-<<<<<<< HEAD
-    console.log('Assessment submitted:', { type: selectedType, subject: mockSubjects[selectedType], rating, comments });
-    navigation.goBack();
-=======
     if (!currentSubject?.id) {
       Alert.alert('Unavailable', 'No candidate found for selected assessment type.');
       return;
@@ -133,20 +108,12 @@ const AssessmentScreen = ({ navigation, route }) => {
       }
     };
     submit();
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   };
 
   const teal = theme.colors.primary?.main || '#14b8a6';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-<<<<<<< HEAD
-      <BackgroundShapes variant="form" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={[styles.backText, { color: teal }]}>{'<- Back'}</Text>
-=======
       {theme.isDarkMode ? (
         <>
           {/* Arch-like strips in teal colors */}
@@ -168,53 +135,38 @@ const AssessmentScreen = ({ navigation, route }) => {
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Assessment</Text>
           <View style={{ width: 70 }} />
         </View>
 
-<<<<<<< HEAD
-        {/* Type Selection */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Select Assessment Type</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+          Select Assessment Type
+        </Text>
         <View style={styles.typeRow}>
           {assessmentTypes.map((type) => {
             const isSelected = selectedType === type.id;
             return (
               <TouchableOpacity
                 key={type.id}
-                style={[styles.typeCard, isSelected && { borderColor: type.color, borderWidth: 2, backgroundColor: `${type.color}08` }]}
-                onPress={() => setSelectedType(type.id)}
-                activeOpacity={0.7}
-=======
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-          Select Assessment Type
-        </Text>
-        <View style={styles.typeContainer}>
-          {assessmentTypes.map((type) => (
-            <TouchableOpacity
-              key={type.id}
-              style={[
-                styles.typeCard,
-                selectedType === type.id && {
-                  borderWidth: 2,
-                  borderColor: type.color,
-                  backgroundColor: `${type.color}10`,
-                },
-              ]}
-              onPress={() => setSelectedType(type.id)}
-            >
-              <AppIcon name={type.icon} size={24} color={type.color} />
-              <Text
                 style={[
-                  styles.typeLabel,
-                  { color: theme.colors.text.primary },
-                  selectedType === type.id && { fontWeight: '700', color: type.color },
+                  styles.typeCard,
+                  isSelected && {
+                    borderWidth: 2,
+                    borderColor: type.color,
+                    backgroundColor: `${type.color}10`,
+                  },
                 ]}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
+                onPress={() => setSelectedType(type.id)}
               >
-                <Text style={styles.typeIcon}>{type.icon}</Text>
-                <Text style={[styles.typeLabel, { color: theme.colors.text.primary }, isSelected && { fontWeight: '700', color: type.color }]}>
+                <AppIcon name={type.icon} size={24} color={type.color} />
+                <Text
+                  style={[
+                    styles.typeLabel,
+                    { color: theme.colors.text.primary },
+                    isSelected && { fontWeight: '700', color: type.color },
+                  ]}
+                >
                   {type.label}
                 </Text>
               </TouchableOpacity>
@@ -224,17 +176,10 @@ const AssessmentScreen = ({ navigation, route }) => {
 
         {selectedType && (
           <>
-<<<<<<< HEAD
-            {/* Subject Card */}
-            <View style={styles.card}>
-              <Text style={styles.fieldLabel}>
-                {selectedType === 'driver' ? 'DRIVER' : selectedType === 'buyer' ? 'BUYER' : 'SELLER'}
-=======
             {loading ? <ActivityIndicator color={theme.colors.primary.main} style={{ marginBottom: 16 }} /> : null}
             <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.subjectCard}>
               <Text style={[styles.label, { color: theme.colors.text.secondary }]}>
                 {selectedType === 'driver' ? 'Driver' : selectedType === 'buyer' ? 'Buyer' : 'Seller'}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
               </Text>
               {candidateList.length > 0 ? (
                 <TouchableOpacity
@@ -256,19 +201,13 @@ const AssessmentScreen = ({ navigation, route }) => {
               <Text style={[styles.subjectName, { color: theme.colors.text.primary }]}>
                 {currentSubject?.name ?? 'No assigned candidate'}
               </Text>
-<<<<<<< HEAD
-              <Text style={styles.subjectMeta}>Order: {mockSubjects[selectedType].orderId}</Text>
-              <Text style={styles.subjectMeta}>{mockSubjects[selectedType].extra}</Text>
-            </View>
-=======
             </Card>
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
             {/* Rating */}
             <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Rating (1-5)</Text>
-            <View style={styles.starsRow}>
+            <View style={styles.ratingContainer}>
               {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity key={star} onPress={() => setRating(star)} style={styles.starBtn}>
+                <TouchableOpacity key={star} onPress={() => setRating(star)} style={styles.starButton}>
                   <Text style={[styles.star, rating >= star && styles.starFilled]}>
                     {rating >= star ? '★' : '☆'}
                   </Text>
@@ -276,18 +215,12 @@ const AssessmentScreen = ({ navigation, route }) => {
               ))}
             </View>
 
-<<<<<<< HEAD
-            {/* Comments */}
-            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Comments</Text>
-            <View style={styles.inputCard}>
-=======
             <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
               Comments
             </Text>
             <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.commentsCard}>
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
               <TextInput
-                style={[styles.textInput, { color: theme.colors.text.primary }]}
+                style={[styles.input, { color: theme.colors.text.primary }]}
                 placeholder="Enter assessment comments..."
                 placeholderTextColor={theme.colors.text.tertiary}
                 multiline
@@ -295,20 +228,14 @@ const AssessmentScreen = ({ navigation, route }) => {
                 value={comments}
                 onChangeText={setComments}
               />
-            </View>
+            </Card>
 
-<<<<<<< HEAD
-            <TouchableOpacity style={[styles.submitBtn, { backgroundColor: teal }]} onPress={handleSubmit} activeOpacity={0.8}>
-              <Text style={styles.submitText}>Submit Assessment</Text>
-            </TouchableOpacity>
-=======
             <Button
               title={submitting ? 'Submitting...' : 'Submit Assessment'}
-              onPress={handleSubmitAssessment}
+              onPress={handleSubmit}
               disabled={submitting || !currentSubject}
               style={styles.submitButton}
             />
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           </>
         )}
       </ScrollView>
@@ -400,10 +327,6 @@ const AssessmentScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
-  container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-=======
   container: { 
     flex: 1,
     overflow: 'hidden',
@@ -466,16 +389,11 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     zIndex: 1,
   },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingTop: 16, paddingBottom: 20,
   },
-<<<<<<< HEAD
-  backText: { fontSize: 16, fontWeight: '600' },
-=======
   backButton: { fontSize: 16, fontWeight: '600' },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   headerTitle: { fontSize: 20, fontWeight: '700' },
   sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
 
@@ -486,31 +404,6 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 1,
   },
   typeIcon: { fontSize: 32, marginBottom: 8 },
-<<<<<<< HEAD
-  typeLabel: { fontSize: 13, fontWeight: '500', textAlign: 'center', lineHeight: 18 },
-
-  card: {
-    backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
-  },
-  fieldLabel: { fontSize: 11, fontWeight: '600', color: '#94a3b8', letterSpacing: 0.8, marginBottom: 4 },
-  subjectName: { fontSize: 18, fontWeight: '800', marginBottom: 8 },
-  subjectMeta: { fontSize: 14, color: '#94a3b8', marginBottom: 4 },
-
-  starsRow: { flexDirection: 'row', justifyContent: 'center', gap: 16, marginBottom: 28 },
-  starBtn: { padding: 4 },
-  star: { fontSize: 42, color: '#d1d5db' },
-  starFilled: { color: '#fbbf24' },
-
-  inputCard: {
-    backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
-  },
-  textInput: { fontSize: 14, minHeight: 140, textAlignVertical: 'top', lineHeight: 22 },
-
-  submitBtn: { borderRadius: 20, paddingVertical: 18, alignItems: 'center' },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-=======
   typeLabel: { fontSize: 13, fontWeight: '500', textAlign: 'center' },
   subjectCard: { padding: 16, marginBottom: 24 },
   openPickerButton: {
@@ -601,7 +494,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(34, 197, 94, 0.3)',
     opacity: 0.6,
   },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 });
 
 export default AssessmentScreen;

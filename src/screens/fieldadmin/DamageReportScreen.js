@@ -12,9 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-<<<<<<< HEAD
-import BackgroundShapes from '../../components/common/BackgroundShapes';
-=======
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
@@ -25,7 +22,6 @@ import {
   FLOW_STEPS,
   withFlowUpdate,
 } from '../../utils/fieldAdminQualityFlow';
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
 const DamageReportScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -46,13 +42,6 @@ const DamageReportScreen = ({ navigation, route }) => {
   const [isPickerVisible, setIsPickerVisible] = useState(false);
   const [orderSearch, setOrderSearch] = useState('');
 
-<<<<<<< HEAD
-  const order = route?.params?.order || {
-    id: '1',
-    orderId: '#ORD-2024-042',
-    customer: 'John Doe',
-  };
-=======
   useEffect(() => {
     if (isFlowMode) return undefined;
     const loadOrders = async () => {
@@ -114,7 +103,6 @@ const DamageReportScreen = ({ navigation, route }) => {
       `${entry.orderNumber ?? ''} ${entry.customer ?? ''} ${entry.status ?? ''}`.toLowerCase().includes(query)
     );
   }, [orders, orderSearch]);
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
   const damageTypes = ['Product Damage', 'Packaging Damage', 'Transport Damage', 'Other'];
   const severityLevels = ['Minor', 'Moderate', 'Severe', 'Critical'];
@@ -124,9 +112,6 @@ const DamageReportScreen = ({ navigation, route }) => {
       alert('Please fill all required fields');
       return;
     }
-<<<<<<< HEAD
-    console.log('Damage reported:', { orderId: order.orderId, damageType, severity, description, affectedItems });
-=======
     setSubmitting(true);
     const orderItemIds = isFlowMode ? flow.rejectedItems.map((entry) => entry.itemId) : undefined;
     const inspectionIds = isFlowMode ? flow.inspectionIds : undefined;
@@ -163,7 +148,6 @@ const DamageReportScreen = ({ navigation, route }) => {
       confirmLeaveFlow(() => navigation.goBack());
       return;
     }
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
     navigation.goBack();
   };
 
@@ -171,13 +155,6 @@ const DamageReportScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-<<<<<<< HEAD
-      <BackgroundShapes variant="detail" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={[styles.backText, { color: teal }]}>{'<- Back'}</Text>
-=======
       {theme.isDarkMode ? (
         <>
           {/* Arch-like strips in teal colors */}
@@ -199,20 +176,11 @@ const DamageReportScreen = ({ navigation, route }) => {
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBackPress}>
             <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>← Back</Text>
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Report Damage</Text>
           <View style={{ width: 70 }} />
         </View>
 
-<<<<<<< HEAD
-        {/* Order Card */}
-        <View style={styles.card}>
-          <Text style={styles.fieldLabel}>ORDER ID</Text>
-          <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>{order.orderId}</Text>
-          <Text style={styles.fieldLabel}>CUSTOMER</Text>
-          <Text style={[styles.fieldValue, { color: theme.colors.text.primary }]}>{order.customer}</Text>
-=======
         {isFlowMode ? <FieldAdminFlowStepper currentStep={FLOW_STEPS.DAMAGE} /> : null}
         {isFlowMode && order ? (
           <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.flowOrderBanner}>
@@ -286,7 +254,6 @@ const DamageReportScreen = ({ navigation, route }) => {
               </Text>
             </TouchableOpacity>
           ))}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
         </View>
 
         {/* Damage Type */}
@@ -309,35 +276,6 @@ const DamageReportScreen = ({ navigation, route }) => {
           })}
         </View>
 
-<<<<<<< HEAD
-        {/* Severity */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Severity Level</Text>
-        <View style={styles.pillList}>
-          {severityLevels.map((level) => {
-            const isSelected = severity === level;
-            return (
-              <TouchableOpacity
-                key={level}
-                style={[styles.pill, isSelected && { backgroundColor: '#fef3c7', borderColor: '#f59e0b' }]}
-                onPress={() => setSeverity(level)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.pillText, { color: theme.colors.text.primary }, isSelected && { color: '#f59e0b', fontWeight: '700' }]}>
-                  {level}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Affected Items */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Affected Items</Text>
-        <View style={styles.inputCard}>
-          <TextInput
-            style={[styles.textInput, { color: theme.colors.text.primary, minHeight: 80 }]}
-            placeholder="List damaged items..."
-            placeholderTextColor={theme.colors.text.tertiary}
-=======
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Affected Items
         </Text>
@@ -346,24 +284,17 @@ const DamageReportScreen = ({ navigation, route }) => {
             style={[styles.input, { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary }]}
             placeholder="List damaged items (e.g., Tomatoes - 2kg, Spinach - 5 bunches)..."
             placeholderTextColor={theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary}
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
             multiline
             numberOfLines={3}
             value={affectedItems}
             onChangeText={setAffectedItems}
           />
-        </View>
+        </Card>
 
-<<<<<<< HEAD
-        {/* Description */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Description (Required)</Text>
-        <View style={styles.inputCard}>
-=======
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Description (Required)
         </Text>
         <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.inputCard}>
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
           <TextInput
             style={[styles.textInput, { color: theme.colors.text.primary, minHeight: 120 }]}
             placeholder="Describe the damage in detail..."
@@ -373,20 +304,14 @@ const DamageReportScreen = ({ navigation, route }) => {
             value={description}
             onChangeText={setDescription}
           />
-        </View>
+        </Card>
 
-<<<<<<< HEAD
-        <TouchableOpacity style={[styles.submitBtn, { backgroundColor: teal }]} onPress={handleSubmitReport} activeOpacity={0.8}>
-          <Text style={styles.submitText}>Submit Damage Report</Text>
-        </TouchableOpacity>
-=======
         <Button
           title={submitting ? 'Submitting...' : 'Submit Damage Report'}
           onPress={handleSubmitReport}
           disabled={submitting || !order}
           style={styles.submitButton}
         />
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
       </ScrollView>
       <Modal
         visible={isPickerVisible}
@@ -460,10 +385,6 @@ const DamageReportScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
-  container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-=======
   container: { 
     flex: 1,
     overflow: 'hidden',
@@ -526,42 +447,10 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
     zIndex: 1,
   },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingTop: 16, paddingBottom: 20,
   },
-<<<<<<< HEAD
-  backText: { fontSize: 16, fontWeight: '600' },
-  headerTitle: { fontSize: 20, fontWeight: '700' },
-
-  card: {
-    backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
-  },
-  fieldLabel: { fontSize: 11, fontWeight: '600', color: '#94a3b8', letterSpacing: 0.8, marginBottom: 4, marginTop: 8 },
-  orderId: { fontSize: 18, fontWeight: '800' },
-  fieldValue: { fontSize: 15, fontWeight: '500' },
-
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
-
-  pillList: { gap: 10, marginBottom: 24 },
-  pill: {
-    backgroundColor: '#fff', borderRadius: 20, paddingVertical: 16, paddingHorizontal: 20,
-    borderWidth: 1.5, borderColor: '#e0dcd9',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
-  },
-  pillText: { fontSize: 15, fontWeight: '500' },
-
-  inputCard: {
-    backgroundColor: '#fff', borderRadius: 20, padding: 16, marginBottom: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
-  },
-  textInput: { fontSize: 14, textAlignVertical: 'top', lineHeight: 22 },
-
-  submitBtn: { borderRadius: 20, paddingVertical: 18, alignItems: 'center', marginTop: 4 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-=======
   backButton: { fontSize: 16, fontWeight: '600' },
   headerTitle: { fontSize: 20, fontWeight: '700' },
   openPickerButton: {
@@ -660,7 +549,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(34, 197, 94, 0.3)',
     opacity: 0.6,
   },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 });
 
 export default DamageReportScreen;

@@ -11,7 +11,6 @@ export interface DriverStats {
   totalDeliveries: number;
   completedDeliveries: number;
   remainingDeliveries: number;
-  earningsToday: number;
 }
 
 export interface Coordinates {

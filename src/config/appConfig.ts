@@ -5,8 +5,8 @@ interface EnvironmentConfig {
   socketUrl: string;
 }
 
-const localApiBaseUrl = 'http://192.168.1.10:5000/api/v1';
-const localSocketUrl = 'http://192.168.1.10:5000';
+const localApiBaseUrl = 'http://192.168.1.208:5000/api/v1';
+const localSocketUrl = 'http://192.168.1.208:5000';
 
 const envApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
 const envSocketUrl = process.env.EXPO_PUBLIC_SOCKET_URL?.trim();
@@ -41,7 +41,6 @@ export const appConfig = {
     driverCompleteStop: '/driver/me/stops',
     driverAvailability: '/driver/me/availability',
     driverIssues: '/driver/me/issues',
-    driverEarnings: '/driver/me/earnings',
   },
 } as const;
 

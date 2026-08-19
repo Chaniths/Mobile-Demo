@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-import { appConfig } from "../config/appConfig";
-=======
 // Application configuration
 // In production, these should come from environment variables
 
@@ -27,7 +24,6 @@ const getEnvVars = (env = 'dev') => {
 };
 
 const config = getEnvVars();
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
 export default {
   apiUrl: appConfig.apiBaseUrl,

@@ -9,15 +9,11 @@ import {
 import { useSelector } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-<<<<<<< HEAD
-import BackgroundShapes from '../../components/common/BackgroundShapes';
-=======
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
 import fieldAdminApi from '../../api/fieldAdminApi';
 import AppIcon from '../../components/common/AppIcon';
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -76,41 +72,6 @@ const HomeScreen = ({ navigation }) => {
   );
 
   const quickActions = [
-<<<<<<< HEAD
-    { id: '1', title: 'Confirm\nQuality', icon: '✅', color: '#22c55e', screen: 'QualityConfirm' },
-    { id: '2', title: 'Reject\nProduct', icon: '❌', color: '#ef4444', screen: 'SellerReject' },
-    { id: '3', title: 'Mark\nDelivery', icon: '📦', color: '#3b82f6', screen: 'DeliveryPickup' },
-    { id: '4', title: 'Assessments', icon: '📋', color: '#8b5cf6', screen: 'Assessment' },
-    { id: '5', title: 'Report\nDamage', icon: '⚠️', color: '#f59e0b', screen: 'DamageReport' },
-    { id: '6', title: 'Refund\nInitiation', icon: '💰', color: '#06b6d4', screen: 'RefundInitiation' },
-    { id: '7', title: 'Route\nReass...', icon: '🔄', color: '#10b981', screen: 'RouteReassessment' },
-    { id: '8', title: 'Truck\nCapacity', icon: '🚚', color: '#6366f1', screen: 'TruckCapacity' },
-  ];
-
-  const pendingTasks = [
-    {
-      id: '1',
-      type: 'QUALITY CHECK',
-      orderId: '#ORD-2024-045',
-      detail: 'Green Market . Tomatoes, Spinach',
-      priority: 'High',
-    },
-    {
-      id: '2',
-      type: 'DELIVERY',
-      orderId: '#ORD-2024-042',
-      detail: 'John Doe . 123 Main St',
-      priority: 'Pending',
-    },
-    {
-      id: '3',
-      type: 'ASSESSMENT',
-      orderId: '#ORD-2024-040',
-      detail: 'Mike Johnson . Route #12',
-      priority: 'Pending',
-    },
-  ];
-=======
     {
       id: '1',
       title: 'Confirm Quality',
@@ -150,47 +111,11 @@ const HomeScreen = ({ navigation }) => {
     authUser?.fullName ||
     [authUser?.firstName, authUser?.lastName].filter(Boolean).join(' ') ||
     'Field Admin';
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 
   const teal = theme.colors.primary?.main || '#14b8a6';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-<<<<<<< HEAD
-      <BackgroundShapes />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          {todayStats.map((stat) => (
-            <View key={stat.id} style={styles.statCard}>
-              <View style={[styles.statIconWrap, { backgroundColor: `${stat.color}15` }]}>
-                <Text style={styles.statIcon}>{stat.icon}</Text>
-              </View>
-              <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>{stat.value}</Text>
-              <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Quick Actions */}
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>Quick Actions</Text>
-        <View style={styles.actionsGrid}>
-          {quickActions.map((action) => (
-            <TouchableOpacity
-              key={action.id}
-              style={styles.actionCard}
-              onPress={() => navigation.navigate(action.screen)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.actionIconWrap, { backgroundColor: `${action.color}12` }]}>
-                <Text style={styles.actionIcon}>{action.icon}</Text>
-              </View>
-              <Text style={[styles.actionTitle, { color: theme.colors.text.primary }]} numberOfLines={2}>
-                {action.title}
-              </Text>
-            </TouchableOpacity>
-          ))}
-=======
       {theme.isDarkMode ? (
         <>
           {/* Arch-like strips in teal colors */}
@@ -382,7 +307,6 @@ const HomeScreen = ({ navigation }) => {
             onPress={() => navigation.navigate('RouteMap')}
             style={styles.navButton}
           />
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
         </View>
 
         {/* Pending Tasks */}
@@ -442,12 +366,6 @@ const HomeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
-  container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 120 },
-
-  statsRow: {
-=======
   container: {
     flex: 1,
     overflow: 'hidden',
@@ -511,7 +429,6 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-30deg' }],
   },
   header: {
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
     flexDirection: 'row',
     gap: 10,
     marginTop: 16,
@@ -553,24 +470,6 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   actionCard: {
-<<<<<<< HEAD
-    width: '22%',
-    flexGrow: 1,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 14,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  actionIconWrap: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-=======
     minHeight: 122,
     padding: 12,
     borderRadius: 14,
@@ -585,15 +484,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
     justifyContent: 'center',
     alignItems: 'center',
   },
-<<<<<<< HEAD
-  actionIcon: { fontSize: 22 },
-  actionTitle: { fontSize: 11, fontWeight: '600', textAlign: 'center', lineHeight: 15 },
-
-=======
   actionIcon: {
     fontSize: 20,
   },
@@ -630,7 +523,6 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
   taskHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -679,9 +571,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     marginBottom: 8,
   },
-<<<<<<< HEAD
-  navBtnOutlineText: { fontSize: 16, fontWeight: '700' },
-=======
   taskInfo: {
     flex: 1,
   },
@@ -732,7 +621,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(34, 197, 94, 0.3)',
     opacity: 0.6,
   },
->>>>>>> 6bb2a0aca91423e584391ea2099b3ef34a352400
 });
 
 export default HomeScreen;

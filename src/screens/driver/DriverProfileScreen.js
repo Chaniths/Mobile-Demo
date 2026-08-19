@@ -27,11 +27,10 @@ const DriverProfileScreen = ({ navigation }) => {
 
   const menuItems = [
     { id: "1", icon: "📦", title: "Delivery History",    color: "#14b8a6", screen: "AllDeliveries" },
-    { id: "2", icon: "💰", title: "My Earnings",          color: "#8b5cf6", screen: "Earnings" },
-    { id: "3", icon: "⚠️", title: "Report an Issue",      color: "#ef4444", screen: "ReportIssue" },
-    { id: "4", icon: "🔔", title: "Notifications",        color: "#f59e0b", screen: "Notifications" },
-    { id: "5", icon: "❓", title: "Help & Support",       color: "#3b82f6", screen: "Help" },
-    { id: "6", icon: "📄", title: "Terms & Privacy",      color: "#64748b", screen: "Terms" },
+    { id: "2", icon: "⚠️", title: "Report an Issue",      color: "#ef4444", screen: "ReportIssue" },
+    { id: "3", icon: "🔔", title: "Notifications",        color: "#f59e0b", screen: "Notifications" },
+    { id: "4", icon: "❓", title: "Help & Support",       color: "#3b82f6", screen: "Help" },
+    { id: "5", icon: "📄", title: "Terms & Privacy",      color: "#64748b", screen: "Terms" },
   ];
 
   return (
@@ -92,13 +91,6 @@ const DriverProfileScreen = ({ navigation }) => {
                 {stats?.remainingDeliveries ?? 0}
               </Text>
               <Text style={[styles.statLabel, { color: theme.colors.text.tertiary }]}>Remaining</Text>
-            </View>
-            <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: "#14b8a6" }]}>
-                ${stats?.earningsToday?.toFixed(0) ?? 0}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.colors.text.tertiary }]}>Earned</Text>
             </View>
           </View>
         </Card>
