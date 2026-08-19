@@ -15,6 +15,7 @@ import Card from "../../components/common/Card";
 import Avatar from "../../components/common/Avatar";
 import Loader from "../../components/common/Loader";
 import EmptyState from "../../components/common/EmptyState";
+import NotificationBell from "../../components/NotificationBell";
 import { useDriverData } from "../../hooks/useDriverData";
 import { driverApi } from "../../api/driverApi";
 
@@ -126,9 +127,12 @@ const HomeScreen = ({ navigation }) => {
                 )}
               </View>
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
-              <Avatar name={data.me?.name || "Driver"} size="medium" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <NotificationBell />
+              <TouchableOpacity onPress={() => navigation.navigate("Profile")}>
+                <Avatar name={data.me?.name || "Driver"} size="medium" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Stats strip */}

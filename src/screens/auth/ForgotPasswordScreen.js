@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import apiClient from '../../api/client';
 import Card from '../../components/common/Card';
 import AppIcon from '../../components/common/AppIcon';
 
@@ -27,12 +28,15 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
     setLoading(true);
     setError('');
-    
-    // TODO: Implement actual password reset logic
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      await apiClient.post('/auth/forgot-password', { email });
       setSuccess(true);
-    }, 1500);
+    } catch (err) {
+      setError(err?.response?.data?.message ?? 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (success) {
@@ -227,4 +231,3 @@ const styles = StyleSheet.create({
 });
 
 export default ForgotPasswordScreen;
-

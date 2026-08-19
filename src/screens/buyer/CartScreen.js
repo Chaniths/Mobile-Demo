@@ -1,49 +1,88 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import AppIcon from '../../components/common/AppIcon';
+import ProductThumb from '../../components/common/ProductThumb';
 import { useDispatch, useSelector } from 'react-redux';
-import { changeItemQuantity } from '../../store/slices/cartSlice';
+import { fetchCart, updateQuantityAsync } from '../../store/slices/cartSlice';
+import { categoryIcon, formatMoney } from '../../utils/mediaUrl';
 
 const CartScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items);
+  const totals = useSelector((state) => state.cart.totals);
+  const loading = useSelector((state) => state.cart.loading);
+  const iconColor = theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main;
 
-  const updateQuantity = (id, change) => {
-    dispatch(changeItemQuantity({ id, delta: change }));
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(fetchCart());
+    }, [dispatch])
+  );
+
+  const updateQuantity = async (item, change) => {
+    try {
+      await dispatch(
+        updateQuantityAsync({
+          productId: item.productId,
+          sellerId: item.sellerId,
+          quantity: item.quantity + change,
+        })
+      ).unwrap();
+    } catch (err) {
+      Alert.alert('Cart update failed', typeof err === 'string' ? err : 'Please try again.');
+    }
   };
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const deliveryFee = 5.99;
-  const total = subtotal + deliveryFee;
+  const subtotal = totals?.subtotal ?? cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const tax = totals?.tax ?? 0;
+  const discount = totals?.discount ?? 0;
+  const total = totals?.total ?? subtotal + tax - discount;
 
   const renderCartItem = ({ item }) => (
-    <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.cartItem}>
-      <View style={[styles.itemImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-        <AppIcon name={item.productImage || item.image} size={32} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
+    <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.cartItem}>
+      <View
+        style={[
+          styles.itemImage,
+          { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light },
+        ]}
+      >
+        <ProductThumb
+          imageUrl={item.imageUrl}
+          icon={categoryIcon(item.category)}
+          size={32}
+          color={iconColor}
+        />
       </View>
       <View style={styles.itemInfo}>
         <Text style={[styles.itemName, { color: theme.colors.text.primary }]}>
           {item.name}
         </Text>
-        <Text style={[styles.itemPrice, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-          ${item.price.toFixed(2)}
+        {item.vendor ? (
+          <Text style={[styles.itemVendor, { color: theme.colors.text.secondary }]}>
+            {item.vendor}
+          </Text>
+        ) : null}
+        <Text style={[styles.itemPrice, { color: iconColor }]}>
+          {formatMoney(item.price)}
         </Text>
       </View>
       <View style={styles.quantityControl}>
         <TouchableOpacity
-          onPress={() => updateQuantity(item.id, -1)}
+          onPress={() => updateQuantity(item, -1)}
           style={[styles.quantityButton, { backgroundColor: theme.colors.cardSecondary }]}
         >
           <Text style={[styles.quantityButtonText, { color: theme.colors.text.primary }]}>
@@ -54,8 +93,8 @@ const CartScreen = ({ navigation }) => {
           {item.quantity}
         </Text>
         <TouchableOpacity
-          onPress={() => updateQuantity(item.id, 1)}
-          style={[styles.quantityButton, { backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}
+          onPress={() => updateQuantity(item, 1)}
+          style={[styles.quantityButton, { backgroundColor: iconColor }]}
         >
           <Text style={styles.quantityButtonText}>+</Text>
         </TouchableOpacity>
@@ -63,14 +102,12 @@ const CartScreen = ({ navigation }) => {
     </Card>
   );
 
-  if (cartItems.length === 0) {
+  if (!loading && cartItems.length === 0) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-              ← Back
-            </Text>
+            <Text style={[styles.backButton, { color: iconColor }]}>← Back</Text>
           </TouchableOpacity>
           <Text style={[styles.title, { color: theme.colors.text.primary }]}>Cart</Text>
           <View style={{ width: 50 }} />
@@ -90,7 +127,6 @@ const CartScreen = ({ navigation }) => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {theme.isDarkMode ? (
         <>
-          {/* Arch-like strips in teal colors */}
           <View style={styles.archStrip1} />
           <View style={styles.archStrip2} />
           <View style={styles.archStrip3} />
@@ -98,14 +134,12 @@ const CartScreen = ({ navigation }) => {
         </>
       ) : (
         <>
-          {/* Arch-like strips in green colors for light mode */}
           <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
           <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
           <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
           <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
         </>
       )}
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={[styles.backButton, { color: theme.colors.primary.main }]}>← Back</Text>
@@ -116,41 +150,39 @@ const CartScreen = ({ navigation }) => {
         </Text>
       </View>
 
-      {/* Cart Items */}
       <FlatList
         data={cartItems}
         renderItem={renderCartItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => `${item.productId}:${item.sellerId}`}
         contentContainerStyle={[styles.list, { zIndex: 1 }]}
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Summary */}
-      <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.summary} elevation="lg">
+      <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.summary} elevation="lg">
         <View style={styles.summaryRow}>
-          <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>
-            Subtotal
-          </Text>
+          <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>Subtotal</Text>
           <Text style={[styles.summaryValue, { color: theme.colors.text.primary }]}>
-            ${subtotal.toFixed(2)}
+            {formatMoney(subtotal)}
           </Text>
         </View>
         <View style={styles.summaryRow}>
-          <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>
-            Delivery Fee
-          </Text>
+          <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>Tax</Text>
           <Text style={[styles.summaryValue, { color: theme.colors.text.primary }]}>
-            ${deliveryFee.toFixed(2)}
+            {formatMoney(tax)}
           </Text>
         </View>
+        {discount > 0 ? (
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>Discount</Text>
+            <Text style={[styles.summaryValue, { color: theme.colors.text.primary }]}>
+              -{formatMoney(discount)}
+            </Text>
+          </View>
+        ) : null}
         <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
         <View style={styles.summaryRow}>
-          <Text style={[styles.totalLabel, { color: theme.colors.text.primary }]}>
-            Total
-          </Text>
-          <Text style={[styles.totalValue, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-            ${total.toFixed(2)}
-          </Text>
+          <Text style={[styles.totalLabel, { color: theme.colors.text.primary }]}>Total</Text>
+          <Text style={[styles.totalValue, { color: iconColor }]}>{formatMoney(total)}</Text>
         </View>
         <Button
           title="Proceed to Checkout"
@@ -167,7 +199,6 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
   },
-  // Arch-like strips pattern for dark mode
   archStrip1: {
     position: 'absolute',
     top: -100,
@@ -255,9 +286,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-  },
-  itemEmoji: {
-    fontSize: 32,
+    overflow: 'hidden',
   },
   itemInfo: {
     flex: 1,
@@ -265,6 +294,10 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 16,
     fontWeight: '600',
+    marginBottom: 4,
+  },
+  itemVendor: {
+    fontSize: 12,
     marginBottom: 4,
   },
   itemPrice: {
@@ -326,10 +359,6 @@ const styles = StyleSheet.create({
   checkoutButton: {
     marginTop: 16,
   },
-  emptyIcon: {
-    fontSize: 64,
-  },
-  // Light mode arch strips with green colors
   lightModeArchStrip1: {
     backgroundColor: 'rgba(22, 163, 74, 0.3)',
     opacity: 0.7,
@@ -349,4 +378,3 @@ const styles = StyleSheet.create({
 });
 
 export default CartScreen;
-

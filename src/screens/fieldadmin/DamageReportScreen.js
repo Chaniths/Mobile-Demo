@@ -17,9 +17,9 @@ import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
 import FieldAdminFlowStepper from '../../components/common/FieldAdminFlowStepper';
 import {
-  buildAffectedItemsSummary,
   confirmLeaveFlow,
   FLOW_STEPS,
+  formatRejectedQtyLabel,
   withFlowUpdate,
 } from '../../utils/fieldAdminQualityFlow';
 
@@ -30,8 +30,11 @@ const DamageReportScreen = ({ navigation, route }) => {
   const [damageType, setDamageType] = useState('');
   const [severity, setSeverity] = useState('');
   const [description, setDescription] = useState('');
+  const [currentItemIndex, setCurrentItemIndex] = useState(0);
+  const [damageReportIds, setDamageReportIds] = useState(flow?.damageReportIds ?? []);
+  const flowCurrentItem = isFlowMode ? flow.rejectedItems?.[currentItemIndex] ?? null : null;
   const [affectedItems, setAffectedItems] = useState(
-    isFlowMode ? buildAffectedItemsSummary(flow.rejectedItems) : ''
+    isFlowMode && flowCurrentItem ? formatRejectedQtyLabel(flowCurrentItem) : ''
   );
   const [orders, setOrders] = useState([]);
   const [selectedOrderId, setSelectedOrderId] = useState(
@@ -79,6 +82,25 @@ const DamageReportScreen = ({ navigation, route }) => {
     };
   }, [flow, isFlowMode]);
 
+  const flowItem = useMemo(() => {
+    if (!flowCurrentItem) return null;
+    return {
+      id: flowCurrentItem.itemId,
+      name: flowCurrentItem.name,
+      quantity: formatRejectedQtyLabel(flowCurrentItem),
+    };
+  }, [flowCurrentItem]);
+
+  useEffect(() => {
+    if (!isFlowMode || !flowCurrentItem) return;
+    setAffectedItems(
+      `${flowCurrentItem.name}: ${formatRejectedQtyLabel(flowCurrentItem)}`
+    );
+    setDamageType('');
+    setSeverity('');
+    setDescription('');
+  }, [currentItemIndex, isFlowMode, flowCurrentItem]);
+
   const selectedOrder = useMemo(
     () => orders.find((entry) => entry.id === selectedOrderId) || null,
     [orders, selectedOrderId]
@@ -113,8 +135,8 @@ const DamageReportScreen = ({ navigation, route }) => {
       return;
     }
     setSubmitting(true);
-    const orderItemIds = isFlowMode ? flow.rejectedItems.map((entry) => entry.itemId) : undefined;
-    const inspectionIds = isFlowMode ? flow.inspectionIds : undefined;
+    const currentInspectionId = isFlowMode ? flow.inspectionIds?.[currentItemIndex] : undefined;
+    const currentOrderItemId = isFlowMode ? flowCurrentItem?.itemId : undefined;
 
     fieldAdminApi
       .submitDamageReport({
@@ -122,13 +144,23 @@ const DamageReportScreen = ({ navigation, route }) => {
         damageType,
         severity,
         affectedItems,
-        orderItemIds,
-        inspectionIds,
+        orderItemId: currentOrderItemId,
+        inspectionId: currentInspectionId,
         description: `${damageType} | ${severity} | ${description}${affectedItems ? ` | Items: ${affectedItems}` : ''}`,
       })
       .then((result) => {
         if (isFlowMode) {
-          const updatedFlow = withFlowUpdate(flow, { damageReportId: result?.id });
+          const nextReportIds = [...damageReportIds, result?.id].filter(Boolean);
+          const isLastItem = currentItemIndex >= (flow.rejectedItems?.length ?? 1) - 1;
+          if (!isLastItem) {
+            setDamageReportIds(nextReportIds);
+            setCurrentItemIndex((prev) => prev + 1);
+            return null;
+          }
+          const updatedFlow = withFlowUpdate(flow, {
+            damageReportIds: nextReportIds,
+            damageReportId: nextReportIds[0] ?? result?.id ?? null,
+          });
           navigation.navigate('RefundInitiation', { flow: updatedFlow, step: FLOW_STEPS.REFUND });
           return null;
         }
@@ -187,6 +219,18 @@ const DamageReportScreen = ({ navigation, route }) => {
             <Text style={[styles.flowOrderText, { color: theme.colors.text.secondary }]}>
               Quality issue workflow — Order {order.orderId}
             </Text>
+          </Card>
+        ) : null}
+        {isFlowMode && (flow.rejectedItems?.length ?? 0) > 1 ? (
+          <Text style={[styles.flowProgress, { color: theme.colors.text.secondary }]}>
+            Item {currentItemIndex + 1} of {flow.rejectedItems.length}
+          </Text>
+        ) : null}
+        {isFlowMode && flowItem ? (
+          <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.orderCard}>
+            <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Product</Text>
+            <Text style={[styles.orderId, { color: theme.colors.text.primary }]}>{flowItem.name}</Text>
+            <Text style={[styles.detail, { color: theme.colors.text.secondary }]}>{flowItem.quantity}</Text>
           </Card>
         ) : null}
 
@@ -307,7 +351,15 @@ const DamageReportScreen = ({ navigation, route }) => {
         </Card>
 
         <Button
-          title={submitting ? 'Submitting...' : 'Submit Damage Report'}
+          title={
+            submitting
+              ? 'Submitting...'
+              : isFlowMode && currentItemIndex < (flow.rejectedItems?.length ?? 1) - 1
+                ? 'Submit & Next Item'
+                : isFlowMode
+                  ? 'Submit & Continue to Refund'
+                  : 'Submit Damage Report'
+          }
           onPress={handleSubmitReport}
           disabled={submitting || !order}
           style={styles.submitButton}
@@ -468,6 +520,7 @@ const styles = StyleSheet.create({
   orderCard: { padding: 16, marginBottom: 24 },
   flowOrderBanner: { padding: 12, marginBottom: 16 },
   flowOrderText: { fontSize: 13, textAlign: 'center' },
+  flowProgress: { fontSize: 13, marginBottom: 12, textAlign: 'center' },
   label: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   orderId: { fontSize: 18, fontWeight: '700', marginBottom: 8 },
   detail: { fontSize: 14 },

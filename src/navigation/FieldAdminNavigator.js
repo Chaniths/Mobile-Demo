@@ -14,10 +14,9 @@ import AssessmentScreen from '../screens/fieldadmin/AssessmentScreen';
 import DamageReportScreen from '../screens/fieldadmin/DamageReportScreen';
 import TruckCapacityScreen from '../screens/fieldadmin/TruckCapacityScreen';
 import RouteOrdersScreen from '../screens/fieldadmin/RouteOrdersScreen';
-import RouteMapScreen from '../screens/fieldadmin/RouteMapScreen';
 import OrdersScreen from '../screens/fieldadmin/OrdersScreen';
 import HistoryScreen from '../screens/fieldadmin/HistoryScreen';
-import ProfileScreen from '../screens/buyer/ProfileScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -35,7 +34,6 @@ const FieldAdminStack = () => {
       <Stack.Screen name="DamageReport" component={DamageReportScreen} />
       <Stack.Screen name="TruckCapacity" component={TruckCapacityScreen} />
       <Stack.Screen name="RouteOrders" component={RouteOrdersScreen} />
-      <Stack.Screen name="RouteMap" component={RouteMapScreen} />
       <Stack.Screen name="Orders" component={OrdersScreen} />
       <Stack.Screen name="History" component={HistoryScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
@@ -48,7 +46,6 @@ const RoutesStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="RouteOrders">
       <Stack.Screen name="RouteOrders" component={RouteOrdersScreen} />
-      <Stack.Screen name="RouteMap" component={RouteMapScreen} />
       <Stack.Screen name="DeliveryPickup" component={DeliveryPickupScreen} />
     </Stack.Navigator>
   );
@@ -60,7 +57,6 @@ const OrdersStack = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Orders">
       <Stack.Screen name="Orders" component={OrdersScreen} />
       <Stack.Screen name="DeliveryPickup" component={DeliveryPickupScreen} />
-      <Stack.Screen name="RouteMap" component={RouteMapScreen} />
     </Stack.Navigator>
   );
 };
@@ -113,7 +109,7 @@ const FieldAdminNavigator = () => {
         options={{
           tabBarLabel: 'Routes',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="map" color={color} focused={focused} />
+            <TabBarIcon name="clipboard" color={color} focused={focused} />
           ),
         }}
       />

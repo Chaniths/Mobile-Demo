@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,42 +6,89 @@ import {
   ScrollView,
   TouchableOpacity,
   FlatList,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
+import { useSelector } from 'react-redux';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
 import AppIcon from '../../components/common/AppIcon';
+import NotificationBell from '../../components/NotificationBell';
+import ProductThumb from '../../components/common/ProductThumb';
+import { getApprovedProducts } from '../../api/productsApi';
+import { categoryIcon, formatMoney } from '../../utils/mediaUrl';
 
-const categories = [
+const DEFAULT_CATEGORIES = [
   { id: 'fruits', name: 'Fruits', icon: 'food-apple' },
   { id: 'vegetables', name: 'Vegetables', icon: 'food-leaf' },
   { id: 'dairy', name: 'Dairy', icon: 'food-dairy' },
   { id: 'grains', name: 'Grains', icon: 'food-grain' },
 ];
 
-const featuredProducts = [
-  { id: '1', name: 'Organic Apples', price: '$4.99', image: 'food-apple', rating: 4.8 },
-  { id: '2', name: 'Fresh Spinach', price: '$2.99', image: 'food-leaf', rating: 4.6 },
-  { id: '3', name: 'Raw Honey', price: '$8.99', image: 'food-honey', rating: 4.9 },
-  { id: '4', name: 'Organic Bananas', price: '$3.99', image: 'food-banana', rating: 4.7 },
-  { id: '5', name: 'Fresh Carrots', price: '$2.99', image: 'food-carrot', rating: 4.5 },
-  { id: '6', name: 'Organic Milk', price: '$5.99', image: 'food-dairy', rating: 4.8 },
-  { id: '7', name: 'Organic Eggs', price: '$1.99', image: 'food-egg', rating: 4.6 },
-  { id: '8', name: 'Organic Wheat', price: '$4.99', image: 'food-grain', rating: 4.9 },
-  { id: '9', name: 'Organic Rice', price: '$3.99', image: 'food-rice', rating: 4.7 },
-  { id: '10', name: 'Organic Sugar', price: '$2.99', image: 'food-sugar', rating: 4.5 },
-];
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good Morning';
+  if (h < 17) return 'Good Afternoon';
+  return 'Good Evening';
+};
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
+  const user = useSelector((state) => state.auth.user);
+  const displayName = user?.name ?? user?.ownerName ?? 'Guest';
+  const iconColor = theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main;
+
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+
+  const loadProducts = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    try {
+      const data = await getApprovedProducts();
+      setProducts(Array.isArray(data) ? data : []);
+      setError('');
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Could not load products from the server.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProducts();
+    }, [loadProducts])
+  );
+
+  const categories = useMemo(() => {
+    const extras = [];
+    const seen = new Set(DEFAULT_CATEGORIES.map((c) => c.id));
+    products.forEach((product) => {
+      const name = String(product.category || '').trim();
+      if (!name) return;
+      const id = name.toLowerCase();
+      if (seen.has(id)) return;
+      seen.add(id);
+      extras.push({ id, name, icon: categoryIcon(name) });
+    });
+    return [...DEFAULT_CATEGORIES, ...extras];
+  }, [products]);
+
+  const featuredProducts = products.slice(0, 10);
 
   const renderCategory = ({ item }) => (
     <TouchableOpacity
       onPress={() => navigation.navigate('ProductBrowse', { category: item.id })}
       style={styles.categoryPillWrapper}
     >
-      <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.categoryPill}>
-        <AppIcon name={item.icon} size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
+      <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.categoryPill}>
+        <AppIcon name={item.icon} size={28} color={iconColor} />
         <Text style={[styles.categoryName, { color: theme.colors.text.primary }]}>
           {item.name}
         </Text>
@@ -53,20 +100,30 @@ const HomeScreen = ({ navigation }) => {
     <TouchableOpacity
       onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
     >
-      <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.productCard}>
-        <View style={[styles.productImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-          <AppIcon name={item.image} size={36} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
+      <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.productCard}>
+        <View
+          style={[
+            styles.productImage,
+            { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light },
+          ]}
+        >
+          <ProductThumb
+            imageUrl={item.imageUrl}
+            icon={categoryIcon(item.category)}
+            size={36}
+            color={iconColor}
+          />
         </View>
-        <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
+        <Text style={[styles.productName, { color: theme.colors.text.primary }]} numberOfLines={2}>
           {item.name}
         </Text>
         <View style={styles.productFooter}>
-          <Text style={[styles.productPrice, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-            {item.price}
+          <Text style={[styles.productPrice, { color: iconColor }]}>
+            {formatMoney(item.price)}
           </Text>
           <View style={styles.rating}>
             <AppIcon name="star" size={13} color="#f59e0b" />
-            <Text style={styles.ratingText}> {item.rating}</Text>
+            <Text style={styles.ratingText}> {item.averageRating || 0}</Text>
           </View>
         </View>
       </Card>
@@ -77,7 +134,6 @@ const HomeScreen = ({ navigation }) => {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {theme.isDarkMode ? (
         <>
-          {/* Arch-like strips in teal colors */}
           <View style={styles.archStrip1} />
           <View style={styles.archStrip2} />
           <View style={styles.archStrip3} />
@@ -85,47 +141,54 @@ const HomeScreen = ({ navigation }) => {
         </>
       ) : (
         <>
-          {/* Arch-like strips in green colors for light mode */}
           <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
           <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
           <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
           <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
         </>
       )}
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => loadProducts(true)} />
+        }
       >
-        {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={[styles.greeting, { color: theme.colors.text.secondary }]}>
-              Good Morning
+              {getGreeting()}
             </Text>
             <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
-              John Doe
+              {displayName}
             </Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <Avatar name="John Doe" size="medium" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <NotificationBell />
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+              <Avatar name={displayName} size="medium" />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Search Bar */}
-        <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.searchBarCard}>
+        <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.searchBarCard}>
           <TouchableOpacity
             style={styles.searchBar}
             onPress={() => navigation.navigate('ProductBrowse')}
           >
-          <AppIcon name="search" size={20} color={theme.colors.text.tertiary} />
-            <Text style={[styles.searchPlaceholder, { color: theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary }]}>
+            <AppIcon name="search" size={20} color={theme.colors.text.tertiary} />
+            <Text
+              style={[
+                styles.searchPlaceholder,
+                { color: theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary },
+              ]}
+            >
               Search for organic products...
             </Text>
           </TouchableOpacity>
         </Card>
 
-        {/* Categories */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
             Categories
@@ -140,61 +203,59 @@ const HomeScreen = ({ navigation }) => {
           />
         </View>
 
-        {/* Featured Products */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary, paddingHorizontal: 0, marginBottom: 0 }]}>
               Featured Products
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('ProductBrowse')}>
-              <Text style={[styles.seeAll, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-                See All
-              </Text>
+              <Text style={[styles.seeAll, { color: iconColor }]}>See All</Text>
             </TouchableOpacity>
           </View>
-          <FlatList
-            data={featuredProducts}
-            renderItem={renderProduct}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.productsList}
-          />
+          {loading && featuredProducts.length === 0 ? (
+            <ActivityIndicator color={iconColor} style={{ marginVertical: 24 }} />
+          ) : error && featuredProducts.length === 0 ? (
+            <Text style={[styles.emptyHint, { color: theme.colors.text.secondary }]}>{error}</Text>
+          ) : featuredProducts.length === 0 ? (
+            <Text style={[styles.emptyHint, { color: theme.colors.text.secondary }]}>
+              No approved products in the catalog yet.
+            </Text>
+          ) : (
+            <FlatList
+              data={featuredProducts}
+              renderItem={renderProduct}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.productsList}
+            />
+          )}
         </View>
 
-        {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
             Quick Actions
           </Text>
           <View style={styles.actionsGrid}>
-            <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard} onPress={() => navigation.navigate('OrdersTab')}>
-              <AppIcon name="orders" size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
-              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
-                My Orders
-              </Text>
+            <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.actionCard} onPress={() => navigation.navigate('OrdersTab')}>
+              <AppIcon name="orders" size={28} color={iconColor} />
+              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>My Orders</Text>
             </Card>
-            <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard} onPress={() => navigation.navigate('CartTab')}>
-              <AppIcon name="cart" size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
-              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
-                Cart
-              </Text>
+            <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.actionCard} onPress={() => navigation.navigate('CartTab')}>
+              <AppIcon name="cart" size={28} color={iconColor} />
+              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>Cart</Text>
             </Card>
-            <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.actionCard} onPress={() => navigation.navigate('Analytics')}>
-              <AppIcon name="analytics" size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
-              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
-                Analytics
-              </Text>
+            <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.actionCard} onPress={() => navigation.navigate('Analytics')}>
+              <AppIcon name="analytics" size={28} color={iconColor} />
+              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>Analytics</Text>
             </Card>
             <Card
-              variant={theme.isDarkMode ? "glass" : "default"}
+              variant={theme.isDarkMode ? 'glass' : 'default'}
               style={styles.actionCard}
               onPress={() => navigation.navigate('TrackOrder')}
             >
-              <AppIcon name="track" size={28} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
-              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>
-                Track Order
-              </Text>
+              <AppIcon name="track" size={28} color={iconColor} />
+              <Text style={[styles.actionText, { color: theme.colors.text.primary }]}>Track Order</Text>
             </Card>
           </View>
         </View>
@@ -216,7 +277,6 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
     zIndex: 1,
   },
-  // Arch-like strips pattern for dark mode
   archStrip1: {
     position: 'absolute',
     top: -100,
@@ -293,10 +353,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
-  searchIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
   searchPlaceholder: {
     fontSize: 15,
   },
@@ -323,9 +379,8 @@ const styles = StyleSheet.create({
   categoriesList: {
     paddingHorizontal: 16,
   },
-  categoryIcon: {
-    fontSize: 18,
-    marginRight: 8,
+  categoryPillWrapper: {
+    marginRight: 0,
   },
   categoryName: {
     fontSize: 14,
@@ -353,9 +408,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-  },
-  productEmoji: {
-    fontSize: 48,
+    overflow: 'hidden',
   },
   productName: {
     fontSize: 14,
@@ -389,15 +442,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 20,
   },
-  actionIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
   actionText: {
     fontSize: 13,
     fontWeight: '600',
   },
-  // Light mode arch strips with green colors
+  emptyHint: {
+    paddingHorizontal: 20,
+    fontSize: 14,
+  },
   lightModeArchStrip1: {
     backgroundColor: 'rgba(22, 163, 74, 0.3)',
     opacity: 0.7,
@@ -417,4 +469,3 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
-

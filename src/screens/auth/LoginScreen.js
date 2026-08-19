@@ -1,223 +1,353 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  StatusBar,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useDispatch } from "react-redux";
-import { loginDriverAsync } from "../../store/slices/authSlice";
-import { useTheme } from "../../hooks/useTheme";
-import Button from "../../components/common/Button";
-import Input from "../../components/common/Input";
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  KeyboardAvoidingView, Platform, ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch } from 'react-redux';
+import { useTheme } from '../../hooks/useTheme';
+import { loginSuccess } from '../../store/slices/authSlice';
+import { fetchCart } from '../../store/slices/cartSlice';
+import AsyncStorageService from '../../services/storage/AsyncStorageService';
+import { STORAGE_KEYS } from '../../utils/constants';
+import apiClient from '../../api/client';
+import { setAuthToken } from '../../api/interceptors';
+import { buildSessionUser, normalizeRole } from '../../utils/roles';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import AppIcon from '../../components/common/AppIcon';
+import Card from '../../components/common/Card';
+import Svg, { Path, Circle, Line } from 'react-native-svg';
 
-const PRIMARY = "#14b8a6";
-const BRAND_BG = "#0a1929";
+const EyeIcon = ({ visible, color = '#94a3b8', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+      stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"
+    />
+    <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={1.8} />
+    {!visible && (
+      <Line x1="2" y1="2" x2="22" y2="22" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    )}
+  </Svg>
+);
+// ─── Validation ───────────────────────────────────────────────────────────────
+
+const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '').trim());
+
+const normalizeEmail = (v) =>
+  String(v || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[․。．]/g, '.');
+
+// Recognize a "not approved yet" login response from the API.
+// Adjust this to match your backend's actual shape — common patterns:
+//   - 403 with { status: 'pending' } or { accountStatus: 'pending' }
+//   - 403 with a specific error code, e.g. { code: 'VENDOR_PENDING_APPROVAL' }
+//   - fallback: sniff the message text
+const isPendingApprovalError = (err) => {
+  const data = err?.response?.data;
+  if (!data) return false;
+  const status = data.status ?? data.accountStatus;
+  const code   = data.code;
+  if (status === 'pending' || status === 'pending_approval') return true;
+  if (code === 'VENDOR_PENDING_APPROVAL') return true;
+  const msg = (data.message ?? '').toLowerCase();
+  return msg.includes('pending') && msg.includes('approv');
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const LoginScreen = ({ navigation }) => {
-  const dispatch = useDispatch();
-  const { theme, isDarkMode } = useTheme();
-  const [email, setEmail] = useState("mike@freshroute.com");
-  const [password, setPassword] = useState("driver123");
+  const { theme } = useTheme();
+  const dispatch   = useDispatch();
+
+  const [email,        setEmail]        = useState('');
+  const [password,     setPassword]     = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [authError, setAuthError] = useState("");
+  const [loading,      setLoading]      = useState(false);
+  const [errors,       setErrors]       = useState({});
+  const [apiError,     setApiError]     = useState('');
+
+  // ── Touched state — show inline errors only after user has left the field ──
+  const [touched, setTouched] = useState({ email: false, password: false });
+  const touch = (field) => setTouched((p) => ({ ...p, [field]: true }));
+
+  const emailError    = touched.email    && (!email    ? 'Email is required'    : !isValidEmail(email)    ? 'Enter a valid email address'         : '');
+  const passwordError = touched.password && (!password ? 'Password is required' : '');
+
+  const validate = () => {
+    setTouched({ email: true, password: true });
+    return isValidEmail(email) && password.trim().length > 0;
+  };
 
   const handleLogin = async () => {
-    const newErrors = {};
-    if (!email.trim()) newErrors.email = "Email is required";
-    if (!password) newErrors.password = "Password is required";
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
+    if (!validate()) return;
     setLoading(true);
-    setAuthError("");
+    setApiError('');
     try {
-      await dispatch(
-        loginDriverAsync({ email: email.trim().toLowerCase(), password }),
-      ).unwrap();
-    } catch (error) {
-      const message =
-        typeof error === "string" ? error : "Invalid credentials. Please try again.";
-      setAuthError(message);
+      const { data } = await apiClient.post('/auth/login', {
+        email: normalizeEmail(email),
+        password: password.trim(),
+      });
+      const mergedUser = buildSessionUser(data.user ?? {}, data.profile ?? {});
+      setAuthToken(data.token);
+      await AsyncStorageService.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
+      await AsyncStorageService.setItem(STORAGE_KEYS.USER_DATA, mergedUser);
+      dispatch(loginSuccess({ user: mergedUser, token: data.token }));
+      if (normalizeRole(mergedUser.role) === 'buyer') {
+        dispatch(fetchCart());
+      }
+      // Navigation handled automatically by AppNavigator based on auth state
+    } catch (err) {
+      if (isPendingApprovalError(err)) {
+        navigation.navigate('PendingApproval');
+      } else {
+        setApiError(
+          err?.response?.data?.message
+          ?? (err?.request && !err?.response ? 'Cannot reach the server. Check that the backend is running.' : null)
+          ?? err?.message
+          ?? 'Invalid email or password'
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const errBoxBg   = isDarkMode ? "#2d1515" : "#fef2f2";
-  const errBoxBdr  = isDarkMode ? "#7f1d1d" : "#fecaca";
-  const errBoxText = isDarkMode ? "#fca5a5" : "#b91c1c";
+  // Background gradient overlay for dark mode
+  const backgroundStyle = theme.isDarkMode
+    ? {
+        backgroundColor: theme.colors.background,
+      }
+    : {
+        backgroundColor: theme.colors.background,
+      };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle="light-content" backgroundColor={BRAND_BG} />
-      <SafeAreaView style={styles.flex}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.flex}
+    <SafeAreaView style={[styles.container, backgroundStyle]}>
+      {theme.isDarkMode ? (
+        <>
+          <View style={styles.gradientCircle1} />
+          <View style={styles.gradientCircle2} />
+        </>
+      ) : (
+        <>
+          <View style={[styles.gradientCircle1, styles.lightModeCircle1]} />
+          <View style={[styles.gradientCircle2, styles.lightModeCircle2]} />
+        </>
+      )}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Brand area — always dark navy regardless of theme */}
-            <View style={[styles.brandArea, { backgroundColor: BRAND_BG }]}>
-              <View style={[styles.logoBox, { backgroundColor: PRIMARY }]}>
-                <Text style={styles.logoText}>🌱</Text>
-              </View>
-              <Text style={styles.brandName}>FreshRoute</Text>
-              <Text style={styles.brandTagline}>Driver Portal</Text>
+          {/* Logo/Header */}
+          <View style={styles.header}>
+            <View style={[styles.logo, { backgroundColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+              <Text style={styles.logoText}>🌱</Text>
             </View>
+            <Text style={[styles.title, { color: theme.colors.text.primary }]}>Welcome Back</Text>
+            <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>Sign in to continue to FreshRoute</Text>
+          </View>
 
-            {/* Form area — adapts to theme */}
-            <View style={[styles.formArea, { backgroundColor: theme.colors.background }]}>
-              <Text style={[styles.formTitle, { color: theme.colors.text.primary }]}>
-                Sign In
-              </Text>
-              <Text style={[styles.formSubtitle, { color: theme.colors.text.secondary }]}>
-                Enter your credentials to continue
-              </Text>
+          {/* API error banner */}
+          {!!apiError && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>❌ {apiError}</Text>
+            </View>
+          )}
 
-              <View style={styles.inputGroup}>
-                <Input
-                  label="Email address"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    if (errors.email) setErrors({ ...errors, email: "" });
-                  }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  error={errors.email}
+          {/* Form Card with Glassmorphism */}
+          <Card variant="glass" style={styles.formCard}>
+            <View style={styles.form}>
+            <Input
+              label="Email"
+              placeholder="you@example.com"
+              value={email}
+              onChangeText={(t) => { setEmail(t); setErrors({}); setApiError(''); }}
+              onBlur={() => touch('email')}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+              textContentType="username"
+              error={emailError}
+            />
+
+            <Input
+              label="Password"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={(t) => { setPassword(t); setErrors({}); setApiError(''); }}
+              onBlur={() => touch('password')}
+              secureTextEntry={!showPassword}
+              autoCorrect={false}
+              autoComplete="password"
+              textContentType="password"
+              error={passwordError}
+              rightIcon={
+                <AppIcon
+                  name={showPassword ? 'eye' : 'eyeOff'}
+                  size={22}
+                  color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main}
                 />
-
-                <Input
-                  label="Password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    if (errors.password) setErrors({ ...errors, password: "" });
-                  }}
-                  secureTextEntry={!showPassword}
-                  error={errors.password}
-                  rightIcon={
-                    <Text style={{ color: PRIMARY, fontSize: 16 }}>
-                      {showPassword ? "👁️" : "👁️‍🗨️"}
-                    </Text>
-                  }
-                  onRightIconPress={() => setShowPassword(!showPassword)}
-                />
-              </View>
+              }
+              onRightIconPress={() => setShowPassword(!showPassword)}
+            />
 
               <TouchableOpacity
-                onPress={() => navigation.navigate("ForgotPassword")}
-                style={styles.forgotRow}
+                onPress={() => navigation.navigate('ForgotPassword')}
+                style={styles.forgotPassword}
               >
-                <Text style={[styles.forgotText, { color: PRIMARY }]}>Forgot Password?</Text>
+                <Text style={[styles.forgotText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                  Forgot Password?
+                </Text>
               </TouchableOpacity>
 
-              {!!authError && (
-                <View style={[styles.errorBox, { backgroundColor: errBoxBg, borderColor: errBoxBdr }]}>
-                  <Text style={[styles.errorBoxText, { color: errBoxText }]}>{authError}</Text>
-                </View>
-              )}
-
               <Button
-                title={loading ? "Signing in..." : "Sign In"}
+                title="Sign In"
                 onPress={handleLogin}
                 loading={loading}
-                disabled={loading}
-                style={styles.loginButton}
+                style={[styles.loginButton, theme.isDarkMode && { backgroundColor: theme.colors.primary.main }]}
               />
-
-              <View style={styles.footer}>
-                <Text style={[styles.footerText, { color: theme.colors.text.secondary }]}>
-                  Don't have an account?{" "}
-                </Text>
-                <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-                  <Text style={[styles.signupText, { color: PRIMARY }]}>Sign Up</Text>
-                </TouchableOpacity>
-              </View>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </View>
+          </Card>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: theme.colors.text.secondary }]}>Don't have an account? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+              <Text style={[styles.signupText, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
+                Sign Up
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  flex: { flex: 1 },
-  scrollContent: { flexGrow: 1 },
-
-  brandArea: {
-    paddingTop: 60,
-    paddingBottom: 48,
-    alignItems: "center",
-  },
-  logoBox: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 14,
-    shadowColor: "#14b8a6",
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  logoText: { fontSize: 36 },
-  brandName: { fontSize: 28, fontWeight: "800", color: "#f8fafc", letterSpacing: -0.5 },
-  brandTagline: { fontSize: 13, color: "#64748b", marginTop: 4, letterSpacing: 1 },
-
-  formArea: {
+  container: {
     flex: 1,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    marginTop: -24,
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 40,
+    overflow: 'hidden',
   },
-  formTitle: { fontSize: 24, fontWeight: "800", marginBottom: 4 },
-  formSubtitle: { fontSize: 14, marginBottom: 28 },
-
-  inputGroup: { gap: 4, marginBottom: 8 },
-
-  forgotRow: { alignSelf: "flex-end", marginBottom: 20 },
-  forgotText: { fontSize: 13, fontWeight: "600" },
-
-  errorBox: {
-    borderWidth: 1,
+  flex: {
+    flex: 1,
+  },
+  gradientCircle1: {
+    position: 'absolute',
+    top: -160,
+    left: -160,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(56, 189, 248, 0.45)',
+    opacity: 0.6,
+  },
+  gradientCircle2: {
+    position: 'absolute',
+    bottom: -192,
+    right: -192,
+    width: 384,
+    height: 384,
+    borderRadius: 192,
+    backgroundColor: 'rgba(35, 101, 113, 0.4)',
+    opacity: 0.6,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  formCard: {
+    borderRadius: 24,
+    padding: 24,
+    marginVertical: 16,
+  },
+  errorBanner: {
     borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 16,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
   },
-  errorBoxText: { fontSize: 13, fontWeight: "500", textAlign: "center" },
-
-  loginButton: { marginBottom: 24 },
-
-  footer: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
-  footerText: { fontSize: 14 },
-  signupText: { fontSize: 14, fontWeight: "700" },
+  errorBannerText: {
+    color: '#ef4444',
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logoText: {
+    fontSize: 40,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  form: {
+    marginBottom: 24,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 24,
+  },
+  forgotText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  loginButton: {
+    marginTop: 8,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 14,
+  },
+  signupText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  lightModeCircle1: {
+    backgroundColor: 'rgba(22, 163, 74, 0.35)',
+    opacity: 0.7,
+  },
+  lightModeCircle2: {
+    backgroundColor: 'rgba(74, 222, 128, 0.2)',
+    opacity: 0.5,
+  },
 });
 
 export default LoginScreen;

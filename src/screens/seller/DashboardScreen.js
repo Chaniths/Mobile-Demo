@@ -6,13 +6,27 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { useSelector } from 'react-redux';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
 import AppIcon from '../../components/common/AppIcon';
+import NotificationBell from '../../components/NotificationBell';
+
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good Morning';
+  if (h < 17) return 'Good Afternoon';
+  return 'Good Evening';
+};
 
 const DashboardScreen = ({ navigation }) => {
   const { theme } = useTheme();
+
+  // ── Pull real seller from Redux auth state ────────────────────────────────
+  const user = useSelector((state) => state.auth.user);
+  const businessName = user?.businessName ?? user?.name ?? 'My Store';
+  const ownerName    = user?.ownerName    ?? user?.name ?? 'Seller';
 
   const stats = [
     { id: '1', label: 'Total Sales', value: '$2,450', icon: 'cash', color: '#22c55e' },
@@ -22,9 +36,9 @@ const DashboardScreen = ({ navigation }) => {
   ];
 
   const recentOrders = [
-    { id: '1', orderId: '#ORD-001', customer: 'John Doe', items: 3, total: 45.99, status: 'pending' },
-    { id: '2', orderId: '#ORD-002', customer: 'Jane Smith', items: 2, total: 32.50, status: 'confirmed' },
-    { id: '3', orderId: '#ORD-003', customer: 'Bob Johnson', items: 1, total: 18.75, status: 'pending' },
+    { id: '1', orderId: '#ORD-001', customer: 'John Doe',    items: 3, total: 45.99, status: 'pending'   },
+    { id: '2', orderId: '#ORD-002', customer: 'Jane Smith',  items: 2, total: 32.50, status: 'confirmed' },
+    { id: '3', orderId: '#ORD-003', customer: 'Bob Johnson', items: 1, total: 18.75, status: 'pending'   },
   ];
 
   const quickActions = [
@@ -62,15 +76,19 @@ const DashboardScreen = ({ navigation }) => {
         <View style={styles.header}>
           <View>
             <Text style={[styles.greeting, { color: theme.colors.text.secondary }]}>
-              Seller Dashboard
+              {getGreeting()}, {ownerName.split(' ')[0]}
             </Text>
             <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
-              My Store
+              {businessName}
             </Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-            <Avatar name="My Store" size="medium" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <NotificationBell />
+            {/* Avatar uses businessName so initials match the store */}
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+              <Avatar name={businessName} size="medium" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Stats */}
@@ -140,28 +158,16 @@ const DashboardScreen = ({ navigation }) => {
                     {order.customer}
                   </Text>
                 </View>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    {
-                      backgroundColor:
-                        order.status === 'confirmed'
-                          ? `${theme.colors.success}20`
-                          : `${theme.colors.warning}20`,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.statusText,
-                      {
-                        color:
-                          order.status === 'confirmed'
-                            ? theme.colors.success
-                            : theme.colors.warning,
-                      },
-                    ]}
-                  >
+                <View style={[styles.statusBadge, {
+                  backgroundColor: order.status === 'confirmed'
+                    ? `${theme.colors.success}20`
+                    : `${theme.colors.warning}20`,
+                }]}>
+                  <Text style={[styles.statusText, {
+                    color: order.status === 'confirmed'
+                      ? theme.colors.success
+                      : theme.colors.warning,
+                  }]}>
                     {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                   </Text>
                 </View>
@@ -390,4 +396,3 @@ const styles = StyleSheet.create({
 });
 
 export default DashboardScreen;
-

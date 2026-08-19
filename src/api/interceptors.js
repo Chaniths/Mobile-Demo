@@ -1,24 +1,46 @@
 import AsyncStorageService from '../services/storage/AsyncStorageService';
 import { STORAGE_KEYS } from '../utils/constants';
+import { unwrapStoredValue } from '../utils/roles';
+
+let memoryToken = null;
+
+export const setAuthToken = (token) => {
+  memoryToken = token || null;
+};
+
+const isAuthCredentialRequest = (config) => {
+  const url = String(config?.url || '');
+  return /\/auth\/(login|register|signup|forgot-password|reset-password)/i.test(url);
+};
 
 export const setupInterceptors = (axiosInstance) => {
   // Request interceptor - add auth token
   axiosInstance.interceptors.request.use(
-    async (config) => {
-      try {
-        const token = await AsyncStorageService.getItem(STORAGE_KEYS.AUTH_TOKEN);
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    try {
+      if (isAuthCredentialRequest(config)) {
+        if (config.headers) {
+          delete config.headers.Authorization;
+          delete config.headers.authorization;
         }
-      } catch (error) {
-        console.error('Error getting auth token:', error);
+        return config;
       }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
+      const stored = unwrapStoredValue(
+        await AsyncStorageService.getItem(STORAGE_KEYS.AUTH_TOKEN)
+      );
+      const token = typeof stored === 'string' && stored ? stored : memoryToken;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Error getting auth token:', error);
     }
-  );
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
   // Response interceptor - handle errors
   axiosInstance.interceptors.response.use(
@@ -30,17 +52,17 @@ export const setupInterceptors = (axiosInstance) => {
         // Handle specific error codes
         switch (error.response.status) {
           case 401:
-            // Unauthorized - clear auth and redirect to login
-            await AsyncStorageService.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-            await AsyncStorageService.removeItem(STORAGE_KEYS.USER_DATA);
-            // TODO: Navigate to login screen
+            if (!isAuthCredentialRequest(error.config)) {
+              setAuthToken(null);
+              await AsyncStorageService.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+              await AsyncStorageService.removeItem(STORAGE_KEYS.USER_DATA);
+            }
             break;
           case 403:
             // Forbidden
             console.error('Access forbidden');
             break;
           case 404:
-            console.error('Resource not found');
             break;
           case 500:
             console.error('Server error');

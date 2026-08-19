@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { authService } from "../../services/auth/authService";
 import { toUserMessage } from "../../api/errors";
+import { buildSessionUser, unwrapStoredValue } from "../../utils/roles";
 
 const initialState = {
   user: null,
@@ -63,8 +64,9 @@ const authSlice = createSlice({
     loginSuccess: (state, action) => {
       state.isLoading = false;
       state.isAuthenticated = true;
-      state.user = action.payload.user;
-      state.token = action.payload.token;
+      const rawUser = unwrapStoredValue(action.payload.user);
+      state.user = rawUser ? buildSessionUser(rawUser) : null;
+      state.token = unwrapStoredValue(action.payload.token);
       state.error = null;
     },
     loginFailure: (state, action) => {

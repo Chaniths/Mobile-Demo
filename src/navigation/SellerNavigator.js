@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
 import { TabBarIcon } from '../components/common/AppIcon';
 
-// Seller Screens
 import DashboardScreen from '../screens/seller/DashboardScreen';
 import ProductsScreen from '../screens/seller/ProductsScreen';
 import AddProductScreen from '../screens/seller/AddProductScreen';
@@ -14,7 +13,8 @@ import ProductCatalogScreen from '../screens/seller/ProductCatalogScreen';
 import TruckTrackingScreen from '../screens/seller/TruckTrackingScreen';
 import OrderDetailScreen from '../screens/seller/OrderDetailScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen'; // Reuse
-import ProfileScreen from '../screens/buyer/ProfileScreen'; // Reuse
+import ProfileScreen from '../screens/ProfileScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -47,10 +47,7 @@ const SellerTabs = () => {
           shadowOffset: { width: 0, height: 4 },
           shadowRadius: 12,
         },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-        },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
       }}
     >
       <Tab.Screen
@@ -105,6 +102,7 @@ const SellerNavigator = () => (
     <Stack.Screen name="ProductCatalog" component={ProductCatalogScreen} />
     <Stack.Screen name="TruckTracking" component={TruckTrackingScreen} />
     <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+    <Stack.Screen name="Notifications" component={NotificationsScreen} />
   </Stack.Navigator>
 );
 

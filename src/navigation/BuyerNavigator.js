@@ -5,16 +5,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../hooks/useTheme';
 import { TabBarIcon } from '../components/common/AppIcon';
 
-// Buyer Screens
 import HomeScreen from '../screens/buyer/HomeScreen';
 import ProductBrowseScreen from '../screens/buyer/ProductBrowseScreen';
 import ProductDetailScreen from '../screens/buyer/ProductDetailScreen';
 import CartScreen from '../screens/buyer/CartScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen';
-import ProfileScreen from '../screens/buyer/ProfileScreen';
 import AnalyticsScreen from '../screens/buyer/AnalyticsScreen';
 import TrackOrderScreen from '../screens/buyer/TrackOrderScreen';
 import CheckoutScreen from '../screens/buyer/CheckoutScreen';
+import ProfileScreen from '../screens/ProfileScreen'; // ✅ combined file, no ProfileSectionScreen import
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -71,10 +71,7 @@ const BuyerTabs = () => {
           shadowOffset: { width: 0, height: 4 },
           shadowRadius: 12,
         },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-        },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
       }}
     >
       <Tab.Screen
@@ -135,6 +132,8 @@ const BuyerNavigator = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="MainTabs" component={BuyerTabs} />
     <Stack.Screen name="TrackOrder" component={TrackOrderScreen} />
+    <Stack.Screen name="Notifications" component={NotificationsScreen} />
+    {/* ✅ ProfileStack removed — ProfileScreen handles its own internal navigation */}
   </Stack.Navigator>
 );
 

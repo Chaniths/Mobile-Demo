@@ -79,16 +79,51 @@ const roleKeyMap = {
 
 const normalizeEmail = (email) => email.trim().toLowerCase();
 
+const getAllUsers = () => Object.values(demoDatabase).flat();
+
 export const findUserByCredentials = (email, password) => {
   const normalizedEmail = normalizeEmail(email);
   const passwordToMatch = password || '';
 
-  const allUsers = Object.values(demoDatabase).flat();
+  const allUsers = getAllUsers();
   return allUsers.find(
     (user) =>
       normalizeEmail(user.email) === normalizedEmail &&
       user.password === passwordToMatch
   );
+};
+
+export const updateUserProfile = ({ id, lookupEmail, name, email, phone, password }) => {
+  const allUsers = getAllUsers();
+  const normalizedLookupEmail = lookupEmail ? normalizeEmail(lookupEmail) : null;
+  const targetUser = allUsers.find(
+    (user) =>
+      (id && user.id === id) ||
+      (normalizedLookupEmail && normalizeEmail(user.email) === normalizedLookupEmail)
+  );
+
+  if (!targetUser) {
+    throw new Error('User not found.');
+  }
+
+  if (email) {
+    const normalizedEmail = normalizeEmail(email);
+    const emailTaken = allUsers.some(
+      (user) => user.id !== targetUser.id && normalizeEmail(user.email) === normalizedEmail
+    );
+
+    if (emailTaken) {
+      throw new Error('Email already exists.');
+    }
+
+    targetUser.email = email;
+  }
+
+  if (name !== undefined) targetUser.name = name;
+  if (phone !== undefined) targetUser.phone = phone;
+  if (password !== undefined) targetUser.password = password;
+
+  return targetUser;
 };
 
 export const addUser = ({ role, name, email, phone, password }) => {

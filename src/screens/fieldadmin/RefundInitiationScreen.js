@@ -16,7 +16,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
 import FieldAdminFlowStepper from '../../components/common/FieldAdminFlowStepper';
-import { confirmLeaveFlow, FLOW_STEPS } from '../../utils/fieldAdminQualityFlow';
+import { confirmLeaveFlow, FLOW_STEPS, buildFlowRefundOrder, mergeEligibleOrdersWithFlow } from '../../utils/fieldAdminQualityFlow';
 
 const buildRefundDefaults = (selectedOrder) => {
   if (!selectedOrder) {
@@ -56,20 +56,27 @@ const RefundInitiationScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     const loadOrders = async () => {
+      const flowOrder = buildFlowRefundOrder(flow);
       try {
         setLoading(true);
         const eligibleOrders = await fieldAdminApi.getRefundEligibleOrders();
-        const normalizedOrders = eligibleOrders ?? [];
-        setOrders(normalizedOrders);
+        const merged = mergeEligibleOrdersWithFlow(eligibleOrders, flow);
+
+        setOrders(merged);
 
         const initialOrderId = flow?.orderId ?? route?.params?.order?.id;
-        const validSelectedOrderId = normalizedOrders.some((entry) => entry.id === initialOrderId)
+        const validSelectedOrderId = merged.some((entry) => entry.id === initialOrderId)
           ? initialOrderId
-          : normalizedOrders[0]?.id ?? null;
+          : merged[0]?.id ?? null;
 
         setSelectedOrderId(validSelectedOrderId);
       } catch {
-        Alert.alert('Error', 'Failed to load orders for refund.');
+        if (flowOrder) {
+          setOrders([flowOrder]);
+          setSelectedOrderId(flowOrder.id);
+        } else {
+          Alert.alert('Error', 'Failed to load orders for refund.');
+        }
       } finally {
         setLoading(false);
       }
@@ -84,12 +91,22 @@ const RefundInitiationScreen = ({ navigation, route }) => {
 
   const order = useMemo(() => {
     if (!selectedOrder) return null;
+    const itemRefundTotal = Number(
+      (selectedOrder.items ?? [])
+        .filter((item) => item.refundableQuantity > 0)
+        .reduce((sum, item) => sum + Number(item.refundableAmount ?? 0), 0)
+        .toFixed(2)
+    );
+    const refundableAmount =
+      Number(selectedOrder.refundableAmount ?? 0) > 0
+        ? Number(selectedOrder.refundableAmount)
+        : itemRefundTotal;
     return {
       id: selectedOrder.id,
       orderId: selectedOrder.orderNumber ?? selectedOrder.id,
       customer: selectedOrder.customer ?? 'Customer',
       totalAmount: `Rs. ${Number(selectedOrder.totalAmount ?? 0).toFixed(2)}`,
-      refundableAmount: Number(selectedOrder.refundableAmount ?? 0),
+      refundableAmount,
       status: selectedOrder.status ?? 'N/A',
       items: (selectedOrder.items ?? []).filter((item) => item.refundableQuantity > 0),
     };
@@ -110,7 +127,7 @@ const RefundInitiationScreen = ({ navigation, route }) => {
   }, [orders, orderSearch]);
 
   const handleInitiateRefund = () => {
-    if (!reason.trim() || !amount.trim()) {
+    if (!reason.trim()) {
       alert('Please fill all required fields');
       return;
     }
@@ -118,10 +135,12 @@ const RefundInitiationScreen = ({ navigation, route }) => {
       Alert.alert('Error', 'No order selected for refund.');
       return;
     }
-    const requestedAmount = Number(amount);
-    if (requestedAmount <= 0 || requestedAmount > order.refundableAmount) {
-      Alert.alert('Error', `Refund amount must be between 0 and Rs. ${order.refundableAmount.toFixed(2)}.`);
-      return;
+    const requestedAmount = Number(amount || 0);
+    if (order.refundableAmount > 0) {
+      if (!amount.trim() || requestedAmount <= 0 || requestedAmount > order.refundableAmount) {
+        Alert.alert('Error', `Refund amount must be between 0 and Rs. ${order.refundableAmount.toFixed(2)}.`);
+        return;
+      }
     }
 
     const orderItemIds = order.items?.map((item) => item.id) ?? [];

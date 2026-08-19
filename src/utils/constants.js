@@ -4,7 +4,7 @@ export const USER_ROLES = {
   BUYER: 'buyer',
   SELLER: 'seller',
   DRIVER: 'driver',
-  FIELD_ADMIN: 'fieldadmin',
+  FIELD_ADMIN: 'field_admin',
   ADMIN: 'admin',
 };
 

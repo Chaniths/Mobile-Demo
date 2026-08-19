@@ -9,10 +9,11 @@ import { useTheme } from "../hooks/useTheme";
 import HomeScreen from "../screens/driver/HomeScreen";
 import RouteScreen from "../screens/driver/RouteScreen";
 import OrdersScreen from "../screens/driver/OrdersScreen";
-import ProfileScreen from "../screens/driver/DriverProfileScreen";
+import ProfileScreen from "../screens/ProfileScreen";
 import DeliveryDetailScreen from "../screens/driver/DeliveryDetailScreen";
 import AllDeliveriesScreen from "../screens/driver/AllDeliveriesScreen";
 import ReportIssueScreen from "../screens/driver/ReportIssueScreen";
+import NotificationsScreen from "../screens/NotificationsScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -35,7 +36,7 @@ const DeliveriesStack = () => (
   </Stack.Navigator>
 );
 
-const DriverNavigator = () => {
+const DriverTabs = () => {
   const { theme, isDarkMode } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -103,5 +104,12 @@ const DriverNavigator = () => {
     </Tab.Navigator>
   );
 };
+
+const DriverNavigator = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="DriverTabs" component={DriverTabs} />
+    <Stack.Screen name="Notifications" component={NotificationsScreen} />
+  </Stack.Navigator>
+);
 
 export default DriverNavigator;

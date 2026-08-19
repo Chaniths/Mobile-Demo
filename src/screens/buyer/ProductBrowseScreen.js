@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,67 +6,107 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import EmptyState from '../../components/common/EmptyState';
 import AppIcon from '../../components/common/AppIcon';
-import { products } from '../../utils/catalog';
+import ProductThumb from '../../components/common/ProductThumb';
+import { getApprovedProducts } from '../../api/productsApi';
+import { categoryIcon, formatMoney, matchesCategory } from '../../utils/mediaUrl';
 
 const ProductBrowseScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
+  const iconColor = theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory] = useState(route?.params?.category || 'all');
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const loadProducts = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    try {
+      const data = await getApprovedProducts();
+      setProducts(Array.isArray(data) ? data : []);
+      setError('');
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Could not load products.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
-  const renderProduct = ({ item }) => {
-    const firstSeller = item.sellers && item.sellers[0];
-    const priceLabel = firstSeller ? `$${firstSeller.price.toFixed(2)}` : 'See sellers';
+  useFocusEffect(
+    useCallback(() => {
+      loadProducts();
+    }, [loadProducts])
+  );
 
-    return (
-      <Card
-        variant={theme.isDarkMode ? "glass" : "default"}
-        style={styles.productCard}
-        onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
+  const filteredProducts = useMemo(
+    () =>
+      products.filter((product) => {
+        const matchesSearch = String(product.name || '')
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+        return matchesSearch && matchesCategory(product.category, selectedCategory);
+      }),
+    [products, searchQuery, selectedCategory]
+  );
+
+  const renderProduct = ({ item }) => (
+    <Card
+      variant={theme.isDarkMode ? 'glass' : 'default'}
+      style={styles.productCard}
+      onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
+    >
+      <View
+        style={[
+          styles.productImage,
+          { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light },
+        ]}
       >
-        <View style={[styles.productImage, { backgroundColor: theme.isDarkMode ? theme.colors.teal.medium : theme.colors.primary.light }]}>
-          <AppIcon name={item.image} size={36} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
-        </View>
-        <View style={styles.productInfo}>
-          <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
-            {item.name}
+        <ProductThumb
+          imageUrl={item.imageUrl}
+          icon={categoryIcon(item.category)}
+          size={36}
+          color={iconColor}
+        />
+      </View>
+      <View style={styles.productInfo}>
+        <Text style={[styles.productName, { color: theme.colors.text.primary }]}>
+          {item.name}
+        </Text>
+        <View style={styles.productFooter}>
+          <Text style={[styles.productPrice, { color: iconColor }]}>
+            {formatMoney(item.price)}
           </Text>
-          <View style={styles.productFooter}>
-            <Text style={[styles.productPrice, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-              {priceLabel}
-            </Text>
-            <View style={styles.ratingRow}>
-              <AppIcon name="star" size={13} color="#f59e0b" />
-              <Text style={styles.rating}> {item.rating}</Text>
-            </View>
+          <View style={styles.ratingRow}>
+            <AppIcon name="star" size={13} color="#f59e0b" />
+            <Text style={styles.rating}> {item.averageRating || 0}</Text>
           </View>
         </View>
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: theme.colors.primary.main }]}
-          onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-      </Card>
-    );
-  };
+      </View>
+      <TouchableOpacity
+        style={[styles.addButton, { backgroundColor: theme.colors.primary.main }]}
+        onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
+      >
+        <Text style={styles.addButtonText}>+</Text>
+      </TouchableOpacity>
+    </Card>
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {theme.isDarkMode ? (
         <>
-          {/* Arch-like strips in teal colors */}
           <View style={styles.archStrip1} />
           <View style={styles.archStrip2} />
           <View style={styles.archStrip3} />
@@ -74,30 +114,30 @@ const ProductBrowseScreen = ({ navigation, route }) => {
         </>
       ) : (
         <>
-          {/* Arch-like strips in green colors for light mode */}
           <View style={[styles.archStrip1, styles.lightModeArchStrip1]} />
           <View style={[styles.archStrip2, styles.lightModeArchStrip2]} />
           <View style={[styles.archStrip3, styles.lightModeArchStrip3]} />
           <View style={[styles.archStrip4, styles.lightModeArchStrip4]} />
         </>
       )}
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={[styles.backButton, { color: theme.isDarkMode ? theme.colors.primary.main : theme.colors.primary.main }]}>← Back</Text>
+          <Text style={[styles.backButton, { color: theme.colors.primary.main }]}>← Back</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.colors.text.primary }]}>Products</Text>
         <TouchableOpacity onPress={() => navigation.navigate('CartTab')}>
-          <AppIcon name="cart" size={24} color={theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main} />
+          <AppIcon name="cart" size={24} color={iconColor} />
         </TouchableOpacity>
       </View>
 
-      {/* Search Bar */}
-      <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.searchCard}>
+      <Card variant={theme.isDarkMode ? 'glass' : 'default'} style={styles.searchCard}>
         <View style={styles.searchContainer}>
           <AppIcon name="search" size={20} color={theme.colors.text.tertiary} />
           <TextInput
-            style={[styles.searchInput, { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary }]}
+            style={[
+              styles.searchInput,
+              { color: theme.isDarkMode ? theme.colors.accent.peach : theme.colors.text.primary },
+            ]}
             placeholder="Search products..."
             placeholderTextColor={theme.isDarkMode ? theme.colors.accent.peachSoft : theme.colors.text.tertiary}
             value={searchQuery}
@@ -106,21 +146,27 @@ const ProductBrowseScreen = ({ navigation, route }) => {
         </View>
       </Card>
 
-      {/* Product List */}
-      <FlatList
-        data={filteredProducts}
-        renderItem={renderProduct}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <EmptyState
-            icon={<AppIcon name="orders" size={64} color={theme.colors.text.tertiary} />}
-            title="No products found"
-            message="Try adjusting your search or filters"
-          />
-        }
-      />
+      {loading && products.length === 0 ? (
+        <ActivityIndicator color={iconColor} style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={filteredProducts}
+          renderItem={renderProduct}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => loadProducts(true)} />
+          }
+          ListEmptyComponent={
+            <EmptyState
+              icon={<AppIcon name="orders" size={64} color={theme.colors.text.tertiary} />}
+              title={error ? 'Could not load products' : 'No products found'}
+              message={error || 'Try adjusting your search or filters'}
+            />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -130,7 +176,6 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
   },
-  // Arch-like strips pattern for dark mode
   archStrip1: {
     position: 'absolute',
     top: -100,
@@ -183,9 +228,6 @@ const styles = StyleSheet.create({
     zIndex: 0,
     transform: [{ rotate: '-30deg' }],
   },
-  header: {
-    zIndex: 1,
-  },
   searchCard: {
     marginHorizontal: 20,
     marginBottom: 16,
@@ -198,6 +240,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   header: {
+    zIndex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -211,19 +254,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
   },
-  cartIcon: {
-    fontSize: 24,
-  },
-  searchIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
   searchInput: {
     flex: 1,
     fontSize: 15,
+    marginLeft: 8,
   },
   list: {
     paddingHorizontal: 20,
+    paddingBottom: 40,
   },
   productCard: {
     flexDirection: 'row',
@@ -238,9 +276,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-  },
-  productEmoji: {
-    fontSize: 36,
+    overflow: 'hidden',
   },
   productInfo: {
     flex: 1,
@@ -278,10 +314,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
   },
-  emptyIcon: {
-    fontSize: 64,
-  },
-  // Light mode arch strips with green colors
   lightModeArchStrip1: {
     backgroundColor: 'rgba(22, 163, 74, 0.3)',
     opacity: 0.7,
@@ -301,4 +333,3 @@ const styles = StyleSheet.create({
 });
 
 export default ProductBrowseScreen;
-
