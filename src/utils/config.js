@@ -1,33 +1,24 @@
 // Application configuration
-// In production, these should come from environment variables
+// Expo inlines EXPO_PUBLIC_* from .env at bundle time.
 
-const ENV = {
-  dev: {
-    // For Android emulator use: http://10.0.2.2:5001/api/v1
-    apiUrl: 'http://localhost:5001/api/v1',
-    wsUrl: 'ws://localhost:5001',
-  },
-  staging: {
-    apiUrl: 'https://staging-api.freshroute.com/api',
-    wsUrl: 'wss://staging-api.freshroute.com',
-  },
-  prod: {
-    apiUrl: 'https://api.freshroute.com/api',
-    wsUrl: 'wss://api.freshroute.com',
-  },
-};
+const DEFAULT_BACKEND = 'https://freshroute-backend.onrender.com';
 
-const getEnvVars = (env = 'dev') => {
-  if (env === 'prod') return ENV.prod;
-  if (env === 'staging') return ENV.staging;
-  return ENV.dev;
-};
+const normalizeOrigin = (value) =>
+  String(value || '')
+    .trim()
+    .replace(/\/+$/, '');
 
-const config = getEnvVars();
+const apiOrigin = normalizeOrigin(
+  process.env.EXPO_PUBLIC_BACKEND_URL ||
+    process.env.EXPO_PUBLIC_API_URL ||
+    DEFAULT_BACKEND
+);
 
-export default {
-  ...config,
+const config = {
+  apiOrigin,
+  apiUrl: `${apiOrigin}/api/v1`,
+  wsUrl: apiOrigin.replace(/^http/, 'ws'),
   apiTimeout: 30000,
-  // Add other configuration here
 };
 
+export default config;

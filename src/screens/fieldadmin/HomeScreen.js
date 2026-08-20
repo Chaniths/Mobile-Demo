@@ -24,6 +24,8 @@ const HomeScreen = ({ navigation }) => {
   const [inTransitCount, setInTransitCount] = useState(0);
   // null means "not computed yet" so the tile can fall back to the overview count.
   const [routesTodayCount, setRoutesTodayCount] = useState(null);
+  const [assignedOrdersCount, setAssignedOrdersCount] = useState(null);
+  const [assessmentsCount, setAssessmentsCount] = useState(null);
 
   const [loadError, setLoadError] = useState('');
 
@@ -39,6 +41,22 @@ const HomeScreen = ({ navigation }) => {
         } catch (error) {
           console.error('Failed to load field admin overview:', error?.message || error);
           if (!cancelled) setLoadError(error?.response?.data?.message || error?.message || 'Failed to load dashboard');
+        }
+
+        try {
+          const allHistory = await fieldAdminApi.getAllHistory();
+          if (cancelled) return;
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          setAssessmentsCount(
+            (allHistory?.assessments ?? []).filter((assessment) => {
+              if (!assessment?.createdAt) return false;
+              const parsed = new Date(assessment.createdAt);
+              return !Number.isNaN(parsed.getTime()) && parsed >= sevenDaysAgo;
+            }).length
+          );
+        } catch (error) {
+          console.error('Failed to load field admin assessments:', error?.message || error);
         }
 
         try {
@@ -77,7 +95,18 @@ const HomeScreen = ({ navigation }) => {
           // always equals the number of route cards the field admin can actually open.
           const handoffs = await fieldAdminApi.getRouteHandoffs();
           if (cancelled) return;
-          setRoutesTodayCount(selectCurrentRouteHandoffs(handoffs).length);
+          const currentHandoffs = selectCurrentRouteHandoffs(handoffs);
+          setRoutesTodayCount(currentHandoffs.length);
+          // Same orders Confirm Quality loads from today's batches. Do not use
+          // overview.assignedOrders — that includes extra batched orders that never
+          // appear on the quality page.
+          const qualityOrderIds = new Set();
+          currentHandoffs.forEach((handoff) => {
+            (handoff.orders ?? []).forEach((order) => {
+              if (order?.id) qualityOrderIds.add(order.id);
+            });
+          });
+          setAssignedOrdersCount(qualityOrderIds.size);
         } catch (error) {
           console.error('Failed to load field admin routes:', error?.message || error);
         }
@@ -92,8 +121,8 @@ const HomeScreen = ({ navigation }) => {
 
   const todayStats = useMemo(
     () => [
-      { id: '1', label: 'Orders Assigned', value: String(overview?.assignedOrders ?? 0), icon: 'orders', color: '#3b82f6' },
-      { id: '2', label: 'Assessments', value: String(overview?.assessments ?? 0), icon: 'check', color: '#22c55e' },
+      { id: '1', label: 'Orders Assigned', value: String(assignedOrdersCount ?? overview?.assignedOrders ?? 0), icon: 'orders', color: '#3b82f6' },
+      { id: '2', label: 'Assessments', value: String(assessmentsCount ?? overview?.assessments ?? 0), icon: 'check', color: '#22c55e' },
       { id: '3', label: 'In Transit', value: String(inTransitCount), icon: 'truck', color: '#f59e0b' },
       {
         id: '4',
@@ -103,7 +132,7 @@ const HomeScreen = ({ navigation }) => {
         color: '#8b5cf6',
       },
     ],
-    [overview, inTransitCount, routesTodayCount]
+    [overview, inTransitCount, routesTodayCount, assignedOrdersCount, assessmentsCount]
   );
 
   const quickActions = [

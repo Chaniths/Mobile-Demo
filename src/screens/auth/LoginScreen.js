@@ -32,11 +32,14 @@ const LoginScreen = ({ navigation }) => {
   const [authError, setAuthError] = useState('');
 
   const handleLogin = async () => {
-    // Validation
+    // Trim — iOS autofill/paste often adds spaces; Render rejects those as invalid credentials.
+    const trimmedEmail = String(email || '').trim().toLowerCase();
+    const trimmedPassword = String(password || '').trim();
+
     const newErrors = {};
-    if (!email) newErrors.email = 'Email is required';
-    if (!password) newErrors.password = 'Password is required';
-    
+    if (!trimmedEmail) newErrors.email = 'Email is required';
+    if (!trimmedPassword) newErrors.password = 'Password is required';
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -47,7 +50,10 @@ const LoginScreen = ({ navigation }) => {
     dispatch(loginStart());
 
     try {
-      const data = await loginByRole({ email, password });
+      const data = await loginByRole({
+        email: trimmedEmail,
+        password: trimmedPassword,
+      });
       const serverUser = data.user ?? data.fieldAdmin ?? {};
       const normalizedRole = serverUser.role
         ? serverUser.role.toLowerCase().replace(/_/g, '')
