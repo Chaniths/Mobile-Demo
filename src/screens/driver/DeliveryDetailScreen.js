@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { useTheme } from "../../hooks/useTheme";
+import AppIcon from "../../components/common/AppIcon";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
