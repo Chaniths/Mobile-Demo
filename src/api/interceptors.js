@@ -41,8 +41,12 @@ export const setupInterceptors = (axiosInstance) => {
             await AsyncStorageService.removeItem(STORAGE_KEYS.USER_DATA);
             break;
           case 403:
-            // Forbidden
-            console.error('Access forbidden');
+            if (__DEV__) {
+              console.warn('Access forbidden:', error.response.data);
+            }
+            break;
+          case 400:
+          case 422:
             break;
           case 404:
             break;
@@ -50,7 +54,9 @@ export const setupInterceptors = (axiosInstance) => {
             console.error('Server error');
             break;
           default:
-            console.error('API Error:', error.response.data);
+            if (__DEV__) {
+              console.warn('API Error:', error.response.data);
+            }
         }
       } else if (error.request) {
         // Request made but no response

@@ -13,6 +13,59 @@ import Card from '../../components/common/Card';
 import fieldAdminApi from '../../api/fieldAdminApi';
 import AppIcon from '../../components/common/AppIcon';
 
+const routeWhen = (route) =>
+  route?.actualEnd || route?.scheduledStart || route?.updatedAt || route?.completedAt || null;
+
+const formatWhen = (value) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString();
+};
+
+const dayKey = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+};
+
+const routeStatusLabel = (status) => {
+  const value = String(status ?? '').replace(/_/g, ' ');
+  if (!value) return 'Assigned';
+  return value.charAt(0) + value.slice(1).toLowerCase();
+};
+
+const COMPLETED_STATUSES = new Set(['DELIVERED', 'COMPLETED']);
+const IN_PROGRESS_STATUSES = new Set([
+  'IN_TRANSIT',
+  'ASSIGNED',
+  'BATCHED',
+  'IN_PROGRESS',
+  'STARTED',
+  'PLANNED',
+]);
+
+const workPhaseFromStatus = (status) => {
+  const value = String(status ?? '').toUpperCase();
+  if (COMPLETED_STATUSES.has(value)) return 'completed';
+  if (IN_PROGRESS_STATUSES.has(value)) return 'in_progress';
+  return null;
+};
+
+const DRIVER_PHASE = {
+  in_progress: { label: 'In progress', color: '#f59e0b' },
+  completed: { label: 'Completed', color: '#22c55e' },
+};
+
+const orderWhen = (order) =>
+  order?.deliveredAt ||
+  order?.actualDelivery ||
+  order?.route?.scheduledStart ||
+  order?.batch?.scheduledDate ||
+  order?.placedAt ||
+  null;
+
 const HistoryScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('assessments'); // assessments, trucks, drivers
@@ -25,10 +78,14 @@ const HistoryScreen = ({ navigation }) => {
     const loadHistory = async () => {
       try {
         setLoading(true);
-        const [allHistory, truckHistory, driverHistory] = await Promise.all([
+        // Assessments still come from history/all. Trucks and drivers are taken from
+        // /route/all because that payload already includes the assigned Truck row and
+        // Driver profile — the dedicated history endpoints only look at COMPLETED
+        // routes and read the truck plate off the driver, so they stay empty.
+        const [allHistory, routes, orders] = await Promise.all([
           fieldAdminApi.getAllHistory(),
-          fieldAdminApi.getTruckHistory(),
-          fieldAdminApi.getDriverHistory(),
+          fieldAdminApi.getRoutes(),
+          fieldAdminApi.getOrdersByTab('all'),
         ]);
 
         const sevenDaysAgo = new Date();
@@ -50,25 +107,141 @@ const HistoryScreen = ({ navigation }) => {
             comments: assessment.comment || '',
           }));
 
-        const mappedTrucks = (truckHistory ?? [])
-          .filter((truck) => withinLastWeek(truck.completedAt))
-          .map((truck) => ({
-            id: truck.routeId,
-            licensePlate: truck.truckNumber || 'Truck N/A',
-            date: truck.completedAt ? new Date(truck.completedAt).toLocaleDateString() : '-',
-            routeNumber: truck.routeNumber,
-            truckType: truck.truckType || 'N/A',
-            status: 'Completed',
+        const recentRoutes = (Array.isArray(routes) ? routes : []).filter((route) =>
+          withinLastWeek(routeWhen(route))
+        );
+        const visibleRoutes = recentRoutes.length > 0 ? recentRoutes : (Array.isArray(routes) ? routes : []);
+
+        const mappedTrucks = visibleRoutes
+          .filter((route) => route?.truck?.id || route?.truck?.vehicleNumber)
+          .map((route) => ({
+            id: `${route.id}-${route.truck?.id ?? 'truck'}`,
+            truckId: route.truck?.id,
+            licensePlate: route.truck?.vehicleNumber || 'Truck N/A',
+            date: formatWhen(routeWhen(route)),
+            routeNumber: route.routeNumber,
+            truckType: route.truck?.vehicleType || 'N/A',
+            status: routeStatusLabel(route.status),
+            maxWeight: route.truck?.maxWeight,
+            maxVolume: route.truck?.maxVolume,
+            driverName: route.driver?.user?.name || null,
           }));
 
-        const mappedDrivers = (driverHistory ?? [])
-          .filter((driver) => withinLastWeek(driver.completedAt))
-          .map((driver) => ({
-            id: `${driver.routeId}-${driver.driverId ?? 'unknown'}`,
-            name: driver.driverName || 'Driver N/A',
-            date: driver.completedAt ? new Date(driver.completedAt).toLocaleDateString() : '-',
-            routeNumber: driver.routeNumber,
-          }));
+        const recentOrders = (Array.isArray(orders) ? orders : []).filter((order) =>
+          withinLastWeek(orderWhen(order))
+        );
+        const visibleOrders = recentOrders.length > 0 ? recentOrders : (Array.isArray(orders) ? orders : []);
+
+        const driverRows = new Map();
+        const addDriverRow = (entry) => {
+          if (!entry?.name || !entry.phase) return;
+          const key = `${entry.driverId || entry.name}::${entry.phase}`;
+          const current = driverRows.get(key);
+          const routesForRow = entry.routeNumber ? [entry.routeNumber] : [];
+          if (!current) {
+            driverRows.set(key, {
+              ...entry,
+              orderCount: entry.orderCount ?? 1,
+              routes: routesForRow,
+            });
+            return;
+          }
+          current.orderCount += entry.orderCount ?? 1;
+          routesForRow.forEach((routeNumber) => {
+            if (!current.routes.includes(routeNumber)) current.routes.push(routeNumber);
+          });
+          if (entry.vehicleNumber && !current.vehicleNumber) current.vehicleNumber = entry.vehicleNumber;
+          if (entry.rating != null) current.rating = entry.rating;
+        };
+
+        visibleOrders.forEach((order) => {
+          const name = order?.driver?.name;
+          if (!name) return;
+          const phase = workPhaseFromStatus(order.status);
+          if (!phase) return;
+          addDriverRow({
+            driverId: order.driver?.id,
+            name,
+            phase,
+            date: formatWhen(orderWhen(order)),
+            routeNumber: order.route?.routeNumber || order.batch?.batchNumber || null,
+            vehicleNumber: order.truck?.vehicleNumber || null,
+            vehicleType: null,
+            orderCount: 1,
+          });
+        });
+
+        visibleRoutes.forEach((route) => {
+          const name = route?.driver?.user?.name;
+          if (!name) return;
+          const phase = workPhaseFromStatus(route.status) || 'in_progress';
+          addDriverRow({
+            driverId: route.driver?.id,
+            name,
+            phase,
+            date: formatWhen(routeWhen(route)),
+            routeNumber: route.routeNumber,
+            vehicleNumber: route.driver?.vehicleNumber || route.truck?.vehicleNumber || null,
+            vehicleType: route.driver?.vehicleType || route.truck?.vehicleType || null,
+            orderCount: 1,
+          });
+        });
+
+        const knownDriverKeys = new Set(
+          Array.from(driverRows.values()).map((row) => row.driverId || row.name)
+        );
+
+        (allHistory?.assessments ?? [])
+          .filter((assessment) => String(assessment.target).toUpperCase() === 'DRIVER')
+          .filter((assessment) => withinLastWeek(assessment.createdAt))
+          .forEach((assessment) => {
+            const name = assessment.targetUserName || assessment.targetUserId;
+            if (!name) return;
+            const identity = assessment.targetUserId || name;
+            if (knownDriverKeys.has(identity) || knownDriverKeys.has(name)) return;
+
+            const assessmentDay = dayKey(assessment.createdAt);
+            const sameDayOrders = visibleOrders.filter(
+              (order) => dayKey(orderWhen(order)) === assessmentDay
+            );
+            const hasInProgress = sameDayOrders.some((order) => workPhaseFromStatus(order.status) === 'in_progress');
+            const hasCompleted = sameDayOrders.some((order) => workPhaseFromStatus(order.status) === 'completed');
+            const phases = [
+              hasInProgress ? 'in_progress' : null,
+              hasCompleted ? 'completed' : null,
+            ].filter(Boolean);
+            const inferred =
+              phases.length > 0
+                ? phases
+                : [dayKey(assessment.createdAt) === dayKey(new Date()) ? 'in_progress' : 'completed'];
+
+            inferred.forEach((phase) => {
+              const matching = sameDayOrders.filter((order) => workPhaseFromStatus(order.status) === phase);
+              addDriverRow({
+                driverId: assessment.targetUserId,
+                name,
+                phase,
+                date: new Date(assessment.createdAt).toLocaleDateString(),
+                routeNumber: matching[0]?.route?.routeNumber || matching[0]?.batch?.batchNumber || null,
+                vehicleNumber: matching[0]?.truck?.vehicleNumber || null,
+                vehicleType: null,
+                orderCount: matching.length || 1,
+                rating: assessment.rating,
+              });
+            });
+          });
+
+        const mappedDrivers = Array.from(driverRows.values())
+          .map((row) => ({
+            ...row,
+            id: `${row.driverId || row.name}-${row.phase}-${row.date}`,
+            routeNumber: row.routes?.[0] || row.routeNumber || '—',
+            extraRoutes: Math.max(0, (row.routes?.length ?? 1) - 1),
+          }))
+          .sort((a, b) => {
+            if (a.phase !== b.phase) return a.phase === 'in_progress' ? -1 : 1;
+            return String(b.date).localeCompare(String(a.date));
+          });
 
         setAssessments(mappedAssessments);
         setTrucks(mappedTrucks);
@@ -87,19 +260,28 @@ const HistoryScreen = ({ navigation }) => {
     return drivers;
   }, [activeTab, assessments, trucks, drivers]);
 
+  const uniqueTruckCount = useMemo(
+    () => new Set(trucks.map((truck) => truck.truckId || truck.licensePlate)).size,
+    [trucks]
+  );
+  const uniqueDriverCount = useMemo(
+    () => new Set(drivers.map((driver) => driver.driverId || driver.name)).size,
+    [drivers]
+  );
+
   const summaryStats = useMemo(
     () => [
-      { id: 'a', label: 'Assessments', value: assessments.length, color: theme.colors.warning, icon: 'star' },
-      { id: 't', label: 'Truck Runs', value: trucks.length, color: theme.colors.success, icon: 'truck' },
+      { id: 'assessments', label: 'Assessments', value: assessments.length, color: theme.colors.warning, icon: 'star' },
+      { id: 'trucks', label: 'Trucks', value: uniqueTruckCount, color: theme.colors.success, icon: 'truck' },
       {
-        id: 'd',
-        label: 'Drivers Worked',
-        value: new Set(drivers.map((driver) => driver.name)).size,
+        id: 'drivers',
+        label: 'Drivers',
+        value: uniqueDriverCount,
         color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
         icon: 'profile',
       },
     ],
-    [assessments, trucks, drivers, theme]
+    [assessments, uniqueTruckCount, uniqueDriverCount, theme]
   );
 
   const renderStars = (rating) => {
@@ -115,7 +297,7 @@ const HistoryScreen = ({ navigation }) => {
       return (
         <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.itemCard}>
           <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
-            No records found in the last 7 days.
+            No records found for this tab.
           </Text>
         </Card>
       );
@@ -125,7 +307,7 @@ const HistoryScreen = ({ navigation }) => {
       return assessments.map((assessment) => (
         <Card variant={theme.isDarkMode ? "glass" : "default"} key={assessment.id} style={styles.itemCard}>
           <View style={styles.itemHeader}>
-            <View>
+            <View style={styles.itemHeaderLeft}>
               <Text style={[styles.itemType, { color: theme.colors.text.secondary }]}>
                 {assessment.type}
               </Text>
@@ -156,7 +338,7 @@ const HistoryScreen = ({ navigation }) => {
       return trucks.map((truck) => (
         <Card variant={theme.isDarkMode ? "glass" : "default"} key={truck.id} style={styles.itemCard}>
           <View style={styles.itemHeader}>
-            <View>
+            <View style={styles.itemHeaderLeft}>
               <Text style={[styles.itemTitle, { color: theme.colors.text.primary }]}>
                 {truck.licensePlate}
               </Text>
@@ -166,6 +348,16 @@ const HistoryScreen = ({ navigation }) => {
               <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
                 Truck Type: {truck.truckType}
               </Text>
+              {truck.driverName ? (
+                <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
+                  Driver: {truck.driverName}
+                </Text>
+              ) : null}
+              {truck.maxWeight != null || truck.maxVolume != null ? (
+                <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
+                  Capacity: {truck.maxWeight ?? '—'} kg / {truck.maxVolume ?? '—'} m³
+                </Text>
+              ) : null}
             </View>
             <View
               style={[
@@ -181,20 +373,44 @@ const HistoryScreen = ({ navigation }) => {
         </Card>
       ));
     } else {
-      return drivers.map((driver) => (
-        <Card variant={theme.isDarkMode ? "glass" : "default"} key={driver.id} style={styles.itemCard}>
-          <View style={styles.itemHeader}>
-            <View>
-              <Text style={[styles.itemTitle, { color: theme.colors.text.primary }]}>
-                {driver.name}
-              </Text>
-              <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
-                {driver.date} • Route: {driver.routeNumber}
-              </Text>
+      return drivers.map((driver) => {
+        const phase = DRIVER_PHASE[driver.phase] ?? DRIVER_PHASE.in_progress;
+        return (
+          <Card variant={theme.isDarkMode ? "glass" : "default"} key={driver.id} style={styles.itemCard}>
+            <View style={styles.itemHeader}>
+              <View style={styles.itemHeaderLeft}>
+                <Text style={[styles.itemTitle, { color: theme.colors.text.primary }]}>
+                  {driver.name}
+                </Text>
+                <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
+                  {driver.date}
+                  {driver.routeNumber && driver.routeNumber !== '—' ? ` • Route: ${driver.routeNumber}` : ''}
+                  {driver.extraRoutes > 0 ? ` +${driver.extraRoutes} more` : ''}
+                </Text>
+                <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
+                  {driver.phase === 'completed'
+                    ? `${driver.orderCount} completed order${driver.orderCount === 1 ? '' : 's'}`
+                    : `${driver.orderCount} in-progress order${driver.orderCount === 1 ? '' : 's'}`}
+                </Text>
+                {driver.vehicleNumber ? (
+                  <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
+                    Truck: {driver.vehicleNumber}
+                    {driver.vehicleType ? ` • ${driver.vehicleType}` : ''}
+                  </Text>
+                ) : null}
+                {driver.rating != null ? (
+                  <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
+                    Rated {driver.rating}/5
+                  </Text>
+                ) : null}
+              </View>
+              <View style={[styles.statusBadge, { backgroundColor: `${phase.color}20` }]}>
+                <Text style={[styles.statusText, { color: phase.color }]}>{phase.label}</Text>
+              </View>
             </View>
-          </View>
-        </Card>
-      ));
+          </Card>
+        );
+      });
     }
   };
 
@@ -227,26 +443,51 @@ const HistoryScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.summaryRow}>
-        {summaryStats.map((stat) => (
-          <Card variant={theme.isDarkMode ? "glass" : "default"} key={stat.id} style={styles.summaryCard}>
-            <View style={[styles.summaryIconWrap, { backgroundColor: `${stat.color}20` }]}>
-              <AppIcon name={stat.icon} size={20} color={stat.color} />
-            </View>
-            <Text style={[styles.summaryValue, { color: theme.colors.text.primary }]}>{stat.value}</Text>
-            <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]} numberOfLines={1}>
-              {stat.label}
-            </Text>
-          </Card>
-        ))}
+        {summaryStats.map((stat) => {
+          const selected = activeTab === stat.id;
+          return (
+            <Card
+              key={stat.id}
+              variant={theme.isDarkMode ? 'glass' : 'default'}
+              onPress={() => setActiveTab(stat.id)}
+              style={[
+                styles.summaryCard,
+                {
+                  borderWidth: 1.5,
+                  borderColor: selected
+                    ? `${stat.color}99`
+                    : theme.isDarkMode
+                      ? 'rgba(255,255,255,0.1)'
+                      : 'rgba(0,0,0,0.08)',
+                },
+              ]}
+            >
+              <View style={[styles.summaryIconWrap, { backgroundColor: `${stat.color}20` }]}>
+                <AppIcon name={stat.icon} size={20} color={stat.color} />
+              </View>
+              <Text style={[styles.summaryValue, { color: theme.colors.text.primary }]}>{stat.value}</Text>
+              <Text
+                style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}
+                numberOfLines={2}
+              >
+                {stat.label}
+              </Text>
+            </Card>
+          );
+        })}
       </View>
 
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'assessments' && {
-              borderBottomWidth: 2,
-              borderBottomColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
+            {
+              borderBottomColor:
+                activeTab === 'assessments'
+                  ? theme.isDarkMode
+                    ? theme.colors.teal.main
+                    : theme.colors.primary.main
+                  : 'transparent',
             },
           ]}
           onPress={() => setActiveTab('assessments')}
@@ -267,9 +508,13 @@ const HistoryScreen = ({ navigation }) => {
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'trucks' && {
-              borderBottomWidth: 2,
-              borderBottomColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
+            {
+              borderBottomColor:
+                activeTab === 'trucks'
+                  ? theme.isDarkMode
+                    ? theme.colors.teal.main
+                    : theme.colors.primary.main
+                  : 'transparent',
             },
           ]}
           onPress={() => setActiveTab('trucks')}
@@ -290,9 +535,13 @@ const HistoryScreen = ({ navigation }) => {
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'drivers' && {
-              borderBottomWidth: 2,
-              borderBottomColor: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main,
+            {
+              borderBottomColor:
+                activeTab === 'drivers'
+                  ? theme.isDarkMode
+                    ? theme.colors.teal.main
+                    : theme.colors.primary.main
+                  : 'transparent',
             },
           ]}
           onPress={() => setActiveTab('drivers')}
@@ -390,6 +639,7 @@ const styles = StyleSheet.create({
   headerSubtitle: { fontSize: 14 },
   summaryRow: {
     flexDirection: 'row',
+    alignItems: 'stretch',
     paddingHorizontal: 20,
     gap: 10,
     marginBottom: 8,
@@ -397,9 +647,11 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    paddingVertical: 10,
+    minHeight: 112,
+    paddingVertical: 12,
     paddingHorizontal: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   summaryIconWrap: {
     width: 30,
@@ -410,18 +662,27 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   summaryIcon: { fontSize: 14 },
-  summaryValue: { fontSize: 18, fontWeight: '700', marginBottom: 2 },
-  summaryLabel: { fontSize: 11, fontWeight: '500' },
+  summaryValue: { fontSize: 18, fontWeight: '700', marginBottom: 4, textAlign: 'center' },
+  summaryLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 14,
+    minHeight: 14,
+  },
   tabs: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: 'rgba(148, 163, 184, 0.25)',
+    zIndex: 1,
   },
   tab: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
+    borderBottomWidth: 2,
+    marginBottom: -1,
   },
   tabText: { fontSize: 15, fontWeight: '500' },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 120, paddingTop: 16, zIndex: 1 },
@@ -430,16 +691,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 0,
+  },
+  itemHeaderLeft: {
+    flex: 1,
+    paddingRight: 12,
   },
   itemType: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   itemTitle: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
   itemMeta: { fontSize: 13, marginBottom: 2 },
-  ratingContainer: { alignItems: 'flex-end' },
+  ratingContainer: { alignItems: 'flex-end', flexShrink: 0 },
   ratingText: { fontSize: 14, marginBottom: 4 },
   ratingValue: { fontSize: 14, fontWeight: '700' },
   comments: { fontSize: 13, fontStyle: 'italic', marginTop: 8 },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    flexShrink: 0,
+    alignSelf: 'flex-start',
+  },
   statusText: { fontSize: 12, fontWeight: '600' },
   // Light mode arch strips with green colors
   lightModeArchStrip1: {

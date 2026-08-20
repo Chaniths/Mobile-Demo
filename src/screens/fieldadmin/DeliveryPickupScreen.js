@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,30 +11,20 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
 import AppIcon from '../../components/common/AppIcon';
+import { selectCurrentRouteHandoffs } from '../../utils/fieldAdminRoutes';
+import { orderNeedsQualityCheck } from '../../utils/fieldAdminQualityFlow';
 
-const DeliveryPickupScreen = ({ navigation, route }) => {
-  const { theme } = useTheme();
-  const initialOrder = route?.params?.order ?? null;
-  const [actionType, setActionType] = useState(
-    initialOrder?.currentPhase === 'DROPOFF' ? 'delivery' : 'pickup'
-  );
-  const [signature, setSignature] = useState('');
-  const [notes, setNotes] = useState('');
-  const [orders, setOrders] = useState(initialOrder ? [initialOrder] : []);
-  const [selectedOrderId, setSelectedOrderId] = useState(initialOrder?.id ?? null);
-  const [loading, setLoading] = useState(!initialOrder);
-  const [submitting, setSubmitting] = useState(false);
-  const [isPickerVisible, setIsPickerVisible] = useState(false);
-  const [orderSearch, setOrderSearch] = useState('');
-  const [quickSearch, setQuickSearch] = useState('');
+const PHASE_RANK = { PICKUP: 0, DROPOFF: 1, COMPLETED: 2 };
 
-  const flattenHandoffs = (handoffs) =>
-    (handoffs ?? []).flatMap((handoff) =>
+const flattenHandoffs = (handoffs) =>
+  (handoffs ?? [])
+    .flatMap((handoff) =>
       (handoff.orders ?? []).map((order) => ({
         id: order.id,
         orderNumber: order.orderNumber,
@@ -47,13 +37,41 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
         items: order.items,
         routeNumber: handoff.route?.routeNumber ?? handoff.batch?.batchNumber ?? '',
       }))
-    );
+    )
+    .sort((a, b) => (PHASE_RANK[a.currentPhase] ?? 9) - (PHASE_RANK[b.currentPhase] ?? 9));
 
-  const loadOrders = async () => {
+const DeliveryPickupScreen = ({ navigation, route }) => {
+  const { theme } = useTheme();
+  const initialOrder = route?.params?.order ?? null;
+  const [actionType, setActionType] = useState(
+    initialOrder?.currentPhase === 'DROPOFF' ? 'delivery' : 'pickup'
+  );
+  const [signature, setSignature] = useState('');
+  const [notes, setNotes] = useState('');
+  const [orders, setOrders] = useState(() => {
+    if (!initialOrder) return [];
+    const hasInspectableItems =
+      Array.isArray(initialOrder.items) &&
+      initialOrder.items.some((item) => item && typeof item === 'object');
+    return [
+      {
+        ...initialOrder,
+        items: hasInspectableItems ? initialOrder.items : (initialOrder.raw?.items ?? []),
+      },
+    ];
+  });
+  const [selectedOrderId, setSelectedOrderId] = useState(initialOrder?.id ?? null);
+  const [loading, setLoading] = useState(!initialOrder);
+  const [submitting, setSubmitting] = useState(false);
+  const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const [orderSearch, setOrderSearch] = useState('');
+  const [quickSearch, setQuickSearch] = useState('');
+
+  const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
       const handoffs = await fieldAdminApi.getRouteHandoffs();
-      const flattened = flattenHandoffs(handoffs);
+      const flattened = flattenHandoffs(selectCurrentRouteHandoffs(handoffs));
       setOrders(flattened);
       setSelectedOrderId((currentId) => {
         if (currentId && flattened.some((entry) => entry.id === currentId)) return currentId;
@@ -67,11 +85,13 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [initialOrder?.id]);
 
-  useEffect(() => {
-    loadOrders();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadOrders();
+    }, [loadOrders])
+  );
 
   const selectedOrder = useMemo(
     () => orders.find((entry) => entry.id === selectedOrderId) || null,
@@ -86,14 +106,17 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
     const isPickupPhase = !isDelivered && selectedOrder.currentPhase !== 'DROPOFF' && status !== 'IN_TRANSIT';
     const pickupStopId = selectedOrder.pickup?.nextAction?.stopId ?? null;
     const deliveryStopId = selectedOrder.dropoff?.id ?? null;
+    const needsQualityCheck =
+      selectedOrder.needsQualityCheck === true || orderNeedsQualityCheck(selectedOrder);
     const hasPickupGate = selectedOrder.pickup?.nextAction?.canComplete !== undefined;
-    const canPickup = hasPickupGate
+    const canPickup = !needsQualityCheck && (hasPickupGate
       ? Boolean(selectedOrder.pickup?.nextAction?.canComplete)
-      : isPickupPhase;
+      : isPickupPhase);
+    const pickupComplete = !isDelivered && !isPickupPhase;
     const hasDeliveryGate = selectedOrder.dropoff?.canComplete !== undefined;
-    const canDeliver = hasDeliveryGate
+    const canDeliver = pickupComplete && (hasDeliveryGate
       ? Boolean(selectedOrder.dropoff?.canComplete)
-      : selectedOrder.currentPhase === 'DROPOFF' || status === 'IN_TRANSIT';
+      : selectedOrder.currentPhase === 'DROPOFF' || status === 'IN_TRANSIT');
     return {
       id: selectedOrder.id,
       orderId: selectedOrder.orderNumber ?? selectedOrder.id,
@@ -104,15 +127,20 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
       currentPhase: isDelivered ? 'COMPLETED' : isPickupPhase ? 'PICKUP' : 'DROPOFF',
       status,
       isDelivered,
+      needsQualityCheck,
       routeNumber: selectedOrder.routeNumber ?? '',
       stopId: isPickupPhase ? pickupStopId : deliveryStopId,
       canComplete: isDelivered ? false : isPickupPhase ? canPickup : canDeliver,
       blockedReason: isDelivered
         ? 'This order is already delivered'
-        : isPickupPhase
-          ? selectedOrder.pickup?.nextAction?.blockedReason ?? selectedOrder.pickup?.sellerStops?.[0]?.blockedReason
-          : selectedOrder.dropoff?.blockedReason,
-      items: selectedOrder.items ?? [],
+        : isPickupPhase && needsQualityCheck
+          ? 'Inspect all products on this order before confirming pickup.'
+          : isPickupPhase
+            ? selectedOrder.pickup?.nextAction?.blockedReason ?? selectedOrder.pickup?.sellerStops?.[0]?.blockedReason
+            : pickupComplete
+              ? selectedOrder.dropoff?.blockedReason
+              : 'Complete pickup before marking delivery.',
+      items: Array.isArray(selectedOrder.items) ? selectedOrder.items : [],
     };
   }, [selectedOrder]);
 
@@ -154,6 +182,20 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
     }
     if (!actionType) {
       alert('Please select an action');
+      return;
+    }
+    if (order.currentPhase === 'PICKUP' && actionType === 'pickup' && order.needsQualityCheck) {
+      Alert.alert(
+        'Inspect quality first',
+        'Confirm quality for every product on this order before pickup.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Inspect Quality',
+            onPress: () => navigation.navigate('QualityConfirm', { order: selectedOrder }),
+          },
+        ]
+      );
       return;
     }
     if (order.currentPhase === 'PICKUP' && actionType === 'delivery') {
@@ -307,9 +349,6 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Select Action
         </Text>
-        <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-          Select Action
-        </Text>
         <View style={styles.actionButtons}>
           {order?.isDelivered || order?.currentPhase !== 'PICKUP' ? (
             <TouchableOpacity
@@ -321,12 +360,16 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
                     actionType === 'delivery' && !order?.isDelivered
                       ? theme.colors.success
                       : 'transparent',
-                  opacity: order?.isDelivered ? 0.45 : 1,
+                  opacity: order?.isDelivered || order?.currentPhase === 'PICKUP' ? 0.45 : 1,
                 },
               ]}
               onPress={() => {
                 if (order?.isDelivered) {
                   Alert.alert('Already delivered', 'This order is already delivered.');
+                  return;
+                }
+                if (order?.currentPhase === 'PICKUP') {
+                  Alert.alert('Pickup required', 'Confirm pickup before marking delivery.');
                   return;
                 }
                 setActionType('delivery');
@@ -385,7 +428,15 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
           </Text>
         ) : null}
 
-        {actionType && !order?.isDelivered && (
+        {order?.currentPhase === 'PICKUP' && order?.needsQualityCheck && !order?.isDelivered ? (
+          <Button
+            title="Inspect Quality First"
+            onPress={() => navigation.navigate('QualityConfirm', { order: selectedOrder })}
+            style={styles.submitButton}
+          />
+        ) : null}
+
+        {actionType && !order?.isDelivered && !(order?.currentPhase === 'PICKUP' && order?.needsQualityCheck) && (
           <>
             <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
               Customer Signature / Confirmation
@@ -478,7 +529,9 @@ const DeliveryPickupScreen = ({ navigation, route }) => {
                   >
                     <View>
                       <Text style={[styles.modalOrderNumber, { color: theme.colors.text.primary }]}>{entry.orderNumber}</Text>
-                      <Text style={[styles.modalOrderMeta, { color: theme.colors.text.secondary }]}>{entry.customer}</Text>
+                      <Text style={[styles.modalOrderMeta, { color: theme.colors.text.secondary }]}>
+                        {entry.customer} • {entry.currentPhase === 'PICKUP' ? 'Pickup' : entry.currentPhase === 'DROPOFF' ? 'Dropoff' : 'Done'}
+                      </Text>
                     </View>
                     {active ? <Text style={[styles.modalSelectedTick, { color: theme.colors.primary.main }]}>✓</Text> : null}
                   </TouchableOpacity>

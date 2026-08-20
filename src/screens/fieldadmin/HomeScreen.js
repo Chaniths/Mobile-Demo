@@ -14,6 +14,7 @@ import Card from '../../components/common/Card';
 import Avatar from '../../components/common/Avatar';
 import fieldAdminApi from '../../api/fieldAdminApi';
 import AppIcon from '../../components/common/AppIcon';
+import { selectCurrentRouteHandoffs, isCurrentBatchOrder } from '../../utils/fieldAdminRoutes';
 
 const HomeScreen = ({ navigation }) => {
   const { theme } = useTheme();
@@ -21,6 +22,8 @@ const HomeScreen = ({ navigation }) => {
   const [overview, setOverview] = useState(null);
   const [pendingTasks, setPendingTasks] = useState([]);
   const [inTransitCount, setInTransitCount] = useState(0);
+  // null means "not computed yet" so the tile can fall back to the overview count.
+  const [routesTodayCount, setRoutesTodayCount] = useState(null);
 
   const [loadError, setLoadError] = useState('');
 
@@ -39,34 +42,44 @@ const HomeScreen = ({ navigation }) => {
         }
 
         try {
-          const [inTransitOrders, scheduledOrders] = await Promise.all([
+          const [inTransitOrders, deliveredOrders] = await Promise.all([
             fieldAdminApi.getOrdersByTab('in_transit'),
-            fieldAdminApi.getOrdersByTab('scheduled'),
+            fieldAdminApi.getOrdersByTab('delivered'),
           ]);
           if (cancelled) return;
           const inTransit = Array.isArray(inTransitOrders) ? inTransitOrders : [];
-          const scheduled = Array.isArray(scheduledOrders) ? scheduledOrders : [];
+          const delivered = Array.isArray(deliveredOrders) ? deliveredOrders : [];
           setInTransitCount(inTransit.length);
-          const mergedOrders = [...inTransit, ...scheduled];
-          const dedupedOrders = mergedOrders.filter(
-            (order, index, array) => array.findIndex((entry) => entry.id === order.id) === index
-          );
-          const mappedPending = dedupedOrders
-            .filter((order) => order.status !== 'DELIVERED')
+          const mappedCompleted = delivered
+            .filter((order) => {
+              const status = String(order.status ?? '').toUpperCase();
+              if (status !== 'DELIVERED' && status !== 'COMPLETED') return false;
+              return isCurrentBatchOrder(order);
+            })
             .slice(0, 6)
             .map((order) => ({
               id: order.id,
-              type: 'DELIVERY',
-              orderId: order.orderNumber ? `#${order.orderNumber}` : '#TASK',
+              type: 'COMPLETED',
+              orderId: order.orderNumber ? `#${order.orderNumber}` : '#ORDER',
               customer: order.customer || null,
               address: order.address || null,
               route: order.route?.routeNumber || null,
-              items: order.totalAmount ? `Total: ${order.totalAmount}` : null,
+              items: order.totalAmount ? `Total: LKR ${order.totalAmount}` : null,
               status: order.status,
             }));
-          setPendingTasks(mappedPending);
+          setPendingTasks(mappedCompleted);
         } catch (error) {
           console.error('Failed to load field admin orders:', error?.message || error);
+        }
+
+        try {
+          // Counted from the same handoffs the Route Orders screen lists, so the tile
+          // always equals the number of route cards the field admin can actually open.
+          const handoffs = await fieldAdminApi.getRouteHandoffs();
+          if (cancelled) return;
+          setRoutesTodayCount(selectCurrentRouteHandoffs(handoffs).length);
+        } catch (error) {
+          console.error('Failed to load field admin routes:', error?.message || error);
         }
       };
 
@@ -82,9 +95,15 @@ const HomeScreen = ({ navigation }) => {
       { id: '1', label: 'Orders Assigned', value: String(overview?.assignedOrders ?? 0), icon: 'orders', color: '#3b82f6' },
       { id: '2', label: 'Assessments', value: String(overview?.assessments ?? 0), icon: 'check', color: '#22c55e' },
       { id: '3', label: 'In Transit', value: String(inTransitCount), icon: 'truck', color: '#f59e0b' },
-      { id: '4', label: 'Routes Today', value: String(overview?.routesToday ?? 0), icon: 'clipboard', color: '#8b5cf6' },
+      {
+        id: '4',
+        label: 'Routes Today',
+        value: String(routesTodayCount ?? overview?.routesToday ?? 0),
+        icon: 'clipboard',
+        color: '#8b5cf6',
+      },
     ],
-    [overview, inTransitCount]
+    [overview, inTransitCount, routesTodayCount]
   );
 
   const quickActions = [
@@ -95,14 +114,6 @@ const HomeScreen = ({ navigation }) => {
       icon: 'check',
       color: '#22c55e',
       screen: 'QualityConfirm',
-    },
-    {
-      id: '3',
-      title: 'Mark Delivery',
-      subtitle: 'Complete order handover',
-      icon: 'orders',
-      color: '#3b82f6',
-      screen: 'DeliveryPickup',
     },
     {
       id: '4',
@@ -229,13 +240,13 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Pending Tasks */}
+        {/* Completed Orders */}
         <View style={styles.tasksSection}>
           <View style={styles.tasksHeader}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-              Pending Tasks
+              Completed Orders
             </Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('OrdersTab')}>
               <Text style={[styles.viewAll, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
                 View All
               </Text>
@@ -244,7 +255,7 @@ const HomeScreen = ({ navigation }) => {
           {pendingTasks.length === 0 ? (
             <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.taskCard}>
               <Text style={[styles.taskDetail, { color: theme.colors.text.secondary }]}>
-                No pending delivery tasks right now.
+                No completed orders yet.
               </Text>
             </Card>
           ) : null}

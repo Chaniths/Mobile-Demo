@@ -6,8 +6,16 @@ export const itemNeedsInspection = (item) => {
   return !INSPECTED_RESULTS.has(String(status).toUpperCase());
 };
 
-export const orderNeedsQualityCheck = (order) =>
-  (order?.items ?? []).some(itemNeedsInspection);
+const asInspectableItems = (items) =>
+  Array.isArray(items)
+    ? items.filter((item) => item && typeof item === 'object' && !Array.isArray(item))
+    : [];
+
+export const orderNeedsQualityCheck = (order) => {
+  const items = asInspectableItems(order?.items);
+  const fallbackItems = items.length > 0 ? items : asInspectableItems(order?.raw?.items);
+  return fallbackItems.some(itemNeedsInspection);
+};
 
 export const pendingQualityOrders = (orders) =>
   (Array.isArray(orders) ? orders : []).filter(orderNeedsQualityCheck);

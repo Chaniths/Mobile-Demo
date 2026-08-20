@@ -10,7 +10,6 @@ import QualityConfirmScreen from '../screens/fieldadmin/QualityConfirmScreen';
 import SellerRejectScreen from '../screens/fieldadmin/SellerRejectScreen';
 import RefundInitiationScreen from '../screens/fieldadmin/RefundInitiationScreen';
 import RouteReassessmentScreen from '../screens/fieldadmin/RouteReassessmentScreen';
-import DeliveryPickupScreen from '../screens/fieldadmin/DeliveryPickupScreen';
 import AssessmentScreen from '../screens/fieldadmin/AssessmentScreen';
 import DamageReportScreen from '../screens/fieldadmin/DamageReportScreen';
 import TruckCapacityScreen from '../screens/fieldadmin/TruckCapacityScreen';
@@ -31,7 +30,6 @@ const FieldAdminStack = () => {
       <Stack.Screen name="SellerReject" component={SellerRejectScreen} />
       <Stack.Screen name="RefundInitiation" component={RefundInitiationScreen} />
       <Stack.Screen name="RouteReassessment" component={RouteReassessmentScreen} />
-      <Stack.Screen name="DeliveryPickup" component={DeliveryPickupScreen} />
       <Stack.Screen name="Assessment" component={AssessmentScreen} />
       <Stack.Screen name="DamageReport" component={DamageReportScreen} />
       <Stack.Screen name="TruckCapacity" component={TruckCapacityScreen} />
@@ -48,7 +46,10 @@ const RoutesStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="RouteOrders">
       <Stack.Screen name="RouteOrders" component={RouteOrdersScreen} />
-      <Stack.Screen name="DeliveryPickup" component={DeliveryPickupScreen} />
+      <Stack.Screen name="QualityConfirm" component={QualityConfirmScreen} />
+      <Stack.Screen name="SellerReject" component={SellerRejectScreen} />
+      <Stack.Screen name="DamageReport" component={DamageReportScreen} />
+      <Stack.Screen name="RefundInitiation" component={RefundInitiationScreen} />
     </Stack.Navigator>
   );
 };
@@ -58,7 +59,6 @@ const OrdersStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Orders">
       <Stack.Screen name="Orders" component={OrdersScreen} />
-      <Stack.Screen name="DeliveryPickup" component={DeliveryPickupScreen} />
     </Stack.Navigator>
   );
 };
@@ -110,7 +110,7 @@ const FieldAdminNavigator = () => {
         name="RoutesTab"
         component={RoutesStack}
         options={{
-          tabBarLabel: 'Routes',
+          tabBarLabel: 'Quality',
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="clipboard" color={color} focused={focused} />
           ),

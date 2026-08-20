@@ -5,7 +5,8 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
@@ -14,6 +15,7 @@ import EmptyState from '../../components/common/EmptyState';
 import AppIcon from '../../components/common/AppIcon';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
+import { isCurrentBatchOrder } from '../../utils/fieldAdminRoutes';
 
 const statusColors = {
   ASSIGNED: '#3b82f6',
@@ -41,10 +43,33 @@ const statusLabels = {
   FAILED: 'Failed',
 };
 
-const OrdersScreen = ({ navigation }) => {
+const phaseLabels = {
+  AWAITING_SELLER_PICKUP: 'Awaiting seller pickup',
+  AWAITING_HUB: 'Awaiting hub',
+  IN_TRANSIT: 'In transit',
+  DELIVERED: 'Delivered',
+};
+
+const inspectionLabels = {
+  APPROVED: 'Approved',
+  PARTIAL: 'Partial',
+  REJECTED: 'Rejected',
+};
+
+const formatLkr = (value) => `LKR ${Number(value ?? 0).toFixed(2)}`;
+
+const formatWhen = (value) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString();
+};
+
+const OrdersScreen = () => {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('all');
   const [orders, setOrders] = useState([]);
+  const [detailOrder, setDetailOrder] = useState(null);
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -74,27 +99,25 @@ const OrdersScreen = ({ navigation }) => {
     loadOrders();
   }, [activeTab]);
 
-  const filteredOrders = useMemo(
-    () =>
-      activeTab === 'all'
-        ? orders
-        : orders.filter((order) => {
-            if (activeTab === 'scheduled') {
-              return order.status === 'ASSIGNED' || order.status === 'BATCHED';
-            }
-            if (activeTab === 'in_transit') {
-              return order.status === 'IN_TRANSIT';
-            }
-            if (activeTab === 'delivered') {
-              return order.status === 'DELIVERED';
-            }
-            if (activeTab === 'pending') {
-              return ['PENDING', 'PAID', 'PAYMENT_PENDING', 'PAYMENT_FAILED'].includes(order.status);
-            }
-            return true;
-          }),
-    [activeTab, orders]
-  );
+  const filteredOrders = useMemo(() => {
+    const currentOrders = orders.filter((entry) => isCurrentBatchOrder(entry.raw));
+    if (activeTab === 'all') return currentOrders;
+    return currentOrders.filter((order) => {
+      if (activeTab === 'scheduled') {
+        return order.status === 'ASSIGNED' || order.status === 'BATCHED';
+      }
+      if (activeTab === 'in_transit') {
+        return order.status === 'IN_TRANSIT';
+      }
+      if (activeTab === 'delivered') {
+        return order.status === 'DELIVERED';
+      }
+      if (activeTab === 'pending') {
+        return ['PENDING', 'PAID', 'PAYMENT_PENDING', 'PAYMENT_FAILED'].includes(order.status);
+      }
+      return true;
+    });
+  }, [activeTab, orders]);
 
   const renderOrder = ({ item }) => (
     <Card variant={theme.isDarkMode ? "glass" : "default"} style={styles.orderCard}>
@@ -167,14 +190,14 @@ const OrdersScreen = ({ navigation }) => {
           {item.items} items
         </Text>
         <Text style={[styles.orderTotal, { color: theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main }]}>
-          ${item.total.toFixed(2)}
+          LKR {item.total.toFixed(2)}
         </Text>
       </View>
 
       <View style={styles.orderActions}>
         <Button
           title="View Details"
-          onPress={() => navigation.navigate('DeliveryPickup', { order: item })}
+          onPress={() => setDetailOrder(item)}
           variant="outline"
           style={styles.actionButton}
         />
@@ -252,7 +275,133 @@ const OrdersScreen = ({ navigation }) => {
           />
         }
       />
+      <OrderDetailModal
+        visible={Boolean(detailOrder)}
+        order={detailOrder}
+        theme={theme}
+        onClose={() => setDetailOrder(null)}
+      />
     </SafeAreaView>
+  );
+};
+
+const DetailRow = ({ label, value, theme }) => (
+  <View style={styles.detailRow}>
+    <Text style={styles.detailLabel}>{label}</Text>
+    <Text style={[styles.detailValue, { color: theme.isDarkMode ? '#f8fafc' : '#0f172a' }]}>
+      {value || '—'}
+    </Text>
+  </View>
+);
+
+const OrderDetailModal = ({ visible, order, theme, onClose }) => {
+  const raw = order?.raw ?? order ?? {};
+  const status = raw.status ?? order?.status;
+  const phase = raw.fulfillmentPhase;
+  const lineItems = Array.isArray(raw.items) ? raw.items : [];
+  const accent = theme.isDarkMode ? theme.colors.teal.main : theme.colors.primary.main;
+
+  return (
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
+      <View style={styles.modalRoot}>
+        <TouchableOpacity style={styles.modalBlur} activeOpacity={1} onPress={onClose} />
+        <Card
+          variant="default"
+          elevation="lg"
+          style={[
+            styles.modalCard,
+            {
+              backgroundColor: theme.isDarkMode ? 'rgba(8, 16, 22, 0.97)' : '#ffffff',
+              borderColor: theme.isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.08)',
+            },
+          ]}
+        >
+          <View style={styles.modalHeader}>
+            <View style={styles.modalHeaderLeft}>
+              <Text style={[styles.modalEyebrow, { color: theme.isDarkMode ? '#94a3b8' : '#64748b' }]}>
+                Order status
+              </Text>
+              <Text style={[styles.modalTitle, { color: theme.isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                {order?.orderId ?? (raw.orderNumber ? `#${raw.orderNumber}` : 'Order')}
+              </Text>
+            </View>
+            <View style={[styles.statusBadge, { backgroundColor: `${statusColors[status] ?? '#64748b'}20` }]}>
+              <Text style={[styles.statusText, { color: statusColors[status] ?? '#64748b' }]}>
+                {statusLabels[status] ?? status ?? 'Unknown'}
+              </Text>
+            </View>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false} style={styles.modalScroll}>
+            <Text style={[styles.modalSection, { color: accent }]}>Fulfillment</Text>
+            <DetailRow theme={theme} label="Phase" value={phaseLabels[phase] ?? phase} />
+            <DetailRow theme={theme} label="Stop" value={raw.stopStatus} />
+            <DetailRow theme={theme} label="Placed" value={formatWhen(raw.placedAt)} />
+            <DetailRow theme={theme} label="Delivered" value={raw.deliveredAt ? formatWhen(raw.deliveredAt) : 'Not yet'} />
+
+            <Text style={[styles.modalSection, { color: accent }]}>Customer</Text>
+            <DetailRow theme={theme} label="Name" value={raw.customer ?? order?.customer} />
+            <DetailRow theme={theme} label="Address" value={raw.address ?? order?.address} />
+            <DetailRow theme={theme} label="Email" value={raw.customerEmail} />
+
+            <Text style={[styles.modalSection, { color: accent }]}>Assignment</Text>
+            <DetailRow theme={theme} label="Route" value={raw.route?.routeNumber ?? order?.route} />
+            <DetailRow theme={theme} label="Driver" value={raw.driver?.name ?? order?.driver} />
+            <DetailRow theme={theme} label="Truck" value={raw.truck?.vehicleNumber} />
+            <DetailRow theme={theme} label="ETA" value={order?.eta} />
+
+            <Text style={[styles.modalSection, { color: accent }]}>Items</Text>
+            {lineItems.length === 0 ? (
+              <Text style={[styles.modalEmptyItems, { color: theme.isDarkMode ? '#94a3b8' : '#64748b' }]}>
+                No line items on this order.
+              </Text>
+            ) : (
+              lineItems.map((item) => {
+                const inspect = String(item.inspectionStatus ?? '').toUpperCase();
+                const qty = `${item.quantity ?? 0} ${item.unit ?? ''}`.trim();
+                const lineTotal = Number(item.quantity ?? 0) * Number(item.unitPrice ?? 0);
+                return (
+                  <View
+                    key={item.id}
+                    style={[
+                      styles.itemRow,
+                      {
+                        borderColor: theme.isDarkMode ? 'rgba(255,255,255,0.14)' : 'rgba(15,23,42,0.1)',
+                        backgroundColor: theme.isDarkMode ? 'rgba(255,255,255,0.04)' : '#f8fafc',
+                      },
+                    ]}
+                  >
+                    <View style={styles.itemRowTop}>
+                      <Text style={[styles.itemName, { color: theme.isDarkMode ? '#ffffff' : '#0f172a' }]}>
+                        {item.name ?? 'Item'}
+                      </Text>
+                      <Text style={[styles.itemPrice, { color: accent }]}>{formatLkr(lineTotal)}</Text>
+                    </View>
+                    <Text style={[styles.itemMeta, { color: theme.isDarkMode ? '#cbd5e1' : '#475569' }]}>
+                      {qty} · {formatLkr(item.unitPrice)} each
+                    </Text>
+                    <Text style={[styles.itemMeta, { color: theme.isDarkMode ? '#cbd5e1' : '#475569' }]}>
+                      Quality: {inspectionLabels[inspect] ?? (inspect || 'Not inspected')}
+                    </Text>
+                  </View>
+                );
+              })
+            )}
+
+            <View style={styles.modalTotalRow}>
+              <Text style={[styles.modalTotalLabel, { color: theme.isDarkMode ? '#cbd5e1' : '#475569' }]}>
+                Order total
+              </Text>
+              <Text style={[styles.modalTotalValue, { color: accent }]}>
+                {formatLkr(raw.totalAmount ?? order?.total)}
+              </Text>
+            </View>
+          </ScrollView>
+
+          <Button title="Close" onPress={onClose} variant="outline" style={styles.modalClose} />
+        </Card>
+      </View>
+    </Modal>
   );
 };
 
@@ -432,6 +581,92 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(34, 197, 94, 0.3)',
     opacity: 0.6,
   },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 48,
+  },
+  modalBlur: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.82)',
+  },
+  modalCard: {
+    maxHeight: '88%',
+    padding: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    zIndex: 2,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    gap: 12,
+  },
+  modalHeaderLeft: { flex: 1 },
+  modalEyebrow: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modalScroll: { marginBottom: 8 },
+  modalSection: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginTop: 14,
+    marginBottom: 6,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  detailLabel: {
+    width: 88,
+    fontSize: 13,
+    color: '#94a3b8',
+    fontWeight: '600',
+  },
+  detailValue: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  modalEmptyItems: { fontSize: 13, marginBottom: 8 },
+  itemRow: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  itemRowTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  itemName: { fontSize: 14, fontWeight: '700', flex: 1 },
+  itemPrice: { fontSize: 13, fontWeight: '700' },
+  itemMeta: { fontSize: 12, marginTop: 4 },
+  modalTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  modalTotalLabel: { fontSize: 13, fontWeight: '600' },
+  modalTotalValue: { fontSize: 18, fontWeight: '700' },
+  modalClose: { marginTop: 8 },
 });
 
 export default OrdersScreen;

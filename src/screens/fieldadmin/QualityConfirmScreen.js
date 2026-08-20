@@ -16,7 +16,14 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import fieldAdminApi from '../../api/fieldAdminApi';
 import FieldAdminFlowStepper from '../../components/common/FieldAdminFlowStepper';
-import { buildQualityFlow, FLOW_STEPS, itemNeedsInspection, pendingQualityOrders } from '../../utils/fieldAdminQualityFlow';
+import {
+  buildQualityFlow,
+  FLOW_STEPS,
+  itemNeedsInspection,
+  pendingQualityOrders,
+} from '../../utils/fieldAdminQualityFlow';
+import { getApiErrorMessage } from '../../utils/mediaUrl';
+import { selectCurrentRouteHandoffs } from '../../utils/fieldAdminRoutes';
 
 const mergeOrdersById = (...orderLists) => {
   const merged = new Map();
@@ -56,8 +63,24 @@ const flattenHandoffsToQualityOrders = (handoffs) =>
     )
   );
 
+const qualityOrderFromNav = (order, handoff) => {
+  if (!order?.id) return null;
+  return (
+    flattenHandoffsToQualityOrders([
+      {
+        orders: [order],
+        route: handoff?.route ?? { routeNumber: order.routeNumber ?? order.route?.routeNumber },
+        batch: handoff?.batch ?? {},
+        plannedStopOrder: handoff?.plannedStopOrder ?? [],
+      },
+    ])[0] ?? null
+  );
+};
+
 const QualityConfirmScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
+  const initialOrder = route?.params?.order ?? null;
+  const initialHandoff = route?.params?.handoff ?? null;
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [notes, setNotes] = useState('');
   const [partialQuantities, setPartialQuantities] = useState({});
@@ -73,16 +96,24 @@ const QualityConfirmScreen = ({ navigation, route }) => {
       try {
         setLoading(true);
         const handoffs = await fieldAdminApi.getRouteHandoffs();
-        const pendingOrders = pendingQualityOrders(
-          flattenHandoffsToQualityOrders(handoffs)
-        );
-        setOrders(pendingOrders);
+        const currentHandoffs = selectCurrentRouteHandoffs(handoffs);
+        const fromHandoffs = flattenHandoffsToQualityOrders(currentHandoffs);
+        const focused =
+          (initialOrder?.id && fromHandoffs.find((entry) => entry.id === initialOrder.id)) ||
+          qualityOrderFromNav(initialOrder, initialHandoff);
+        const pendingOrders = pendingQualityOrders(fromHandoffs);
+        const listed = mergeOrdersById(focused ? [focused] : [], pendingOrders);
+        setOrders(listed);
         setSelectedOrderId((currentId) => {
-          if (currentId && pendingOrders.some((entry) => entry.id === currentId)) return currentId;
-          return pendingOrders[0]?.id ?? null;
+          if (focused?.id && listed.some((entry) => entry.id === focused.id)) return focused.id;
+          if (currentId && listed.some((entry) => entry.id === currentId)) return currentId;
+          return listed[0]?.id ?? null;
         });
       } catch (error) {
-        Alert.alert('Error', 'Failed to load quality-check orders.');
+        Alert.alert(
+          'Error',
+          getApiErrorMessage(error, 'Failed to load quality-check orders.')
+        );
       } finally {
         setLoading(false);
       }
@@ -97,20 +128,24 @@ const QualityConfirmScreen = ({ navigation, route }) => {
 
   const order = useMemo(() => {
     if (!selectedOrder) return null;
+    const catalog = Array.isArray(selectedOrder.items) ? selectedOrder.items : [];
+    const toLine = (item) => ({
+      id: item.id,
+      name: item.name,
+      quantity: `${item.quantity} ${item.unit}`,
+      quantityValue: item.quantity,
+      quantityUnit: item.unit,
+      unitPrice: Number(item.unitPrice ?? 0),
+      inspectionStatus: item.inspectionStatus ?? null,
+    });
     return {
       id: selectedOrder.id,
       orderId: selectedOrder.orderNumber ?? selectedOrder.id,
       customer: selectedOrder.customer ?? 'Customer',
       routeNumber: selectedOrder.route?.routeNumber ?? '-',
       date: selectedOrder.placedAt ? new Date(selectedOrder.placedAt).toLocaleDateString() : '-',
-      items: (selectedOrder.items ?? []).filter(itemNeedsInspection).map((item) => ({
-        id: item.id,
-        name: item.name,
-        quantity: `${item.quantity} ${item.unit}`,
-        quantityValue: item.quantity,
-        quantityUnit: item.unit,
-        unitPrice: Number(item.unitPrice ?? 0),
-      })),
+      items: catalog.filter(itemNeedsInspection).map(toLine),
+      inspectedItems: catalog.filter((item) => !itemNeedsInspection(item)).map(toLine),
       totalAmount: Number(selectedOrder.totalAmount ?? 0),
     };
   }, [selectedOrder]);
@@ -667,6 +702,24 @@ const QualityConfirmScreen = ({ navigation, route }) => {
           );
         })}
 
+        {(order.inspectedItems ?? []).length > 0 ? (
+          <>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
+              Already inspected
+            </Text>
+            {order.inspectedItems.map((item) => (
+              <Card variant={theme.isDarkMode ? 'glass' : 'default'} key={`done-${item.id}`} style={styles.productCard}>
+                <Text style={[styles.productName, { color: theme.colors.text.primary }]}>{item.name}</Text>
+                <Text style={[styles.productQuantity, { color: theme.colors.text.secondary }]}>
+                  {item.quantity} · {item.inspectionStatus ?? 'Recorded'}
+                </Text>
+              </Card>
+            ))}
+          </>
+        ) : null}
+
+        {order.items.length > 0 ? (
+        <>
         {/* Notes */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
           Additional Notes
@@ -690,6 +743,12 @@ const QualityConfirmScreen = ({ navigation, route }) => {
           disabled={!allChecked || submitting}
           style={styles.confirmButton}
         />
+        </>
+        ) : order.inspectedItems?.length > 0 ? (
+          <Text style={{ color: theme.colors.text.secondary, marginBottom: 16, marginTop: 8 }}>
+            Quality is already confirmed for this order.
+          </Text>
+        ) : null}
         </>
         ) : null}
       </ScrollView>
