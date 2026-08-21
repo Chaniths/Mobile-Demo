@@ -130,7 +130,7 @@ const QualityConfirmScreen = ({ navigation, route }) => {
     if (!selectedOrder) return null;
     const catalog = Array.isArray(selectedOrder.items) ? selectedOrder.items : [];
     const toLine = (item) => ({
-      id: item.id,
+      id: item.orderItemId ?? item.id,
       name: item.name,
       quantity: `${item.quantity} ${item.unit}`,
       quantityValue: item.quantity,
@@ -269,22 +269,25 @@ const QualityConfirmScreen = ({ navigation, route }) => {
         setSubmitting(true);
 
         const rejectedItems = [];
-        const approvedCalls = [];
+        const approvedItems = [];
 
-        order.items.forEach((item) => {
+        for (const item of order.items) {
           const qualityData = selectedProducts.find((p) => p.itemId === item.id);
-          if (!qualityData) return;
+          if (!qualityData) continue;
+
+          const orderItemId = item.id ?? item.orderItemId;
+          if (!orderItemId) {
+            throw new Error(`Missing item id for ${item.name || 'product'}. Reload Quality and try again.`);
+          }
 
           if (qualityData.quality === 'approved') {
-            approvedCalls.push(
-              fieldAdminApi.submitQualityReview({
-                orderItemId: item.id,
-                notes,
-                approvedQuantity: qualityData.approvedQuantity,
-                rejected: false,
-              })
-            );
-            return;
+            approvedItems.push({
+              itemId: orderItemId,
+              name: item.name,
+              approvedQuantity: Number(qualityData.approvedQuantity ?? item.quantityValue ?? 0),
+              unit: item.quantityUnit,
+            });
+            continue;
           }
 
           const totalQuantity = item.quantityValue || 0;
@@ -292,7 +295,7 @@ const QualityConfirmScreen = ({ navigation, route }) => {
             qualityData.quality === 'rejected' ? 0 : (qualityData.approvedQuantity ?? 0);
 
           rejectedItems.push({
-            itemId: item.id,
+            itemId: orderItemId,
             name: item.name,
             quality: qualityData.quality,
             approvedQuantity,
@@ -300,11 +303,40 @@ const QualityConfirmScreen = ({ navigation, route }) => {
             unit: item.quantityUnit,
             unitPrice: Number(item.unitPrice ?? 0),
           });
-        });
+        }
 
-        if (rejectedItems.length === 0) {
-          await Promise.all(approvedCalls);
-          Alert.alert('Success', 'Quality reviews submitted.');
+        // Partial/reject path: leave the Quality screen immediately and submit
+        // approved lines later in the reject step so one API blip doesn't block the flow.
+        if (rejectedItems.length > 0) {
+          const flow = buildQualityFlow({
+            order,
+            selectedOrder,
+            rejectedItems,
+            approvedItems,
+            notes,
+          });
+          navigation.navigate('SellerReject', { flow, step: FLOW_STEPS.REJECT });
+          return;
+        }
+
+        if (approvedItems.length === 0) {
+          Alert.alert('Error', 'Select a quality result for each item before submitting.');
+          return;
+        }
+
+        await Promise.all(
+          approvedItems.map((entry) =>
+            fieldAdminApi.submitQualityReview({
+              orderItemId: entry.itemId,
+              notes,
+              approvedQuantity: entry.approvedQuantity,
+              rejected: false,
+            })
+          )
+        );
+
+        Alert.alert('Success', 'Quality reviews submitted.');
+        try {
           const handoffs = await fieldAdminApi.getRouteHandoffs();
           const refreshedOrders = pendingQualityOrders(
             flattenHandoffsToQualityOrders(handoffs)
@@ -314,26 +346,17 @@ const QualityConfirmScreen = ({ navigation, route }) => {
           if (!stillExists) {
             setSelectedOrderId(refreshedOrders[0]?.id ?? null);
           }
-          setSelectedProducts([]);
-          setPartialQuantities({});
-          setNotes('');
-          return;
+        } catch (_) {
+          // Submit already succeeded; refresh is best-effort.
         }
-
-        if (approvedCalls.length > 0) {
-          await Promise.all(approvedCalls);
-        }
-
-        const flow = buildQualityFlow({
-          order,
-          selectedOrder,
-          rejectedItems,
-          notes,
-        });
-
-        navigation.navigate('SellerReject', { flow, step: FLOW_STEPS.REJECT });
+        setSelectedProducts([]);
+        setPartialQuantities({});
+        setNotes('');
       } catch (error) {
-        Alert.alert('Error', 'Failed to submit quality reviews.');
+        Alert.alert(
+          'Error',
+          getApiErrorMessage(error, 'Failed to submit quality reviews.')
+        );
       } finally {
         setSubmitting(false);
       }

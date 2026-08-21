@@ -18,6 +18,23 @@ import fieldAdminApi from '../../api/fieldAdminApi';
 import FieldAdminFlowStepper from '../../components/common/FieldAdminFlowStepper';
 import { confirmLeaveFlow, FLOW_STEPS, buildFlowRefundOrder, mergeEligibleOrdersWithFlow } from '../../utils/fieldAdminQualityFlow';
 
+/** Clear the quality flow stack, then land on Home so Quality tab opens fresh next time. */
+const goHomeAfterFlow = (navigation) => {
+  try {
+    if (typeof navigation.popToTop === 'function') {
+      navigation.popToTop();
+    }
+  } catch (_) {
+    // Stack may already be at root; still continue to Home.
+  }
+  const tabNav = navigation.getParent?.();
+  if (tabNav?.navigate) {
+    tabNav.navigate('HomeTab', { screen: 'Home' });
+    return;
+  }
+  navigation.navigate('Home');
+};
+
 const buildRefundDefaults = (selectedOrder) => {
   if (!selectedOrder) {
     return { amount: '', reason: '' };
@@ -161,7 +178,7 @@ const RefundInitiationScreen = ({ navigation, route }) => {
             [
               {
                 text: 'Back to Home',
-                onPress: () => navigation.navigate('Home'),
+                onPress: () => goHomeAfterFlow(navigation),
               },
             ]
           );

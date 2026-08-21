@@ -22,6 +22,7 @@ import {
   formatRejectedQtyLabel,
   withFlowUpdate,
 } from '../../utils/fieldAdminQualityFlow';
+import { getApiErrorMessage } from '../../utils/mediaUrl';
 
 const SellerRejectScreen = ({ navigation, route }) => {
   const { theme } = useTheme();
@@ -180,7 +181,7 @@ const SellerRejectScreen = ({ navigation, route }) => {
         rejectionReason,
         rejectionDetails: rejectionDetails || undefined,
       })
-      .then((result) => {
+      .then(async (result) => {
         if (!isFlowMode) {
           Alert.alert('Success', 'Rejection submitted.');
           setReason('');
@@ -199,6 +200,18 @@ const SellerRejectScreen = ({ navigation, route }) => {
           return null;
         }
 
+        // Finish any fully-approved lines that were deferred from QualityConfirm.
+        const approvedItems = Array.isArray(flow.approvedItems) ? flow.approvedItems : [];
+        for (const entry of approvedItems) {
+          if (!entry?.itemId) continue;
+          await fieldAdminApi.submitQualityReview({
+            orderItemId: entry.itemId,
+            notes: flow.qualityNotes,
+            approvedQuantity: entry.approvedQuantity,
+            rejected: false,
+          });
+        }
+
         const updatedFlow = withFlowUpdate(flow, { inspectionIds: nextInspectionIds });
         navigation.navigate('DamageReport', { flow: updatedFlow, step: FLOW_STEPS.DAMAGE });
         return null;
@@ -208,7 +221,9 @@ const SellerRejectScreen = ({ navigation, route }) => {
           setOrders(refreshedOrders);
         }
       })
-      .catch(() => Alert.alert('Error', 'Failed to submit rejection.'))
+      .catch((error) =>
+        Alert.alert('Error', getApiErrorMessage(error, 'Failed to submit rejection.'))
+      )
       .finally(() => setSubmitting(false));
   };
 

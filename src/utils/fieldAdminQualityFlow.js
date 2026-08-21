@@ -101,7 +101,7 @@ export const mergeEligibleOrdersWithFlow = (eligibleOrders, flow) => {
   return merged;
 };
 
-export const buildQualityFlow = ({ order, selectedOrder, rejectedItems, notes = '' }) => ({
+export const buildQualityFlow = ({ order, selectedOrder, rejectedItems, approvedItems = [], notes = '' }) => ({
   flowId: createFlowId(),
   orderId: order.id,
   order: {
@@ -114,6 +114,7 @@ export const buildQualityFlow = ({ order, selectedOrder, rejectedItems, notes = 
     items: order.items,
   },
   rejectedItems,
+  approvedItems,
   inspectionIds: [],
   damageReportId: null,
   damageReportIds: [],
