@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../../hooks/useTheme";
 import Card from "../../components/common/Card";
 import Avatar from "../../components/common/Avatar";
@@ -33,6 +34,16 @@ const HomeScreen = ({ navigation }) => {
   const { data, loading, refreshing, error, refresh, reload, routeModifiedAt } = useDriverData();
   const [isAvailable, setIsAvailable] = useState(true);
   const [availLoading, setAvailLoading] = useState(false);
+
+  // useDriverData only fetches once on mount, and this tab stays mounted
+  // in the background after the first visit — so completing a route on
+  // the Route tab never showed up back here until a manual pull-to-refresh.
+  // Re-fetch every time Home regains focus instead.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
 
   useEffect(() => {
     if (typeof data.me?.isAvailable === "boolean") {
