@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../../hooks/useTheme";
 import Card from "../../components/common/Card";
 import EmptyState from "../../components/common/EmptyState";
@@ -39,6 +40,17 @@ const OrdersScreen = ({ navigation }) => {
   const { theme } = useTheme();
   const { data, loading, refreshing, error, refresh, reload } = useDriverData();
   const [activeTab, setActiveTab] = useState("all");
+
+  // useDriverData only fetches once on mount, and React Navigation's bottom
+  // tabs keep this screen mounted after the first visit — so without this,
+  // completing stops on the Route tab (or getting a new route assigned)
+  // never shows up here until a manual pull-to-refresh. Re-fetch every time
+  // this tab regains focus instead.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
 
   const filteredOrders = useMemo(() => {
     if (activeTab === "all") return data.orders;
