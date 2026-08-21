@@ -12,6 +12,8 @@ const initialState: DriverDashboardData = {
   orders: [],
 };
 
+type FetchMode = 'silent' | 'refresh' | 'reload';
+
 export const useDriverData = () => {
   const [data, setData] = useState<DriverDashboardData>(initialState);
   const [loading, setLoading] = useState(true);
@@ -19,10 +21,14 @@ export const useDriverData = () => {
   const [error, setError] = useState<string | null>(null);
   const [routeModifiedAt, setRouteModifiedAt] = useState<string | null>(null);
 
-  const fetchAll = useCallback(async (isRefresh = false) => {
-    if (isRefresh) {
+  const fetchAll = useCallback(async (mode: FetchMode = 'reload') => {
+    // 'silent' updates data in the background with no visible loading state
+    // at all — used when a screen refetches on focus, so it doesn't flash
+    // the pull-to-refresh spinner or the full-screen loader just because
+    // the driver switched tabs.
+    if (mode === 'refresh') {
       setRefreshing(true);
-    } else {
+    } else if (mode === 'reload') {
       setLoading(true);
     }
 
@@ -41,13 +47,16 @@ export const useDriverData = () => {
     } catch (err) {
       setError(toUserMessage(err, 'Failed to load driver data. Please retry.'));
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (mode === 'refresh') {
+        setRefreshing(false);
+      } else if (mode === 'reload') {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    void fetchAll(false);
+    void fetchAll('reload');
   }, [fetchAll]);
 
   useEffect(() => {
@@ -56,7 +65,7 @@ export const useDriverData = () => {
 
     const handleRouteModified = (payload: any) => {
       setRouteModifiedAt(payload?.reroutedAt || new Date().toISOString());
-      void fetchAll(true);
+      void fetchAll('refresh');
     };
 
     socket.on('route:modified', handleRouteModified);
@@ -72,7 +81,8 @@ export const useDriverData = () => {
     refreshing,
     error,
     routeModifiedAt,
-    refresh: () => fetchAll(true),
-    reload: () => fetchAll(false),
+    refresh: () => fetchAll('refresh'),
+    reload: () => fetchAll('reload'),
+    silentRefresh: () => fetchAll('silent'),
   };
 };

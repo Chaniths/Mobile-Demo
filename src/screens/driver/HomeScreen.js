@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../../hooks/useTheme";
 import Card from "../../components/common/Card";
 import Avatar from "../../components/common/Avatar";
@@ -30,9 +31,19 @@ const getGreeting = () => {
 
 const HomeScreen = ({ navigation }) => {
   const { theme, isDarkMode } = useTheme();
-  const { data, loading, refreshing, error, refresh, reload, routeModifiedAt } = useDriverData();
+  const { data, loading, refreshing, error, refresh, reload, silentRefresh, routeModifiedAt } = useDriverData();
   const [isAvailable, setIsAvailable] = useState(true);
   const [availLoading, setAvailLoading] = useState(false);
+
+  // Re-check for fresh data every time Home regains focus (e.g. after
+  // completing a route on the Route tab) — silent, so it never touches
+  // the loading/refreshing flags and can't flash the pull-to-refresh
+  // spinner or the full-screen loader.
+  useFocusEffect(
+    useCallback(() => {
+      silentRefresh();
+    }, [silentRefresh]),
+  );
 
   useEffect(() => {
     if (typeof data.me?.isAvailable === "boolean") {
