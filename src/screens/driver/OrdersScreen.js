@@ -15,12 +15,21 @@ import Loader from "../../components/common/Loader";
 import BackgroundShapes from "../../components/common/BackgroundShapes";
 import { useDriverData } from "../../hooks/useDriverData";
 
+// Keys match the real Order.status enum values (uppercase) — the driver's
+// own orders are almost always PAID/ASSIGNED/IN_TRANSIT/DELIVERED/FAILED,
+// but the full set is covered so nothing silently falls back to a
+// generic color.
 const statusColors = {
-  delivered: "#22c55e",
-  in_transit: "#3b82f6",
-  processing: "#f59e0b",
-  cancelled: "#ef4444",
-  pending: "#f59e0b",
+  PENDING: "#f59e0b",
+  PAYMENT_PENDING: "#f59e0b",
+  PAYMENT_FAILED: "#ef4444",
+  PAID: "#3b82f6",
+  BATCHED: "#3b82f6",
+  ASSIGNED: "#3b82f6",
+  IN_TRANSIT: "#3b82f6",
+  DELIVERED: "#22c55e",
+  FAILED: "#ef4444",
+  CANCELLED: "#ef4444",
 };
 
 const toTitle = (value) =>
