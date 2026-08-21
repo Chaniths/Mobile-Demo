@@ -52,10 +52,18 @@ const HomeScreen = ({ navigation }) => {
   }, [data.me?.isAvailable]);
 
   const routeData = data.route || data.activeRoute;
+  // "Next Stops" must only ever reflect the current active route's stops
+  // that are still actually pending — it previously fell back to
+  // data.orders (the full, all-time delivery history) whenever there was
+  // no active route, which meant a driver who'd just finished their last
+  // stop saw that same completed stop still sitting here instead of the
+  // empty state.
   const upcomingDeliveries = useMemo(() => {
-    const source = routeData?.stops?.length ? routeData.stops : data.orders;
-    return source.slice(0, 4);
-  }, [data.orders, routeData]);
+    const stops = routeData?.stops ?? [];
+    return stops
+      .filter((s) => s.status !== "COMPLETED" && s.status !== "FAILED" && s.status !== "SKIPPED")
+      .slice(0, 4);
+  }, [routeData]);
 
   const stats = data.stats;
   const completionRate =
