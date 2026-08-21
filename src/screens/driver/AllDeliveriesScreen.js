@@ -39,11 +39,15 @@ const AllDeliveriesScreen = ({ navigation }) => {
   const { data, loading, refreshing, error, refresh, reload } = useDriverData();
   const STATUS_COLOR = isDarkMode ? STATUS_COLOR_DARK : STATUS_COLOR_LIGHT;
 
-  // Use route stops (has sequence, type, status) — fall back to orders if no route
+  // Today's Stops = the current active route's own stops only. This used to
+  // fall back to data.orders (the driver's full, all-time delivery history)
+  // whenever there was no active route — which is exactly the state right
+  // after finishing the last stop — so a just-completed stop from a route
+  // that no longer counts as "active" kept showing up here. No active route
+  // now correctly means an empty list, same as Home's Next Stops.
   const stops = useMemo(() => {
-    const routeStops = data.route?.stops || data.activeRoute?.stops || [];
-    return routeStops.length > 0 ? routeStops : data.orders;
-  }, [data.route, data.activeRoute, data.orders]);
+    return data.route?.stops || data.activeRoute?.stops || [];
+  }, [data.route, data.activeRoute]);
 
   const completed = useMemo(() => stops.filter((s) => s.status === "COMPLETED").length, [stops]);
 
