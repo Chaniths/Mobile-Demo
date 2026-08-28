@@ -40,7 +40,7 @@ export const setupInterceptors = (axiosInstance) => {
             console.error('Access forbidden');
             break;
           case 404:
-            console.error('Resource not found');
+            console.error('Resource not found', error.config?.method, error.config?.url, error.response?.data);
             break;
           case 500:
             console.error('Server error');
@@ -50,7 +50,7 @@ export const setupInterceptors = (axiosInstance) => {
         }
       } else if (error.request) {
         // Request made but no response
-        console.error('Network error:', error.message);
+        console.error('Network error:', error.message, error.config?.method, error.config?.url);
       } else {
         // Something else happened
         console.error('Error:', error.message);

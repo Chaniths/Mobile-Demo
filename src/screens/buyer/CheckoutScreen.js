@@ -8,50 +8,253 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  TextInput,
+  Linking,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '../../hooks/useTheme';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import api from '../../api/client';
 
-// ── Time slot options ──────────────────────────────────────────────────────────
+// ============================================================================
+// TIME SLOTS
+// ============================================================================
 
 const TIME_SLOTS = [
-  { value: 'MORNING',   label: '🌅 Morning',   sub: '6 AM – 12 PM' },
-  { value: 'AFTERNOON', label: '☀️ Afternoon', sub: '12 PM – 5 PM'  },
-  { value: 'EVENING',   label: '🌆 Evening',   sub: '5 PM – 9 PM'  },
+  {
+    value: 'MORNING',
+    icon: 'partly-sunny-outline',
+    label: 'Morning',
+    sub: '6 AM – 12 PM',
+  },
+  {
+    value: 'AFTERNOON',
+    icon: 'sunny-outline',
+    label: 'Afternoon',
+    sub: '12 PM – 5 PM',
+  },
+  {
+    value: 'EVENING',
+    icon: 'moon-outline',
+    label: 'Evening',
+    sub: '5 PM – 9 PM',
+  },
 ];
 
-// ── Component ──────────────────────────────────────────────────────────────────
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+const parsePrice = (price) => {
+  const cleaned = String(price ?? '').replace(/[^0-9.]/g, '');
+  const parsed = parseFloat(cleaned);
+
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const formatCurrency = (value) => {
+  const number = Number(value) || 0;
+
+  return number.toLocaleString('en-LK', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
+// ============================================================================
+// RESERVATION HELPERS
+// ============================================================================
+
+const getReservationStatus = (expiresAt) => {
+  if (!expiresAt) {
+    return {
+      isExpired: false,
+      percentageRemaining: 100,
+      timeRemaining: '',
+    };
+  }
+
+  const expiry = new Date(expiresAt).getTime();
+  const now = Date.now();
+
+  const remaining = expiry - now;
+
+  if (remaining <= 0) {
+    return {
+      isExpired: true,
+      percentageRemaining: 0,
+      timeRemaining: 'Expired',
+    };
+  }
+
+  const totalReservationTime = 24 * 60 * 60 * 1000;
+  const percentageRemaining = Math.max(
+    0,
+    Math.min(100, (remaining / totalReservationTime) * 100)
+  );
+
+  const totalSeconds = Math.floor(remaining / 1000);
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  let timeRemaining;
+
+  if (hours > 0) {
+    timeRemaining = `${hours}h ${minutes}m`;
+  } else if (minutes > 0) {
+    timeRemaining = `${minutes}m ${seconds}s`;
+  } else {
+    timeRemaining = `${seconds}s`;
+  }
+
+  return {
+    isExpired: false,
+    percentageRemaining,
+    timeRemaining,
+  };
+};
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
 
 const CheckoutScreen = ({ navigation }) => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
-  const [cart, setCart]               = useState(null);
-  const [address, setAddress]         = useState(null);
-  const [timeSlot, setTimeSlot]       = useState('MORNING');
-  const [specialNote, setSpecialNote] = useState('');
-  const [loading, setLoading]         = useState(true);
-  const [placing, setPlacing]         = useState(false);
-  const [error, setError]             = useState(null);
+  // Hide bottom tab bar while on checkout to avoid overlap with footer
+  useEffect(() => {
+    const parent = navigation.getParent?.();
+    if (parent?.setOptions) {
+      parent.setOptions({ tabBarStyle: { display: 'none' } });
+    }
 
-  // ── Fetch cart + address in parallel ─────────────────────────────────────────
+    return () => {
+      if (parent?.setOptions) {
+        parent.setOptions({ tabBarStyle: { display: 'flex' } });
+      }
+    };
+  }, [navigation]);
+
+  // --------------------------------------------------------------------------
+  // STATE
+  // --------------------------------------------------------------------------
+
+  const [items, setItems] = useState([]);
+
+  const [state, setState] = useState({
+    currentStep: 1,
+
+    deliveryAddress: {
+      address: '',
+      latitude: 0,
+      longitude: 0,
+    },
+
+    deliveryTimeSlot: null,
+
+    specialInstructions: '',
+
+    loading: false,
+
+    error: null,
+  });
+
+  const [cartTotals, setCartTotals] = useState({
+    subtotal: 0,
+    tax: 0,
+    discount: 0,
+    total: 0,
+  });
+
+  const [loadingData, setLoadingData] = useState(true);
+
+  // Used to force reservation countdown refresh
+  const [, setTick] = useState(0);
+
+  // --------------------------------------------------------------------------
+  // LIVE RESERVATION TIMER
+  // --------------------------------------------------------------------------
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((value) => value + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // ==========================================================================
+  // FETCH CART + ADDRESS
+  // ==========================================================================
 
   const fetchData = useCallback(async () => {
     try {
-      setError(null);
-      const [cartRes, addrRes] = await Promise.all([
+      setLoadingData(true);
+
+      setState((prev) => ({
+        ...prev,
+        error: null,
+      }));
+
+      const [cartRes, addressRes] = await Promise.all([
         api.get('/cart'),
         api.get('/orders/addresses'),
       ]);
-      setCart(cartRes.data);
-      setAddress(addrRes.data?.primary ?? null);
-    } catch (err) {
-      console.error('Checkout fetch error:', err);
-      setError(err?.response?.data?.message || 'Failed to load checkout.');
+
+      const cartData = cartRes?.data?.data || cartRes?.data || {};
+
+      const rawItems = cartData?.items || [];
+
+      // Guarantee a unique key per line item — the backend's raw `id`
+      // can repeat when the same product appears from more than one
+      // seller, which is what was causing the duplicate-key warning.
+      const cartItems = rawItems.map((item, index) => ({
+        ...item,
+        uniqueId: `${item.productId || item.id || 'product'}-${item.sellerId || 'seller'}-${index}`,
+      }));
+
+      setItems(cartItems);
+
+      setCartTotals({
+        subtotal: Number(cartData?.subtotal) || 0,
+        tax: Number(cartData?.tax) || 0,
+        discount: Number(cartData?.discount) || 0,
+        total: Number(cartData?.total) || 0,
+      });
+
+      const primaryAddress =
+        addressRes?.data?.primary ||
+        addressRes?.data?.data?.primary ||
+        null;
+
+      if (primaryAddress) {
+        setState((prev) => ({
+          ...prev,
+
+          deliveryAddress: {
+            address: primaryAddress.address || '',
+            latitude: Number(primaryAddress.latitude) || 0,
+            longitude: Number(primaryAddress.longitude) || 0,
+          },
+        }));
+      }
+    } catch (error) {
+      console.error('Checkout fetch error:', error);
+
+      setState((prev) => ({
+        ...prev,
+        error:
+          error?.response?.data?.message ||
+          'Failed to load checkout.',
+      }));
     } finally {
-      setLoading(false);
+      setLoadingData(false);
     }
   }, []);
 
@@ -59,69 +262,411 @@ const CheckoutScreen = ({ navigation }) => {
     fetchData();
   }, [fetchData]);
 
-  // ── Place order ───────────────────────────────────────────────────────────────
+  // ==========================================================================
+  // EMPTY CART GUARD
+  // ==========================================================================
 
-  const handlePlaceOrder = async () => {
-    if (!cart || cart.items.length === 0) {
-      Alert.alert('Empty cart', 'Add items to your cart before placing an order.');
-      return;
-    }
-
-    if (!address || !address.address) {
+  useEffect(() => {
+    if (!loadingData && items.length === 0) {
       Alert.alert(
-        'No delivery address',
-        'Please set a delivery address in your profile first.'
+        'Empty Cart',
+        'Your cart is empty. Please add items before checkout.',
+        [
+          {
+            text: 'Go to Cart',
+            onPress: () => navigation.navigate('Cart'),
+          },
+        ]
       );
+    }
+  }, [loadingData, items.length, navigation]);
+
+  // ==========================================================================
+  // RESERVATION BADGE
+  // ==========================================================================
+
+  const renderReservationBadge = (item) => {
+    const expiresAt = item?.reservation?.expiresAt;
+
+    if (!expiresAt) {
+      return null;
+    }
+
+    const status = getReservationStatus(expiresAt);
+
+    if (status.isExpired) {
+      return (
+        <View style={styles.inlineIconRow}>
+          <Ionicons name="alert-circle-outline" size={12} color="#f87171" style={styles.inlineIcon} />
+          <Text style={styles.expiredText}>
+            Expired — go back to cart to re-add
+          </Text>
+        </View>
+      );
+    }
+
+    let color = '#34d399';
+
+    if (status.percentageRemaining < 10) {
+      color = '#facc15';
+    } else if (status.percentageRemaining < 25) {
+      color = '#fb923c';
+    }
+
+    return (
+      <View style={styles.inlineIconRow}>
+        <Ionicons name="timer-outline" size={12} color={color} style={styles.inlineIcon} />
+        <Text
+          style={[
+            styles.reservationText,
+            {
+              color,
+            },
+          ]}
+        >
+          {status.timeRemaining}
+        </Text>
+      </View>
+    );
+  };
+
+  // ==========================================================================
+  // VALIDATE RESERVATIONS
+  // ==========================================================================
+
+  const validateReservations = () => {
+    const expiredItems = [];
+    const expiringItems = [];
+
+    items.forEach((item) => {
+      if (!item?.reservation?.expiresAt) {
+        return;
+      }
+
+      const status = getReservationStatus(
+        item.reservation.expiresAt
+      );
+
+      if (status.isExpired) {
+        expiredItems.push(item.name);
+      } else if (status.percentageRemaining < 10) {
+        expiringItems.push(
+          `${item.name} (${status.timeRemaining})`
+        );
+      }
+    });
+
+    return {
+      expiredItems,
+      expiringItems,
+    };
+  };
+
+  // ==========================================================================
+  // NEXT STEP
+  // ==========================================================================
+
+  const handleNextStep = () => {
+    if (state.currentStep === 2) {
+      if (!state.deliveryAddress?.address?.trim()) {
+        setState((prev) => ({
+          ...prev,
+          error: 'Please enter a delivery address.',
+        }));
+
+        return;
+      }
+    }
+
+    if (state.currentStep === 3) {
+      if (!state.deliveryTimeSlot) {
+        setState((prev) => ({
+          ...prev,
+          error: 'Please select a delivery time slot.',
+        }));
+
+        return;
+      }
+    }
+
+    setState((prev) => ({
+      ...prev,
+      currentStep: Math.min(prev.currentStep + 1, 5),
+      error: null,
+    }));
+  };
+
+  // ==========================================================================
+  // PREVIOUS STEP
+  // ==========================================================================
+
+  const handlePreviousStep = () => {
+    setState((prev) => ({
+      ...prev,
+      currentStep: Math.max(prev.currentStep - 1, 1),
+      error: null,
+    }));
+  };
+
+  // ==========================================================================
+  // CREATE ORDER + STRIPE PAYMENT
+  // ==========================================================================
+
+  const handlePay = async () => {
+    if (!state.deliveryTimeSlot) {
+      setState((prev) => ({
+        ...prev,
+        error: 'Please select a delivery time slot.',
+      }));
+
       return;
     }
 
-    setPlacing(true);
+    if (!state.deliveryAddress?.address?.trim()) {
+      setState((prev) => ({
+        ...prev,
+        error: 'Please enter a delivery address.',
+      }));
+
+      return;
+    }
+
+    setState((prev) => ({
+      ...prev,
+      loading: true,
+      error: null,
+    }));
+
     try {
-      const orderPayload = {
-        // Map cart items to what the backend expects
-        items: cart.items.map((item) => ({
-          productId: item.productId,
-          quantity:  item.quantity,
-          sellerId:  item.sellerId,
-        })),
-        deliveryAddress: address.address,
-        deliveryLat:     address.latitude,
-        deliveryLng:     address.longitude,
-        deliveryTimeSlot: timeSlot,
-        specialInstructions: specialNote || undefined,
-      };
+      // ----------------------------------------------------------------------
+      // STEP 1 — CHECK RESERVATIONS
+      // ----------------------------------------------------------------------
 
-      const response = await api.post('/orders', orderPayload);
-      const order = response.data;
+      const { expiredItems, expiringItems } =
+        validateReservations();
 
-      // Success — navigate to confirmation
-      navigation.replace('OrderConfirmation', {
-        orderId:     order.id,
-        orderNumber: order.orderNumber,
-        total:       order.totalAmount,
-      });
-    } catch (err) {
-      console.error('Place order error:', err);
-      Alert.alert(
-        'Order failed',
-        err?.response?.data?.message || 'Could not place order. Please try again.'
-      );
-    } finally {
-      setPlacing(false);
+      if (expiredItems.length > 0) {
+        throw new Error(
+          `The following items have expired: ${expiredItems.join(
+            ', '
+          )}. Please go back to your cart and re-add them.`
+        );
+      }
+
+      // ----------------------------------------------------------------------
+      // STEP 2 — WARN IF RESERVATION IS ABOUT TO EXPIRE
+      // ----------------------------------------------------------------------
+
+      if (expiringItems.length > 0) {
+        Alert.alert(
+          'Reservation Almost Expired',
+          `The following items are running out of reservation time:\n\n${expiringItems.join(
+            '\n'
+          )}\n\nDo you want to continue?`,
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => {
+                setState((prev) => ({
+                  ...prev,
+                  loading: false,
+                }));
+              },
+            },
+            {
+              text: 'Continue',
+              onPress: () => {
+                continuePayment();
+              },
+            },
+          ]
+        );
+
+        return;
+      }
+
+      await continuePayment();
+    } catch (error) {
+      console.error('Payment preparation error:', error);
+
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        error:
+          error?.response?.data?.message ||
+          error?.message ||
+          'Something went wrong.',
+      }));
     }
   };
 
-  // ── Loading ───────────────────────────────────────────────────────────────────
+  // ==========================================================================
+  // CREATE ORDER
+  // ==========================================================================
 
-  if (loading) {
+  const continuePayment = async () => {
+    try {
+      // ----------------------------------------------------------------------
+      // CREATE ORDER
+      // ----------------------------------------------------------------------
+
+      const orderPayload = {
+        items: items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          sellerId: item.sellerId,
+        })),
+
+        deliveryAddress:
+          state.deliveryAddress.address,
+
+        deliveryLat:
+          state.deliveryAddress.latitude,
+
+        deliveryLng:
+          state.deliveryAddress.longitude,
+
+        deliveryTimeSlot:
+          state.deliveryTimeSlot,
+
+        specialInstructions:
+          state.specialInstructions || undefined,
+      };
+
+      console.log(
+        'Creating order:',
+        JSON.stringify(orderPayload, null, 2)
+      );
+
+      const orderResponse = await api.post(
+        '/orders',
+        orderPayload
+      );
+
+      const order =
+        orderResponse?.data?.data ||
+        orderResponse?.data;
+
+      if (!order?.id) {
+        throw new Error(
+          'Order was created but no order ID was returned.'
+        );
+      }
+
+      // ----------------------------------------------------------------------
+      // CREATE STRIPE CHECKOUT SESSION
+      // ----------------------------------------------------------------------
+
+      console.log(
+        'Creating payment session for order:',
+        order.id
+      );
+
+      const paymentResponse = await api.post('/payments', {
+        orderId: order.id,
+        currency: 'usd',
+      });
+
+      const paymentData =
+        paymentResponse?.data?.data ||
+        paymentResponse?.data;
+
+      const checkoutUrl =
+        paymentData?.checkoutUrl;
+
+      if (!checkoutUrl) {
+        throw new Error(
+          'Failed to get payment URL. Please try again.'
+        );
+      }
+
+      console.log(
+        'Opening Stripe checkout:',
+        checkoutUrl
+      );
+
+      // ----------------------------------------------------------------------
+      // OPEN STRIPE
+      // ----------------------------------------------------------------------
+
+      const supported =
+        await Linking.canOpenURL(checkoutUrl);
+
+      if (!supported) {
+        throw new Error(
+          'Unable to open the payment page on this device.'
+        );
+      }
+
+      await Linking.openURL(checkoutUrl);
+
+      // ----------------------------------------------------------------------
+      // SUCCESS
+      // ----------------------------------------------------------------------
+
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+      }));
+    } catch (error) {
+      console.error('Place order/payment error:', error);
+
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        error:
+          error?.response?.data?.message ||
+          error?.message ||
+          'Could not proceed to payment. Please try again.',
+      }));
+    }
+  };
+
+  // ==========================================================================
+  // LOADING
+  // ==========================================================================
+
+  if (loadingData) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <SafeAreaView
+        style={[
+          styles.container,
+          {
+            backgroundColor:
+              theme.colors.background,
+          },
+        ]}
+      >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.text.primary }]}>Checkout</Text>
+          <Text
+            style={[
+              styles.title,
+              {
+                color:
+                  theme.colors.text.primary,
+              },
+            ]}
+          >
+            Checkout
+          </Text>
         </View>
+
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={theme.colors.primary.main} />
-          <Text style={[styles.loadingText, { color: theme.colors.text.secondary }]}>
+          <ActivityIndicator
+            size="large"
+            color={theme.colors.primary.main}
+          />
+
+          <Text
+            style={[
+              styles.loadingText,
+              {
+                color:
+                  theme.colors.text.secondary,
+              },
+            ]}
+          >
             Loading checkout…
           </Text>
         </View>
@@ -129,232 +674,1634 @@ const CheckoutScreen = ({ navigation }) => {
     );
   }
 
-  // ── Error ─────────────────────────────────────────────────────────────────────
-
-  if (error) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.text.primary }]}>Checkout</Text>
-        </View>
-        <View style={styles.centered}>
-          <Text style={{ fontSize: 40, marginBottom: 12 }}>⚠️</Text>
-          <Text style={[{ fontSize: 15, textAlign: 'center', marginBottom: 20 }, { color: theme.colors.text.primary }]}>
-            {error}
-          </Text>
-          <TouchableOpacity
-            style={[styles.retryBtn, { backgroundColor: theme.colors.primary.main }]}
-            onPress={() => { setLoading(true); fetchData(); }}
-          >
-            <Text style={styles.retryBtnText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const cartItems = cart?.items ?? [];
-
-  // ── Main ──────────────────────────────────────────────────────────────────────
+  // ==========================================================================
+  // MAIN
+  // ==========================================================================
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Header */}
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            theme.colors.background,
+        },
+      ]}
+    >
+      {/* ================================================================ */}
+      {/* HEADER */}
+      {/* ================================================================ */}
+
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={[styles.backButton, { color: theme.colors.primary.main }]}>← Back</Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.headerBackButton}
+        >
+          <Ionicons
+            name="arrow-back"
+            size={18}
+            color={theme.colors.primary.main}
+          />
+
+          <Text
+            style={[
+              styles.backButton,
+              {
+                color:
+                  theme.colors.primary.main,
+              },
+            ]}
+          >
+            Back
+          </Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.colors.text.primary }]}>Checkout</Text>
+
+        <View style={styles.headerCenter}>
+          <Text
+            style={[
+              styles.title,
+              {
+                color:
+                  theme.colors.text.primary,
+              },
+            ]}
+          >
+            Checkout
+          </Text>
+
+          <Text
+            style={[
+              styles.stepText,
+              {
+                color:
+                  theme.colors.text.secondary,
+              },
+            ]}
+          >
+            Step {state.currentStep} of 5
+          </Text>
+        </View>
+
         <View style={{ width: 50 }} />
       </View>
 
+      {/* ================================================================ */}
+      {/* PROGRESS BAR */}
+      {/* ================================================================ */}
+
+      <View style={styles.progressContainer}>
+        {[1, 2, 3, 4, 5].map((step) => (
+          <View
+            key={step}
+            style={[
+              styles.progressBar,
+              {
+                backgroundColor:
+                  step <= state.currentStep
+                    ? theme.colors.primary.main
+                    : theme.colors.border,
+              },
+            ]}
+          />
+        ))}
+      </View>
+
+      {/* ================================================================ */}
+      {/* ERROR */}
+      {/* ================================================================ */}
+
+      {state.error && (
+        <View
+          style={[
+            styles.errorBox,
+            {
+              backgroundColor: 'rgba(239,68,68,0.12)',
+              borderColor: 'rgba(239,68,68,0.35)',
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.errorText,
+              {
+                color:
+                  theme.colors.error ||
+                  '#ef4444',
+              },
+            ]}
+          >
+            {state.error}
+          </Text>
+        </View>
+      )}
+
+      {/* ================================================================ */}
+      {/* CONTENT */}
+      {/* ================================================================ */}
+
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: (insets.bottom || 0) + 180 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Order summary ──────────────────────────────────────────────────── */}
-        <Card style={styles.card} onPress={() => {}}>
-          <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
-            Order Summary
-          </Text>
-          {cartItems.length === 0 ? (
-            <Text style={{ color: theme.colors.text.secondary, marginTop: 4 }}>
-              Your cart is empty.
+        {/* ============================================================ */}
+        {/* STEP 1 — ORDER SUMMARY */}
+        {/* ============================================================ */}
+
+        {state.currentStep === 1 && (
+          <Card style={styles.card}>
+            <Text
+              style={[
+                styles.cardTitle,
+                {
+                  color:
+                    theme.colors.text.primary,
+                },
+              ]}
+            >
+              Order Summary
             </Text>
-          ) : (
-            cartItems.map((item) => (
-              <View key={item.id} style={styles.itemRow}>
-                {/* Thumbnail */}
-                {item.imageUrl ? (
-                  <Image
-                    source={{ uri: item.imageUrl }}
-                    style={styles.itemThumb}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={[styles.itemThumb, styles.itemThumbPlaceholder, { backgroundColor: theme.colors.primary.light }]}>
-                    <Text style={{ fontSize: 18 }}>🛒</Text>
+
+            {items.map((item) => {
+              const price =
+                parsePrice(item.price);
+
+              const itemTotal =
+                price * item.quantity;
+
+              return (
+                <View
+                  key={item.uniqueId || item.id}
+                  style={[
+                    styles.orderItem,
+                    {
+                      backgroundColor:
+                        theme.colors.background,
+                    },
+                  ]}
+                >
+                  <View
+                    style={
+                      styles.orderItemContent
+                    }
+                  >
+                    {item.imageUrl ? (
+                      <Image
+                        source={{
+                          uri: item.imageUrl,
+                        }}
+                        style={
+                          styles.productImage
+                        }
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.productImage,
+                          styles.imagePlaceholder,
+                          {
+                            backgroundColor:
+                              theme.colors
+                                .primary.light,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="cart-outline"
+                          size={20}
+                          color={theme.colors.primary.main}
+                        />
+                      </View>
+                    )}
+
+                    <View
+                      style={
+                        styles.productDetails
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.itemName,
+                          {
+                            color:
+                              theme.colors
+                                .text.primary,
+                          },
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {item.name}
+                      </Text>
+
+                      {item.vendor && (
+                        <View style={styles.inlineIconRow}>
+                          <Ionicons
+                            name="storefront-outline"
+                            size={11}
+                            color={theme.colors.text.secondary}
+                            style={styles.inlineIcon}
+                          />
+                          <Text
+                            style={[
+                              styles.itemMeta,
+                              {
+                                color:
+                                  theme.colors
+                                    .text.secondary,
+                                marginTop: 0,
+                              },
+                            ]}
+                          >
+                            {item.vendor}
+                          </Text>
+                        </View>
+                      )}
+
+                      <Text
+                        style={[
+                          styles.itemMeta,
+                          {
+                            color:
+                              theme.colors
+                                .text.secondary,
+                          },
+                        ]}
+                      >
+                        Rs. {formatCurrency(price)} /{' '}
+                        {item.unit} · Qty{' '}
+                        {item.quantity}
+                      </Text>
+
+                      {renderReservationBadge(
+                        item
+                      )}
+                    </View>
+
+                    <Text
+                      style={[
+                        styles.itemTotal,
+                        {
+                          color:
+                            theme.colors
+                              .text.primary,
+                        },
+                      ]}
+                    >
+                      Rs.{' '}
+                      {formatCurrency(
+                        itemTotal
+                      )}
+                    </Text>
                   </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.itemName, { color: theme.colors.text.primary }]} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
-                    {item.quantity} {item.unit} × Rs. {item.price.toFixed(2)} · {item.vendor}
-                  </Text>
                 </View>
-                <Text style={[styles.itemTotal, { color: theme.colors.text.primary }]}>
-                  Rs. {(item.price * item.quantity).toFixed(2)}
-                </Text>
-              </View>
-            ))
-          )}
-        </Card>
+              );
+            })}
 
-        {/* ── Delivery address ───────────────────────────────────────────────── */}
-        <Card style={styles.card} onPress={() => {}}>
-          <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
-            Delivery Address
-          </Text>
-          {address?.address ? (
-            <>
-              <Text style={[styles.itemName, { color: theme.colors.text.primary }]}>
-                {address.address}
+            {/* SUBTOTAL */}
+
+            <View
+              style={[
+                styles.highlightBox,
+                {
+                  borderColor:
+                    theme.colors.primary.main,
+                  backgroundColor:
+                    `${theme.colors.primary.main}10`,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.highlightLabel,
+                  {
+                    color:
+                      theme.colors.text.secondary,
+                  },
+                ]}
+              >
+                Subtotal
               </Text>
-              <Text style={[styles.itemMeta, { color: theme.colors.text.secondary }]}>
-                Lat: {address.latitude?.toFixed(4)}, Lng: {address.longitude?.toFixed(4)}
+
+              <Text
+                style={[
+                  styles.highlightValue,
+                  {
+                    color:
+                      theme.colors.primary.main,
+                  },
+                ]}
+              >
+                Rs.{' '}
+                {formatCurrency(
+                  cartTotals.subtotal
+                )}
               </Text>
-            </>
-          ) : (
-            <Text style={{ color: theme.colors.error, fontSize: 13 }}>
-              ⚠️ No delivery address found. Please update your profile.
+            </View>
+          </Card>
+        )}
+
+        {/* ============================================================ */}
+        {/* STEP 2 — ADDRESS */}
+        {/* ============================================================ */}
+
+        {state.currentStep === 2 && (
+          <Card style={styles.card}>
+            <Text
+              style={[
+                styles.cardTitle,
+                {
+                  color:
+                    theme.colors.text.primary,
+                },
+              ]}
+            >
+              Delivery Address
             </Text>
-          )}
-        </Card>
 
-        {/* ── Delivery time slot ─────────────────────────────────────────────── */}
-        <Card style={styles.card} onPress={() => {}}>
-          <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
-            Delivery Time Slot
-          </Text>
-          <View style={styles.slotsRow}>
+            <Text
+              style={[
+                styles.fieldLabel,
+                {
+                  color:
+                    theme.colors.text.secondary,
+                },
+              ]}
+            >
+              Address
+            </Text>
+
+            <TextInput
+              value={
+                state.deliveryAddress.address
+              }
+              onChangeText={(text) =>
+                setState((prev) => ({
+                  ...prev,
+
+                  deliveryAddress: {
+                    ...prev.deliveryAddress,
+                    address: text,
+                  },
+
+                  error: null,
+                }))
+              }
+              placeholder="Enter your delivery address"
+              placeholderTextColor={
+                theme.colors.text.tertiary
+              }
+              multiline
+              style={[
+                styles.addressInput,
+                {
+                  color:
+                    theme.colors.text.primary,
+                  borderColor:
+                    theme.colors.border,
+                  backgroundColor:
+                    theme.colors.background,
+                },
+              ]}
+            />
+
+            <View style={styles.inlineIconRow}>
+              <Ionicons
+                name="location-outline"
+                size={12}
+                color={theme.colors.text.secondary}
+                style={styles.inlineIcon}
+              />
+              <Text
+                style={[
+                  styles.locationText,
+                  {
+                    color:
+                      theme.colors.text.secondary,
+                    marginTop: 0,
+                  },
+                ]}
+              >
+                Latitude:{' '}
+                {Number(
+                  state.deliveryAddress
+                    .latitude || 0
+                ).toFixed(4)}
+              </Text>
+            </View>
+
+            <View style={styles.inlineIconRow}>
+              <Ionicons
+                name="location-outline"
+                size={12}
+                color={theme.colors.text.secondary}
+                style={styles.inlineIcon}
+              />
+              <Text
+                style={[
+                  styles.locationText,
+                  {
+                    color:
+                      theme.colors.text.secondary,
+                    marginTop: 0,
+                  },
+                ]}
+              >
+                Longitude:{' '}
+                {Number(
+                  state.deliveryAddress
+                    .longitude || 0
+                ).toFixed(4)}
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.infoBox,
+                {
+                  backgroundColor:
+                    `${theme.colors.primary.main}10`,
+                  borderColor:
+                    `${theme.colors.primary.main}30`,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.infoText,
+                  {
+                    color:
+                      theme.colors.text.secondary,
+                  },
+                ]}
+              >
+                Your primary delivery address
+                is loaded automatically from
+                your profile.
+              </Text>
+            </View>
+          </Card>
+        )}
+
+        {/* ============================================================ */}
+        {/* STEP 3 — TIME SLOT */}
+        {/* ============================================================ */}
+
+        {state.currentStep === 3 && (
+          <Card style={styles.card}>
+            <Text
+              style={[
+                styles.cardTitle,
+                {
+                  color:
+                    theme.colors.text.primary,
+                },
+              ]}
+            >
+              Delivery Time Slot
+            </Text>
+
+            <Text
+              style={[
+                styles.description,
+                {
+                  color:
+                    theme.colors.text.secondary,
+                },
+              ]}
+            >
+              Select a convenient time for
+              your delivery.
+            </Text>
+
             {TIME_SLOTS.map((slot) => {
-              const isSelected = timeSlot === slot.value;
+              const selected =
+                state.deliveryTimeSlot ===
+                slot.value;
+
               return (
                 <TouchableOpacity
                   key={slot.value}
+                  onPress={() =>
+                    setState((prev) => ({
+                      ...prev,
+                      deliveryTimeSlot:
+                        slot.value,
+                      error: null,
+                    }))
+                  }
                   style={[
-                    styles.slotBtn,
+                    styles.timeSlot,
                     {
-                      borderColor: isSelected ? theme.colors.primary.main : theme.colors.border,
-                      backgroundColor: isSelected ? `${theme.colors.primary.main}15` : 'transparent',
+                      borderColor: selected
+                        ? theme.colors.primary.main
+                        : theme.colors.border,
+
+                      backgroundColor: selected
+                        ? `${theme.colors.primary.main}12`
+                        : 'transparent',
                     },
                   ]}
-                  onPress={() => setTimeSlot(slot.value)}
                 >
-                  <Text style={{ fontSize: 20, marginBottom: 4 }}>{slot.label.split(' ')[0]}</Text>
-                  <Text style={[styles.slotLabel, { color: isSelected ? theme.colors.primary.main : theme.colors.text.primary }]}>
-                    {slot.label.split(' ').slice(1).join(' ')}
-                  </Text>
-                  <Text style={[styles.slotSub, { color: theme.colors.text.tertiary }]}>
-                    {slot.sub}
-                  </Text>
+                  <View style={styles.timeSlotIconWrap}>
+                    <Ionicons
+                      name={slot.icon}
+                      size={22}
+                      color={
+                        selected
+                          ? theme.colors.primary.main
+                          : theme.colors.text.secondary
+                      }
+                    />
+                  </View>
+
+                  <View
+                    style={
+                      styles.timeSlotContent
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.timeSlotLabel,
+                        {
+                          color: selected
+                            ? theme.colors
+                                .primary.main
+                            : theme.colors
+                                .text.primary,
+                        },
+                      ]}
+                    >
+                      {slot.label}
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.timeSlotSub,
+                        {
+                          color:
+                            theme.colors
+                              .text.secondary,
+                        },
+                      ]}
+                    >
+                      {slot.sub}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.radio,
+                      {
+                        borderColor:
+                          selected
+                            ? theme.colors
+                                .primary.main
+                            : theme.colors
+                                .border,
+                      },
+                    ]}
+                  >
+                    {selected && (
+                      <View
+                        style={[
+                          styles.radioInner,
+                          {
+                            backgroundColor:
+                              theme.colors
+                                .primary.main,
+                          },
+                        ]}
+                      />
+                    )}
+                  </View>
                 </TouchableOpacity>
               );
             })}
-          </View>
-        </Card>
+          </Card>
+        )}
 
-        {/* ── Payment summary ────────────────────────────────────────────────── */}
-        <Card style={styles.card} onPress={() => {}}>
-          <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>
-            Payment
-          </Text>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>Subtotal</Text>
-            <Text style={[styles.summaryValue, { color: theme.colors.text.primary }]}>
-              Rs. {(cart?.subtotal ?? 0).toFixed(2)}
+        {/* ============================================================ */}
+        {/* STEP 4 — SPECIAL INSTRUCTIONS */}
+        {/* ============================================================ */}
+
+        {state.currentStep === 4 && (
+          <Card style={styles.card}>
+            <Text
+              style={[
+                styles.cardTitle,
+                {
+                  color:
+                    theme.colors.text.primary,
+                },
+              ]}
+            >
+              Special Instructions
             </Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, { color: theme.colors.text.secondary }]}>Tax (10%)</Text>
-            <Text style={[styles.summaryValue, { color: theme.colors.text.primary }]}>
-              Rs. {(cart?.tax ?? 0).toFixed(2)}
+
+            <Text
+              style={[
+                styles.description,
+                {
+                  color:
+                    theme.colors.text.secondary,
+                },
+              ]}
+            >
+              Add any instructions for your
+              delivery. This is optional.
             </Text>
-          </View>
-          {cart?.discount > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: theme.colors.success }]}>Discount</Text>
-              <Text style={[styles.summaryValue, { color: theme.colors.success }]}>
-                − Rs. {(cart?.discount ?? 0).toFixed(2)}
+
+            <TextInput
+              value={
+                state.specialInstructions
+              }
+              onChangeText={(text) =>
+                setState((prev) => ({
+                  ...prev,
+                  specialInstructions:
+                    text,
+                  error: null,
+                }))
+              }
+              placeholder="Example: Please leave the order at the front door..."
+              placeholderTextColor={
+                theme.colors.text.tertiary
+              }
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+              style={[
+                styles.instructionsInput,
+                {
+                  color:
+                    theme.colors.text.primary,
+                  borderColor:
+                    theme.colors.border,
+                  backgroundColor:
+                    theme.colors.background,
+                },
+              ]}
+            />
+
+            <Text
+              style={[
+                styles.characterCount,
+                {
+                  color:
+                    theme.colors.text.tertiary,
+                },
+              ]}
+            >
+              {state.specialInstructions.length}{' '}
+              characters
+            </Text>
+          </Card>
+        )}
+
+        {/* ============================================================ */}
+        {/* STEP 5 — REVIEW */}
+        {/* ============================================================ */}
+
+        {state.currentStep === 5 && (
+          <>
+            {/* ITEMS */}
+
+            <Card style={styles.card}>
+              <Text
+                style={[
+                  styles.cardTitle,
+                  {
+                    color:
+                      theme.colors.text.primary,
+                  },
+                ]}
+              >
+                Review Your Order
               </Text>
-            </View>
-          )}
-          <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-          <View style={styles.summaryRow}>
-            <Text style={[styles.totalLabel, { color: theme.colors.text.primary }]}>Total to pay</Text>
-            <Text style={[styles.totalValue, { color: theme.colors.primary.main }]}>
-              Rs. {(cart?.total ?? 0).toFixed(2)}
-            </Text>
-          </View>
-        </Card>
+
+              <Text
+                style={[
+                  styles.sectionLabel,
+                  {
+                    color:
+                      theme.colors.text.tertiary,
+                  },
+                ]}
+              >
+                ITEMS ({items.length})
+              </Text>
+
+              {items.map((item) => {
+                const price =
+                  parsePrice(item.price);
+
+                return (
+                  <View
+                    key={item.uniqueId || item.id}
+                    style={styles.reviewItem}
+                  >
+                    <View
+                      style={
+                        styles.reviewItemLeft
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.reviewItemName,
+                          {
+                            color:
+                              theme.colors
+                                .text.primary,
+                          },
+                        ]}
+                      >
+                        {item.name} ×{' '}
+                        {item.quantity}
+                      </Text>
+
+                      {item.vendor && (
+                        <View style={styles.inlineIconRow}>
+                          <Ionicons
+                            name="storefront-outline"
+                            size={11}
+                            color={theme.colors.text.secondary}
+                            style={styles.inlineIcon}
+                          />
+                          <Text
+                            style={[
+                              styles.reviewVendor,
+                              {
+                                color:
+                                  theme.colors
+                                    .text.secondary,
+                                marginTop: 0,
+                              },
+                            ]}
+                          >
+                            {item.vendor}
+                          </Text>
+                        </View>
+                      )}
+
+                      {renderReservationBadge(
+                        item
+                      )}
+                    </View>
+
+                    <Text
+                      style={[
+                        styles.reviewPrice,
+                        {
+                          color:
+                            theme.colors
+                              .text.primary,
+                        },
+                      ]}
+                    >
+                      Rs.{' '}
+                      {formatCurrency(
+                        price *
+                          item.quantity
+                      )}
+                    </Text>
+                  </View>
+                );
+              })}
+            </Card>
+
+            {/* DELIVERY */}
+
+            <Card style={styles.card}>
+              <Text
+                style={[
+                  styles.sectionLabel,
+                  {
+                    color:
+                      theme.colors.text.tertiary,
+                  },
+                ]}
+              >
+                DELIVERY
+              </Text>
+
+              <View style={styles.inlineIconRow}>
+                <Ionicons
+                  name="location-outline"
+                  size={14}
+                  color={theme.colors.text.primary}
+                  style={styles.inlineIcon}
+                />
+                <Text
+                  style={[
+                    styles.reviewText,
+                    {
+                      color:
+                        theme.colors.text.primary,
+                      marginBottom: 0,
+                    },
+                  ]}
+                >
+                  {state.deliveryAddress
+                    .address ||
+                    'No address selected'}
+                </Text>
+              </View>
+
+              <View style={[styles.inlineIconRow, { marginTop: 8 }]}>
+                <Ionicons
+                  name="time-outline"
+                  size={14}
+                  color={theme.colors.text.primary}
+                  style={styles.inlineIcon}
+                />
+                <Text
+                  style={[
+                    styles.reviewText,
+                    {
+                      color:
+                        theme.colors.text.primary,
+                      marginBottom: 0,
+                    },
+                  ]}
+                >
+                  {state.deliveryTimeSlot
+                    ? state.deliveryTimeSlot
+                        .replace(
+                          /_/g,
+                          ' '
+                        )
+                    : 'No time slot selected'}
+                </Text>
+              </View>
+
+              {state.specialInstructions ? (
+                <View style={[styles.inlineIconRow, { marginTop: 8, alignItems: 'flex-start' }]}>
+                  <Ionicons
+                    name="document-text-outline"
+                    size={14}
+                    color={theme.colors.text.primary}
+                    style={[styles.inlineIcon, { marginTop: 2 }]}
+                  />
+                  <Text
+                    style={[
+                      styles.reviewText,
+                      {
+                        color:
+                          theme.colors
+                            .text.primary,
+                        marginBottom: 0,
+                        flex: 1,
+                      },
+                    ]}
+                  >
+                    {
+                      state.specialInstructions
+                    }
+                  </Text>
+                </View>
+              ) : null}
+            </Card>
+
+            {/* PAYMENT */}
+
+            <Card style={styles.card}>
+              <Text
+                style={[
+                  styles.sectionLabel,
+                  {
+                    color:
+                      theme.colors.text.tertiary,
+                  },
+                ]}
+              >
+                PAYMENT
+              </Text>
+
+              <View
+                style={styles.summaryRow}
+              >
+                <Text
+                  style={[
+                    styles.summaryLabel,
+                    {
+                      color:
+                        theme.colors
+                          .text.secondary,
+                    },
+                  ]}
+                >
+                  Subtotal
+                </Text>
+
+                <Text
+                  style={[
+                    styles.summaryValue,
+                    {
+                      color:
+                        theme.colors
+                          .text.primary,
+                    },
+                  ]}
+                >
+                  Rs.{' '}
+                  {formatCurrency(
+                    cartTotals.subtotal
+                  )}
+                </Text>
+              </View>
+
+              <View
+                style={styles.summaryRow}
+              >
+                <Text
+                  style={[
+                    styles.summaryLabel,
+                    {
+                      color:
+                        theme.colors
+                          .text.secondary,
+                    },
+                  ]}
+                >
+                  Tax (10%)
+                </Text>
+
+                <Text
+                  style={[
+                    styles.summaryValue,
+                    {
+                      color:
+                        theme.colors
+                          .text.primary,
+                    },
+                  ]}
+                >
+                  Rs.{' '}
+                  {formatCurrency(
+                    cartTotals.tax
+                  )}
+                </Text>
+              </View>
+
+              {cartTotals.discount > 0 && (
+                <View
+                  style={styles.summaryRow}
+                >
+                  <Text
+                    style={[
+                      styles.summaryLabel,
+                      {
+                        color:
+                          theme.colors
+                            .success ||
+                          '#34d399',
+                      },
+                    ]}
+                  >
+                    Discount
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.summaryValue,
+                      {
+                        color:
+                          theme.colors
+                            .success ||
+                          '#34d399',
+                      },
+                    ]}
+                  >
+                    - Rs.{' '}
+                    {formatCurrency(
+                      cartTotals.discount
+                    )}
+                  </Text>
+                </View>
+              )}
+
+              <View
+                style={[
+                  styles.divider,
+                  {
+                    backgroundColor:
+                      theme.colors.border,
+                  },
+                ]}
+              />
+
+              <View
+                style={styles.totalRow}
+              >
+                <Text
+                  style={[
+                    styles.totalLabel,
+                    {
+                      color:
+                        theme.colors
+                          .text.primary,
+                    },
+                  ]}
+                >
+                  Total Amount
+                </Text>
+
+                <Text
+                  style={[
+                    styles.totalValue,
+                    {
+                      color:
+                        theme.colors
+                          .primary.main,
+                    },
+                  ]}
+                >
+                  Rs.{' '}
+                  {formatCurrency(
+                    cartTotals.total
+                  )}
+                </Text>
+              </View>
+            </Card>
+          </>
+        )}
+
+        {/* Bottom spacing */}
+        <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* ── Footer button ────────────────────────────────────────────────────── */}
-      <View style={styles.footer}>
-        <Button
-          title={placing ? 'Placing order…' : 'Place Order'}
-          onPress={handlePlaceOrder}
-          disabled={placing || cartItems.length === 0}
-          style={styles.placeOrderButton}
-        />
+      {/* ================================================================ */}
+      {/* NAVIGATION FOOTER */}
+      {/* ================================================================ */}
+
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor:
+              theme.colors.background,
+            borderTopColor:
+              theme.colors.border,
+          },
+        ]}
+      >
+        <View style={styles.footerButtons}>
+          {state.currentStep > 1 && (
+            <TouchableOpacity
+              style={[
+                styles.previousButton,
+                {
+                  borderColor:
+                    theme.colors.border,
+                },
+              ]}
+              onPress={handlePreviousStep}
+              disabled={state.loading}
+            >
+              <Ionicons
+                name="arrow-back"
+                size={15}
+                color={theme.colors.text.primary}
+                style={{ marginRight: 5 }}
+              />
+              <Text
+                style={[
+                  styles.previousButtonText,
+                  {
+                    color:
+                      theme.colors.text.primary,
+                  },
+                ]}
+              >
+                Previous
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {state.currentStep < 5 ? (
+            <Button
+              title="Next"
+              onPress={handleNextStep}
+              disabled={state.loading}
+              style={[
+                styles.nextButton,
+                state.currentStep === 1 &&
+                  styles.fullButton,
+              ]}
+            />
+          ) : (
+            <Button
+              title={
+                state.loading
+                  ? 'Redirecting to payment…'
+                  : 'Proceed to Payment'
+              }
+              onPress={handlePay}
+              disabled={state.loading}
+              style={styles.nextButton}
+            />
+          )}
+        </View>
+
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('Cart')
+          }
+          disabled={state.loading}
+          style={styles.backToCartRow}
+        >
+          <Ionicons
+            name="arrow-back"
+            size={12}
+            color={theme.colors.text.secondary}
+            style={{ marginRight: 4 }}
+          />
+          <Text
+            style={[
+              styles.backToCart,
+              {
+                color:
+                  theme.colors.text.secondary,
+              },
+            ]}
+          >
+            Back to cart
+          </Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 };
 
-// ── Styles ─────────────────────────────────────────────────────────────────────
+// ============================================================================
+// STYLES
+// ============================================================================
 
 const styles = StyleSheet.create({
-  container:   { flex: 1 },
-  centered:    { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  loadingText: { marginTop: 12, fontSize: 14 },
-  retryBtn:    { paddingHorizontal: 28, paddingVertical: 12, borderRadius: 8 },
-  retryBtnText:{ color: '#fff', fontWeight: '700', fontSize: 14 },
+  container: {
+    flex: 1,
+  },
 
-  header:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
-  backButton: { fontSize: 16, fontWeight: '600' },
-  title:      { fontSize: 22, fontWeight: '700' },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
 
-  scroll:        { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 140 },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+  },
 
-  card:      { marginBottom: 12, padding: 16 },
-  cardTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
+  // --------------------------------------------------------------------------
+  // HEADER
+  // --------------------------------------------------------------------------
 
-  itemRow:             { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  itemThumb:           { width: 44, height: 44, borderRadius: 8, marginRight: 10 },
-  itemThumbPlaceholder:{ justifyContent: 'center', alignItems: 'center' },
-  itemName:            { fontSize: 14, fontWeight: '600', marginBottom: 2 },
-  itemMeta:            { fontSize: 12 },
-  itemTotal:           { fontSize: 13, fontWeight: '700', marginLeft: 8 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
 
-  slotsRow:  { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  slotBtn:   { flex: 1, marginHorizontal: 4, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5, alignItems: 'center' },
-  slotLabel: { fontSize: 12, fontWeight: '700', textAlign: 'center' },
-  slotSub:   { fontSize: 10, textAlign: 'center', marginTop: 2 },
+  headerBackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 60,
+  },
 
-  summaryRow:   { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  summaryLabel: { fontSize: 13 },
-  summaryValue: { fontSize: 13, fontWeight: '600' },
-  divider:      { height: 1, marginVertical: 10 },
-  totalLabel:   { fontSize: 15, fontWeight: '700' },
-  totalValue:   { fontSize: 18, fontWeight: '700' },
+  headerCenter: {
+    alignItems: 'center',
+  },
 
-  footer:           { position: 'absolute', left: 0, right: 0, bottom: 90, paddingHorizontal: 20, paddingVertical: 12 },
-  placeOrderButton: { width: '100%' },
+  backButton: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 3,
+  },
+
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+
+  stepText: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+
+  // --------------------------------------------------------------------------
+  // INLINE ICON ROW
+  // --------------------------------------------------------------------------
+
+  inlineIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  inlineIcon: {
+    marginRight: 4,
+  },
+
+  // --------------------------------------------------------------------------
+  // PROGRESS
+  // --------------------------------------------------------------------------
+
+  progressContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 5,
+    marginBottom: 10,
+  },
+
+  progressBar: {
+    flex: 1,
+    height: 4,
+    borderRadius: 10,
+  },
+
+  // --------------------------------------------------------------------------
+  // ERROR
+  // --------------------------------------------------------------------------
+
+  errorBox: {
+    marginHorizontal: 20,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+  },
+
+  errorText: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+
+  // --------------------------------------------------------------------------
+  // SCROLL
+  // --------------------------------------------------------------------------
+
+  scroll: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 180,
+  },
+
+  // --------------------------------------------------------------------------
+  // CARD
+  // --------------------------------------------------------------------------
+
+  card: {
+    marginBottom: 12,
+    padding: 16,
+  },
+
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 14,
+  },
+
+  description: {
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 15,
+  },
+
+  // --------------------------------------------------------------------------
+  // ORDER ITEMS
+  // --------------------------------------------------------------------------
+
+  orderItem: {
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 8,
+  },
+
+  orderItemContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+
+  productImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+
+  imagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  productDetails: {
+    flex: 1,
+    paddingRight: 6,
+  },
+
+  itemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 3,
+  },
+
+  itemMeta: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+
+  itemTotal: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginLeft: 5,
+  },
+
+  reservationText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  expiredText: {
+    color: '#f87171',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+
+  // --------------------------------------------------------------------------
+  // HIGHLIGHT
+  // --------------------------------------------------------------------------
+
+  highlightBox: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 13,
+    marginTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  highlightLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  highlightValue: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+
+  // --------------------------------------------------------------------------
+  // ADDRESS
+  // --------------------------------------------------------------------------
+
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 7,
+  },
+
+  addressInput: {
+    minHeight: 90,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    fontSize: 14,
+    textAlignVertical: 'top',
+  },
+
+  locationText: {
+    fontSize: 11,
+    marginTop: 7,
+  },
+
+  infoBox: {
+    borderWidth: 1,
+    borderRadius: 9,
+    padding: 10,
+    marginTop: 14,
+  },
+
+  infoText: {
+    fontSize: 11,
+    lineHeight: 17,
+  },
+
+  // --------------------------------------------------------------------------
+  // TIME SLOT
+  // --------------------------------------------------------------------------
+
+  timeSlot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+  },
+
+  timeSlotIconWrap: {
+    width: 40,
+    alignItems: 'flex-start',
+  },
+
+  timeSlotContent: {
+    flex: 1,
+  },
+
+  timeSlotLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  timeSlotSub: {
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  radio: {
+    width: 21,
+    height: 21,
+    borderRadius: 11,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  radioInner: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+  },
+
+  // --------------------------------------------------------------------------
+  // INSTRUCTIONS
+  // --------------------------------------------------------------------------
+
+  instructionsInput: {
+    minHeight: 150,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 13,
+    fontSize: 14,
+  },
+
+  characterCount: {
+    fontSize: 10,
+    textAlign: 'right',
+    marginTop: 5,
+  },
+
+  // --------------------------------------------------------------------------
+  // REVIEW
+  // --------------------------------------------------------------------------
+
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.7,
+    marginBottom: 10,
+  },
+
+  reviewItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 7,
+  },
+
+  reviewItemLeft: {
+    flex: 1,
+    paddingRight: 10,
+  },
+
+  reviewItemName: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  reviewVendor: {
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  reviewPrice: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  reviewText: {
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+
+  // --------------------------------------------------------------------------
+  // PAYMENT
+  // --------------------------------------------------------------------------
+
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 9,
+  },
+
+  summaryLabel: {
+    fontSize: 13,
+  },
+
+  summaryValue: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  divider: {
+    height: 1,
+    marginVertical: 8,
+  },
+
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  totalLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  totalValue: {
+    fontSize: 19,
+    fontWeight: '700',
+  },
+
+  // --------------------------------------------------------------------------
+  // FOOTER
+  // --------------------------------------------------------------------------
+
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+  },
+
+  footerButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+
+  previousButton: {
+    flex: 1,
+    height: 48,
+    borderWidth: 1,
+    borderRadius: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  previousButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  nextButton: {
+    flex: 1,
+    minHeight: 48,
+  },
+
+  fullButton: {
+    flex: 1,
+  },
+
+  backToCartRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 9,
+  },
+
+  backToCart: {
+    textAlign: 'center',
+    fontSize: 11,
+  },
 });
 
 export default CheckoutScreen;

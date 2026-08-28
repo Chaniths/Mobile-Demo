@@ -1,12 +1,13 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 
 import HomeScreen from '../screens/buyer/HomeScreen';
 import ProductBrowseScreen from '../screens/buyer/ProductBrowseScreen';
-import ProductDetailScreen from '../screens/buyer/ProductDetailScreen';
+import ProductSellersScreen from '../screens/buyer/ProductSellersScreen';
 import CartScreen from '../screens/buyer/CartScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen';
 import AnalyticsScreen from '../screens/buyer/AnalyticsScreen';
@@ -18,10 +19,9 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 // TODO: create this screen — shows order number + success message after placing order
 // import OrderConfirmationScreen from '../screens/buyer/OrderConfirmationScreen';
 
-import { View } from 'react-native';
 const OrderConfirmationScreen = ({ route, navigation }) => (
   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text style={{ fontSize: 40, marginBottom: 12 }}>🎉</Text>
+    <Ionicons name="checkmark-circle" size={56} color="#22c55e" style={{ marginBottom: 12 }} />
     <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>
       Order Placed!
     </Text>
@@ -49,7 +49,7 @@ const HomeStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Home"          component={HomeScreen} />
     <Stack.Screen name="ProductBrowse" component={ProductBrowseScreen} />
-    <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+    <Stack.Screen name="ProductSellers" component={ProductSellersScreen} />
     <Stack.Screen name="Analytics"     component={AnalyticsScreen} />
   </Stack.Navigator>
 );
@@ -59,7 +59,7 @@ const HomeStack = () => (
 const BrowseStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="ProductBrowse" component={ProductBrowseScreen} />
-    <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+    <Stack.Screen name="ProductSellers" component={ProductSellersScreen} />
   </Stack.Navigator>
 );
 
@@ -74,7 +74,10 @@ const CartStack = () => (
 );
 
 // ── Orders stack ───────────────────────────────────────────────────────────────
-// Wrapped in a stack so TrackOrder can be pushed on top
+// Wrapped in a stack so TrackOrder can be pushed on top.
+// This is the ONLY place TrackOrder is registered — do not add it
+// again at the root navigator, or navigate('TrackOrder') calls become
+// ambiguous about which instance they resolve to.
 
 const OrdersStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -112,38 +115,71 @@ const BuyerTabs = () => {
         tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
       }}
     >
-      <Tab.Screen name="HomeTab" component={HomeStack}
-        options={{ tabBarLabel: 'Home', tabBarIcon: () => <Text style={{ fontSize: 24 }}>🏠</Text> }}
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeStack}
+        options={{
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={size ?? 24} color={color} />
+          ),
+        }}
       />
-      <Tab.Screen name="BrowseTab" component={BrowseStack}
-        options={{ tabBarLabel: 'Browse', tabBarIcon: () => <Text style={{ fontSize: 24 }}>🔍</Text> }}
+      <Tab.Screen
+        name="BrowseTab"
+        component={BrowseStack}
+        options={{
+          tabBarLabel: 'Browse',
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'search' : 'search-outline'} size={size ?? 24} color={color} />
+          ),
+        }}
       />
-      <Tab.Screen name="CartTab" component={CartStack}
-        options={{ tabBarLabel: 'Cart', tabBarIcon: () => <Text style={{ fontSize: 24 }}>🛒</Text> }}
+      <Tab.Screen
+        name="CartTab"
+        component={CartStack}
+        options={{
+          tabBarLabel: 'Cart',
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'cart' : 'cart-outline'} size={size ?? 24} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
         name="OrdersTab"
         component={OrdersStack}
         options={{
           tabBarLabel: 'My Orders',
-          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text>,
-        }}/>
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'cube' : 'cube-outline'} size={size ?? 24} color={color} />
+          ),
+        }}
+      />
       {/* <Tab.Screen name="OrdersTab" component={OrdersScreen}
         options={{ tabBarLabel: 'My Orders', tabBarIcon: () => <Text style={{ fontSize: 24 }}>📦</Text> }}
       /> */}
-      <Tab.Screen name="Profile" component={ProfileScreen} // ✅ direct, no stack needed
-        options={{ tabBarLabel: 'Profile', tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text> }}
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen} // ✅ direct, no stack needed
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={size ?? 24} color={color} />
+          ),
+        }}
       />
     </Tab.Navigator>
   );
 };
 
 // ── Root navigator ─────────────────────────────────────────────────────────────
+// ✅ Root-level TrackOrder duplicate removed — TrackOrder now lives only
+// inside OrdersStack. Navigate to it with:
+//   navigation.navigate('OrdersTab', { screen: 'TrackOrder' })
 
 const BuyerNavigator = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="MainTabs" component={BuyerTabs} />
-    <Stack.Screen name="TrackOrder" component={TrackOrderScreen} />
     <Stack.Screen name="Notifications" component={NotificationsScreen} />
     {/* ✅ ProfileStack removed — ProfileScreen handles its own internal navigation */}
   </Stack.Navigator>
